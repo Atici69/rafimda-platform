@@ -1,0 +1,119 @@
+# Statik dosyalar — tarayıcı önbelleği (PageSpeed: efficient cache policy)
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresByType text/css "access plus 1 year"
+	ExpiresByType application/javascript "access plus 1 year"
+	ExpiresByType text/javascript "access plus 1 year"
+	ExpiresByType image/png "access plus 1 year"
+	ExpiresByType image/jpeg "access plus 1 year"
+	ExpiresByType image/webp "access plus 1 year"
+	ExpiresByType image/gif "access plus 1 year"
+	ExpiresByType image/svg+xml "access plus 1 year"
+	ExpiresByType image/x-icon "access plus 1 year"
+	ExpiresByType font/woff2 "access plus 1 year"
+	ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+	<FilesMatch "\.(css|js|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|eot)$">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/css application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
+RewriteEngine On
+RewriteBase /
+
+# PrestaShop / Prapazar HTTP Basic (mod_fcgid Authorization başlığını PHP'ye geçirir)
+<IfModule mod_authz_core.c>
+	CGIPassAuth On
+</IfModule>
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Sensitive paths / VCS — never serve from docroot
+RewriteRule ^\.git(/|$) - [F,L]
+RewriteRule ^\.svn(/|$) - [F,L]
+RewriteRule ^(logs|upgrade|cache|backups|config|core|container|storage|lang|tools)(/|$) - [F,L]
+RewriteRule ^install/.*\.sql$ - [F,L]
+RewriteRule ^modules/.*\.php$ - [F,L]
+RewriteRule ^img/.*\.php$ - [F,L]
+RewriteRule \.(sql|tpl)$ - [F,L]
+
+# PWA — dynamic manifest & service worker (mobil-app module)
+RewriteRule ^manifest\.json$ manifest.php [L]
+RewriteRule ^sw\.js$ sw.php [L]
+
+# BEGIN FSHOP_ADMIN
+RewriteRule ^admin/?$ admin/index.php [L,QSA]
+RewriteRule ^admin/([a-zA-Z0-9_-]+)/?$ admin/index.php?container=$1 [L,QSA]
+# END FSHOP_ADMIN
+
+# 404 Sayfası
+ErrorDocument 404 /404
+
+
+# 3. Gerçek dosya ve dizinleri yönlendirme dışı tut (Resim, CSS, JS vb.)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 4b. Sitemap
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# 4b1. LLMs.txt
+RewriteRule ^llms\.txt$ index.php?container=llms [L,QSA]
+
+# 4b2. RSS haber beslemesi
+RewriteRule ^rss\.xml$ rss.php [L]
+
+# 4c. Döviz cron
+RewriteRule ^api/cron$ api/cron.php [L,QSA]
+
+# 4d. Web API (uzaktan sipariş / ürün)
+RewriteRule ^api/v1/?$ api/webapi.php [L,QSA]
+RewriteRule ^api/v1/(.*)$ api/webapi.php?route=$1 [L,QSA]
+
+# 4d1. PrestaShop-compatible WebService (FriSay facade — does not replace /api/v1)
+RewriteRule ^api/?$ api/psws.php [L,QSA]
+RewriteRule ^api/(.+)$ api/psws.php?ps_path=$1 [L,QSA]
+
+# 5a0. Blog kategori (yazı kuralından önce)
+RewriteRule ^blog/kategori/(.+)-([0-9]+)/?$ index.php?container=blog&cat_slug=$1&id_category=$2 [L,QSA,NC]
+
+# 5a. Blog yazı (ürün kuralından önce — /blog/slug-id ürün gibi eşleşmesin)
+RewriteRule ^blog/(.+)-([0-9]+)/?$ index.php?container=blog-post&slug=$1&id=$2 [L,QSA,NC]
+
+# 5. Ürün linki
+RewriteRule ^([a-zA-Z0-9-]+)/(.+)-([0-9]+)$ index.php?container=product&category=$1&slug=$2&id=$3 [L,QSA,NC]
+
+# 5b. Marka sayfası
+RewriteRule ^marka/([0-9a-zA-Z-]+)$ index.php?container=brand&link=$1 [L,QSA,NC]
+
+# 6. Genel Konteyner Yönlendirmesi (En sonda olmalı)
+# Eğer üstteki hiçbir kurala uymazsa buraya düşer
+RewriteCond %{REQUEST_URI} !^/index\.php
+RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?container=$1 [NC,L,QSA]
+
+<IfModule mod_expires.c> 
+  ExpiresActive On
+  ExpiresDefault "access plus 1 seconds"
+  ExpiresByType text/html "access plus 1 seconds"
+  ExpiresByType image/x-icon "access plus 2592000 seconds"
+  ExpiresByType image/gif "access plus 2592000 seconds"
+  ExpiresByType image/jpeg "access plus 2592000 seconds"
+  ExpiresByType image/png "access plus 2592000 seconds"
+  ExpiresByType text/css "access plus 604800 seconds"
+  ExpiresByType text/javascript "access plus 86400 seconds"
+  ExpiresByType application/x-javascript "access plus 86400 seconds"
+</IfModule>
+<FilesMatch "\.(?i:gif|jpe?g|png|ico|css|js|swf)$">
+
+  <IfModule mod_headers.c>
+    Header set Cache-Control "max-age=172800, public, must-revalidate"
+  </IfModule>
+
+</FilesMatch>

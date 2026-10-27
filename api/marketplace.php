@@ -1,0 +1,83 @@
+<?php
+
+define('IN_SCRIPT', true);
+
+// Admin oturumu + Admin:: sınıfı gerekir (cron hariç tüm action'lar admin paneli).
+require_once dirname(__DIR__) . '/config/admin_bootstrap.php';
+require_once dirname(__DIR__) . '/core/marketplace/bootstrap.php';
+
+$action = trim((string) Tools::getValue('action'));
+
+$actions = [
+	'cron' => 'cron.php',
+	'sync' => 'sync.php',
+	'update-price' => 'update-price.php',
+	'unlink' => 'unlink.php',
+	'refresh' => 'refresh.php',
+	'brands' => 'brands.php',
+	'categories' => 'categories.php',
+	'attributes' => 'attributes.php',
+	'fetch-orders' => 'fetch-orders.php',
+	'fetch-questions' => 'fetch-questions.php',
+	'export-orders' => 'export-orders.php',
+	'answer-question' => 'answer-question.php',
+	'import-product' => 'import-product.php',
+	'link-existing' => 'link-existing.php',
+	'update-stock' => 'update-stock.php',
+	'sale-pause' => 'sale-pause.php',
+	'order-action' => 'order-action.php',
+	'ps-test' => 'ps-test.php',
+	'ps-pull' => 'ps-pull.php',
+];
+
+// State-changing actions must be POST (CSRF enforced by admin_bootstrap).
+$mutatingActions = [
+	'sync',
+	'update-price',
+	'unlink',
+	'answer-question',
+	'import-product',
+	'link-existing',
+	'update-stock',
+	'sale-pause',
+	'order-action',
+	'ps-test',
+	'ps-pull',
+	'export-orders',
+	'fetch-orders',
+	'fetch-questions',
+];
+
+if ($action === '' || !isset($actions[$action])) {
+	http_response_code(400);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Geçersiz işlem'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+if ($action !== 'cron' && !Admin::isLoggedIn()) {
+	http_response_code(403);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+if (in_array($action, $mutatingActions, true) && $method !== 'POST') {
+	http_response_code(405);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Yalnızca POST kabul edilir'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+$file = __DIR__ . '/marketplace/' . $actions[$action];
+
+if (!is_file($file)) {
+	http_response_code(404);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Endpoint bulunamadı'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+require $file;

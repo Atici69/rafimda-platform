@@ -1,0 +1,59 @@
+# Ortam (canlıda env.php oluşturun, repoya eklemeyin)
+config/env.php
+config/env0.php
+config/installed.lock
+
+# Loglar
+logs/*.log
+logs/*.jsonl
+logs/php-error.log
+admin/error_log
+
+# Smarty önbellek
+cache/force/*
+!cache/force/index.php
+cache/cache/*
+!cache/cache/index.php
+cache/pages/*
+!cache/pages/index.php
+cache/updates/*
+!cache/updates/index.php
+cache/news-feed.json
+cache/*.txt
+cache/*.xml
+
+# Haber JSON kaynağı repoda kalır; üretilen önbellek değil
+
+# Yüklenen ürün görselleri
+img/products/*
+!img/products/index.php
+
+# Kategori görselleri
+img/category/*
+!img/category/index.php
+!img/category/.htaccess
+
+# İade talebi görselleri
+img/returns/*
+!img/returns/index.php
+
+# Sipariş faturaları
+img/invoices/*
+!img/invoices/index.php
+
+# Dijital ürün dosyaları
+storage/digital/*
+!storage/digital/index.php
+
+# IDE / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Geçici
+config/debug.log
+*.bak
+
+# Yayın paketleri
+dist/

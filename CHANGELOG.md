@@ -1,0 +1,691 @@
+# Changelog
+
+All notable changes to FShop are documented here.  
+Version numbers follow [Semantic Versioning](https://semver.org/).
+
+| Durum | Sürüm |
+|--------|--------|
+| **Yayında (canlı)** | **3.0.2** |
+| **Önceki kararlı** | **3.0.0** |
+
+3.0.0 sonrası geliştirmeler **3.0.2** altında toplandı.
+
+---
+## [3.0.2] — 2026-10-26
+
+### Added
+- **Yönetimden manuel sipariş** — Müşteriyi isim, soyisim, telefon veya e-posta ile bulma; sipariş sırasında yeni müşteri ekleme; ürünleri arayıp sepete ekleme; adres/alıcı, kargo ve ödeme seçimi; kupon ve tutar/oran bazlı ek indirim; mağazanın sepet fiyatlandırmasıyla toplam hesaplama; müşterinin hesabına sipariş kaydı ve e-posta bildirimi
+- **Ürün kişiselleştirme** — Ürün bazında metin, tarih ve görsel alanı tanımlama; sipariş kalemlerinde müşteri girdilerini saklama ve görüntüleme
+- **Müşteri hesabı önizleme** — Admin müşteri detayından mağazayı yeni sekmede seçili müşteri hesabıyla açma; güvenli şekilde yönetici oturumuna geri dönme
+- **Kategori yönetim ağacı** — Sürükle-bırak ile sıralama/üst kategori değiştirme, aç-kapat, aktiflik anahtarı, alt kategori ekleme ve silme menüsü
+
+### Changed
+- **Admin filtreleri** — Kategoriler, müşteriler, iptal/iade talepleri, markalar ve tedarikçilerde tek satır filtre düzeni; marka ve tedarikçi listelerinde yeni kayıt düğmesi aynı satırın sağında
+- **Müşteri yönetimi** — Müşteri detayına kurumsal özet, sipariş istatistikleri, manuel sipariş ve müşteri hesabını önizleme işlemleri eklendi; müşteri araması adın herhangi bir parçasıyla eşleşir
+- **Admin dashboard** — Dönem seçimi, KPI kartları, grafikler ve paneller daha belirgin hiyerarşi, sade renk geçişleri ve mobil uyumlu aralıklarla yenilendi
+- **Ürün liste filtreleri** — Kategori ve arama sonuçlarında stokta olan ürünleri gösterme seçeneği
+- **Modül yönetimi** — Modül menüsüne kaldırma ve modül dosyalarını kalıcı silme seçeneği eklendi; kurulu modüller silinmeden önce kaldırılır ve işlem onayı gösterilir
+- **Mobil App bağımlılıkları** — Push bildirimlerinde kullanılan Guzzle ve ilişkili Composer paketleri güvenlik düzeltmeleri içeren sürümlere yükseltildi
+
+### Fixed
+- **Manuel sipariş adetleri** — Ürün stok birimine göre tam sayı veya küsuratlı adet girişi
+- **Manuel sipariş toplamı** — Ürün, kampanya/kupon, ödeme, kargo ve ek indirim kalemlerinin sipariş formunda hesaplanıp gösterilmesi; kargo ve ödeme yöntemine göre toplamın yenilenmesi
+- **Manuel sipariş müşteri/adres bilgileri** — Sipariş kaydında geçerli müşteri ad-soyadı ve alıcı adı, telefonu, adres bilgileri
+
+---
+## [3.0.0] — 2026-09-10
+
+### Added
+- **Healt theme** — teal accent `#169ba0`, homepage chips from admin “show on home” categories only, app-style mobile chrome
+- **PrestaShop-compatible shop WebService** — `/api/orders?ws_key=` XML/JSON facade (xlink resources, `display=full`, filters) so cargo/marketplace PS clients can talk to FriSay without using `/api/v1`; existing JSON Web API unchanged
+- **ShopNova storefront** (`templates/shopnova`) — marketplace layout: navy utility bar, category search, full-width hero, popular grid, deal/mega banners; editorial product page (studio gallery + filmstrip)
+- **Theme Edit (theme4)** — click-to-edit storefront: Bootstrap modal (no live iframe while typing; apply on Save), header/service-bar/footer chrome texts, category widgets as grid or list, **Container** section (side-by-side divs: category / image / text)
+- **Admin products list** — active/inactive switch; ⋮ menu (Preview, Copy, Delete); search by name, stock code or barcode; clickable column sort (ASC/DESC)
+- **Multi-category products** — default category plus extra categories; product appears on those category pages too
+- **Category images** — upload on category edit (PNG/JPG/WEBP/GIF); homepage circles only request a file when one exists (no 404)
+
+### Changed
+- **Site version** — `FShop::VERSION` 3.0.0 (admin footer)
+- **Default storefront theme** — `templates/dress` renamed to `templates/default`; installer and schema ship it as the stock theme (existing `THEME=dress` is remapped)
+- **Admin dashboard Data period** — snapshot panel uses hero metrics, operation rows, and compact cancel/return/basket cards instead of a flat list
+- **Admin UI** — SaaS design system (blue/coral tokens, airy cards, coral active nav, pill search, modern forms/tables) aligned with a light premium dashboard look
+- **Admin sidebar** — account block removed from the top and bottom of the left menu; My Account stays under System (header user menu unchanged)
+- **Admin AI dock** — dashboard, orders, and other AI pages use a left hover dock instead of a large banner
+- **Admin filters** — list pages use the marketplace-orders filter card (funnel title, dashed rules, yellow search button)
+- **Admin top bar** — height and padding match the sidebar header strip
+- **Admin typography** — body and scale ~1px smaller (html 15px, base 13.5px)
+
+### Fixed
+- **Collapsed admin sidebar** — section submenus open as a flyout to the right of the rail (hover or click); previously the accordion did nothing when the menu was collapsed
+- **Security** — `cache/` cookie dumps removed and blocked over HTTP; core update download no longer disables TLS verification on SSL errors; ParamPOS live SOAP always verifies TLS (bundled CA); sanalpos simulation payments disabled when `APP_ENV=production`; Backup Pro download/delete/restore paths stay under `backups/`; `Notification::getByIdForUser` uses parameterized `getRowSafe`; installer schema no longer ships a known default admin password hash
+- **Security** — module/theme/core ZIP symlink and NTFS-ADS path checks; Nginx deny example (`nginx.conf.example`); `tools/` `config/` `core/` `storage/` blocked over HTTP; product/invoice PHP execution denied; toast/comment DOM XSS (`.text()`); admin logout is POST+CSRF; 30-minute admin idle timeout; `Cache-Control: no-store` on admin and account/checkout; customer password-reset and search-suggest rate limits; hardcoded sample Web API key removed
+- **PrestaShop WebService** — currencies match PS 1.7 XML (`names`/`symbol`/`numeric_iso_code`); VAT via `taxes`, `tax_rule_groups`, `tax_rules` from the shop tax table
+- **PrestaShop WebService request log** — Prapazar/cargo `/api/` calls (method, URL, body, status) stored in `logs/psws-requests.jsonl` and listed under Admin → API
+- **Prapazar product GET** — `/api/products` without `display=full` now returns full product objects (name, barcode, tax, manufacturer); list limit default 1000 (was 80)
+- **Prapazar product POST** — `POST /api/products` (and GET with product XML body) creates/updates the shop product from PrestaShop XML; GET `/api/products` no longer dumps every full product (that 500'd)
+- **Prapazar specific_prices + images** — `GET /api/specific_prices` was 404 so the client aborted before image upload; empty list is now 200. `GET /api/images/products/{id}` returns PrestaShop XML (not JPEG 404); `POST` accepts multipart `image`
+- **Prapazar product slug 400** — deleting a product left `product_lang` rows, so the next POST hit “Bu URL slug zaten kullanılıyor”; delete now clears lang rows and WebService uniquifies/reclaims orphan slugs
+- **Prapazar price + PUT** — PrestaShop `price` is tax-excluded; FShop stores tax-included (706.96 + %1 → 714.03). `PUT /api/products` with `<id>` in the body (no URL id) updates instead of 400
+- **Prapazar order ship 404** — after `POST /api/order_histories` the client `GET /api/order_histories/{id}`; that id is the order id and now returns the current state instead of 404
+- **Prapazar order_carriers** — `POST /api/order_carriers` writes tracking number and cargo company onto the order (was 404 Resource not found)
+- **Prapazar order PUT** — `PUT /api/orders` with `<id>` in the body (no URL id) updates tracking/state instead of 400 Order id is required
+- **Prapazar order_states** — API now exposes PrestaShop 1.7 statuses (4 = Shipped, 5 = Delivered); Prapazar “kargola” no longer maps to FriSay delivered
+- **Prapazar image DELETE** — product edit deletes the old image then uploads a new one; `DELETE /api/images/products/{id}/{imageId}` was 405; empty `<prestashop/>` body now returns `<image><id>` so RestSharp can deserialize
+- **Prapazar specific_prices GET** — after POST the client GET `/api/specific_prices/{id}` (id = product id); rows are stored and the amount/percent reduction is applied to the shop price
+- **Prapazar catalog vs sale price** — `GET /api/products` now returns PrestaShop catalog price (before specific_prices). Discount is applied once from that catalog (600 list + 100 off → 500/600, not 400/500)
+- **Prapazar address district** — order addresses expose ilçe as PrestaShop `id_state` + `/api/states/{id}` (was always 0, so cargo/Prapazar dropped the district)
+- **Prapazar product front URL** — `index.php?id_product={id}&controller=product` 301-redirects to the shop SEO URL (`/kategori/slug-id`); native FShop links unchanged
+- **Home text module install** — table renamed `home-text` → `home_text` so install no longer 500s (`DB::insert` strips hyphens); content renders via `home_text` hook on the default homepage
+- **Welcome admin page** — controller no longer redirects to dashboard; sidebar link restored under General
+
+---
+## [2.5.6] — 2026-08-22
+
+### Added
+- **Admin order delete** — Order detail and orders list (⋮ menu) can permanently delete an order (CSRF + confirm); restores stock unless already cancelled/returned; releases coupon use, virtual licenses, invoice file, and related messages/returns
+- **iyzico payment module** — Checkout Form (PayTR-style pending checkout): API key/secret, live/sandbox, callback + signed webhook; installment off option; amount mismatch cancels payment
+- **Web API messages & notifications** — `GET/POST /api/v1/messages` (list, detail, reply, mark read); `GET/POST /api/v1/notifications` (list, mark read, read-all); API key perms `messages.*` / `notifications.*`; stock hitting zero creates admin `stock` notification (also on order stock decrease)
+- **SEO title suffix** — Admin → SEO: homepage uses full site title; other pages use short `SEO_TITLE_SUFFIX` (`Sayfa | Sonek`); empty suffix falls back to `SITE_NAME`
+- **Main menu locations** — Header / Mobile / Footer per item (`show_header`, `show_mobile`, `show_footer`); `footer_menu` display hook wired in store themes; upgrades auto-bind the hook
+- **Theme customize tabs** — Brand (logos, colors, font) / Homepage (header & messaging, footer text) / Advanced (width & extras); Theme4 schema `edit: theme4` opens the Theme4 module builder
+- **Admin system update** — `FS_VERSION` + `upgrade/migrations/*.php`; Admin → Güncelleme applies pending DB/settings steps and shows CHANGELOG between installed and code version (`docs/UPGRADE.md`)
+- **Admin forgot password** — login screen “Şifremi unuttum?” → email reset link (1 hour); pages `forgot-password` / `reset-password`; `admins.reset_token` + `reset_expires` (schema + auto-migrate); hashed token, rate limit, CSRF; `Mail::sendAdminPasswordReset`
+- **One-click core update (WordPress-style)** — Admin → Güncelleme: fixed channel `bera65/frisay` GitHub Releases; WAMP SSL via `core/cacert.pem`; package names `frisay-*.zip` / `fs-*.zip`; admin menu badge when update available
+
+### Fixed
+- **Security (audit)** — unauthenticated marketplace stock write (`update-stock`); marketplace mutating actions require admin + POST; ParamPOS return hash + amount abort; PayTR/EsnekPOS/PayPal amount mismatch no longer marks paid; backup-pro `ORDER BY` whitelist; XML import SSRF (`isSafeOutboundUrl`); product `variationItemsJson` `JSON_HEX_*`; AdminLang/export-excel open redirect hardening; Theme4 HTML widget uses `sanitizeHtml`; checkout-success guest grant only with matching reference; coupon `max_uses` atomic update; `.git` / `install/*.sql` / `logs` / `upgrade` denied in `.htaccess`
+- **Production security hardening** — N Kolay Pay requires `hashDataV2` + `RESPONSE_CODE=2` + `AUTH_CODE` and PaymentList inquiry; amount mismatch aborts; stored XSS (JSON-LD script-context encode with `JSON_HEX_*` plus leftover `<>` encoding; HTML allowlist via DOM so `onerror`/`img/onerror` cannot skip filters; `javascript:`/`vbscript:`/`data:` URL checks); checkout-success IDOR (session pending only; logged-in users cannot inherit another customer's `guest_order_ids`); Google Login requires `email_verified`; coupon `max_uses` reserved inside the order transaction; `orders.stock_restored` prevents double restore and restores on return; theme ZIP uses an extension allowlist plus zip-slip/absolute/symlink/NTFS-ADS (`:`) rejection (no PHP written under `templates/`); Backup Pro restore extracts only root `database.sql` into a unique `sys_get_temp_dir()/fshop-restore-*` staging dir (outside the docroot), runs SQL only from that staging `database.sql`, and always deletes staging via try/finally; IPv6-mapped SSRF; KuveytTürk/ParamPOS payable total; Tami hash required; iyzico webhook HMAC required; HSTS in production; `display_errors` never on when `APP_ENV=production`
+- **Script-context XSS encoding** — `Security::jsonForHtmlScript` / `jsString` (and Smarty `|js`) for HTML script / JSON-LD / inline JS; theme header Organization/WebSite JSON-LD removed in favor of `SchemaOrg`; Facebook Pixel, reCAPTCHA, customer-notify, and iyzico redirect no longer use `JSON_UNESCAPED_SLASHES` in `<script>`
+- **Marketplace order actions CSRF** — refresh / delete / cancel / import `fetch` posts now send `token` + `X-CSRF-TOKEN` (was “Geçersiz istek (CSRF)”)
+- **Marketplace orders Orion table CSS** — legacy `.mp-order-row { display:grid }` no longer breaks `<tr>` rows; scoped to `.mp-order-list > .mp-order-row`
+- **POS card payment redirect** — `prepare-card` no longer returns root `/pos-card-payment` when `$adminUrl` is unset in `api/module.php`; builds shop/admin URL via `Admin::baseUrl()` / `DOMAIN`+`FOLDER`
+- **Phone validation (global)** — `Customer::isValidPhone` no longer requires Turkish `05xxxxxxxxx` only; accepts E.164-length international numbers (7–15 digits); TR mobile shortcuts kept; admin/front placeholders updated
+- **Admin products stock display** — stock shown with 2 decimal places (`2,00` not `2.000`); column migrated toward `decimal(12,2)`
+- **Export Excel CSRF** — admin export POST to `/api/module.php` now accepts `admin_csrf_token` under front CSRF gate
+- **Hardcoded `/admin/` panel links** — cargos (edit/cancel), API keys, order shipping hint, Shopier/Bifatura/BizimHesap module templates, and contact notification links now use `$adminUrl` / `Admin::url()` so custom `ADMIN_URI` works
+- **Newsletter CSRF** — dress/shopmore/blue/restoran footer forms lacked CSRF `token` and `newsletter.js` was not registered as a front asset (native POST → “Geçersiz istek (CSRF)”); page-cache still injects live tokens on hit
+- **Price-alert toast (dress)** — theme-owned AJAX + toast fallback; message box always visible; toast z-index above modal
+- **Dress product cards** — homepage/category hover shows Add to cart (or “Select options” when variations exist); always visible on touch devices
+- **Admin module install/enable** — button spinner no longer disables the submit control before POST, which dropped `action=install` and showed “Geçersiz işlem”
+- **iyzico callback stuck** — browser return uses `/iyzico-callback` with 303 + HTML/JS (iframe breakout); CSRF exemption also matches `REQUEST_URI`; pending checkout can be resolved by iyzico `token`
+
+### Changed
+- **Admin confirmations** — native `alert`/`confirm` replaced with the admin modal (`AdminConfirm`); loading actions show a spinner on the button (`AdminBusy`) instead of a blocking dialog
+- **Admin orders list** — Orion-style layout: Filters card with order-goal progress (green fill), expanded filters (payment, SKU, product, tracking, channel Store/POS, cargo, sort), bulk bar (print selected), table with Channel / Actions / Cost / Total, row expand for line items; profit column removed; `ORDER_GOAL_TARGET` setting
+- **Marketplace orders + Dashboard lists** — same Orion table (platform icon + name, action icons, status pills, cost/total, ⋮ menu, row expand); profit column removed; dashboard “Last 50” and “Marketplace Orders” reuse the same row partials
+- **Admin list row actions** — products, categories, brands, and CMS pages use soft icon buttons (edit / view / trash) instead of outline + solid danger buttons
+- **Admin Dashboard analytics** — marketplace-style layout: top KPI strip, period pills (`month` / 7 / 15 / 30), ciro→kâr waterfall (Chart.js), period metric grid, marketplace/Frisay question counts, product performance cards, platform revenue bars; recent + marketplace orders kept below; `Admin::getDashboardAnalytics()`
+- **Dashboard KPI strip** — placeholder “Competition analysis” replaced with active customer count (links to Customers)
+- **Dashboard sales revenue chart** — Orion-style horizontal waterfall (Chart.js floating bars) by marketplace / store / POS with in-bar labels and total row
+- **Admin UI accents** — White surfaces, vibrant orange (`#FF5B22`) for CTAs / active nav, royal purple (`#5B2CDE`) for secondary accents; softer cards & pill buttons
+- **Admin sidebar accordion** — section headers are icon+label menu rows with chevron; click expands nested items downward (active group highlighted)
+- **Admin buttons** — Configure / Install / Dashboard actions use pastel lavender / mint / slate (no orange, no box-shadow); selected menu background lightened
+- **Newsletter + alert-price UX** — subscribe success/error via toast; price-alert admin save uses Frisay toast; Theme4 admin flash also toast
+- **Site version** — `FShop::VERSION` 2.5.6 (admin footer)
+
+---
+## [2.5.5] — 2026-08-03
+
+### Fixed
+- **CSRF gaps after central gate** — admin product/category/brand delete & bulk forms, BasitKargo settings, search (`csf`→`token`), price-alert modals now send `token`; `Security` also accepts legacy aliases (`csf`, `bulkProductToken`, delete-button values) so older forms do not 403
+- **POS login/lock CSRF** — PIN forms include session `token` (would 403 under the new gate); logout form too
+- **KuveytTürk card form** — hidden CSRF `token` added for same-origin POST
+- **Alert-price module forms** — JS also handles `.alert-price-form` and sends CSRF
+
+### Added
+- **Core autoload** — `core/autoload.php` registers `ClassName` → `core/ClassName.php`; shop/admin bootstraps no longer need a manual require list (prevents “Class not found” when a new core file is forgotten)
+- **Autoload hardening** — `preg_match` name allowlist, `is_file` + `realpath` must stay under `core/`; missing file → silent `return`; bad path / empty file → `ClassNotFoundException`
+- **POST CSRF gate** — `Security::enforcePostCsrf()` on shop/admin bootstrap; exempts install, cron, webapi, marketplace cron, payment `callback`/`notify` webhooks; accepts `token` / `_csrf` / `X-CSRF-TOKEN` (admin also accepts legacy `md5(token)`)
+- **Suppliers** — brand-like admin CRUD (`suppliers` table, Catalog sidebar); `products.id_supplier` on product form and list filter (no public storefront pages)
+- **Gift wrap** — admin settings `GIFT_WRAP_ENABLED` / `GIFT_WRAP_FEE`; checkout checkbox; fee in order totals; gift icon on front/admin order views
+### Changed
+- **Site version** — `FShop::VERSION` 2.5.5 (admin footer)
+
+---
+## [2.5.4] — 2026-07-30
+
+### Added
+
+#### Marketplace orders — import & actions
+- **Sipariş Import** — filter bar button: choose platform + order number; create or update via API
+- **Row ⋮ menu** — refresh status, cancel on marketplace, delete from local list (print icon kept; old detail icon removed)
+- **Cancel confirm** — irreversible warning; stock choice: restore / set to 0 / leave unchanged; stock changes pushed to all linked marketplaces
+- **`cargo_tracking_link`** — store Trendyol/N11 `cargoTrackingLink` and HB `trackingUrl`; track button opens the real URL when present
+- **Cron `send=0`** — undocumented: order sync deducts FShop stock only (no stock/price push to marketplaces)
+
+### Changed
+
+#### Marketplace orders — sync & status
+- **Hepsiburada fetch** — uses `/packages/.../shipped`, `/delivered`, `/undelivered`, open packages, and `/orders/.../cancelled` with pagination
+- **N11 fetch** — includes Cancelled / UnDelivered / Returned / UnSupplied
+- **Status labels** — Shipped / InTransit / Received → Kargoda; Delivered → Teslim; Cancelled / Returned / UnDelivered mapped correctly
+- **Upsert** — match by order number when package id drifts; always update status + cargo; empty fields do not wipe existing values
+- **Cancelled import skip** — cancelled/returned packages not in FShop are not inserted (all three platforms)
+- **List date** — shows order date (`order_date` / raw), not sync/import time
+- **Product/SKU filter** — searches item SKU / stock code as well as name
+- **UI copy** — user-facing “FShop” strings use `SITE_NAME`
+
+#### Shopmore product page
+- **Sticky gallery** — product images stay sticky beside the purchase card on desktop (`≥992px`) until the showcase section ends
+
+### Fixed
+
+- Shopmore product options / add-to-cart (corrupted `product.js`, missing option inputs, cart payload)
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.4 (admin footer)
+
+---
+## [2.5.3] — 2026-07-28
+
+### Added
+
+#### Order invoice
+- **Admin** — upload PDF/JPG/PNG/WEBP or paste an external URL on the order detail page; view / delete
+- **Customer account** — Invoice link on order detail (owner only); files served via `api/invoice.php`
+- **Web API** — `POST /api/v1/orders/{id}/invoice` (URL only), `DELETE .../invoice`; `invoice` field on order GET
+
+#### Customer groups
+- Table `customer_groups` with Default group (`0%`); `users.id_group`
+- Admin CRUD under Customers → Customer groups; assign group on customer edit
+- **GroupPricing** — logged-in members get catalog/cart unit prices reduced by group `%` on all products (guests / Default = full price)
+
+#### Admin product editor
+- Left vertical tabs: **General** (name, description/SEO, category/brand), **Product details** (type, status, label, variations, virtual, options, SKU/barcode/desi), **Price & stock**, **Images**, **Log**
+- **Product activity log** (`product_logs`) — created/updated, price & stock changes, sales and stock restores
+
+#### Admin order editing
+- Edit order contents: add/remove products, change qty/unit price, update address, set shipping fee
+- Manual order discount: fixed amount or percent
+- After save, show previous vs new total and the difference to collect or refund
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.3 (admin footer)
+
+---
+## [2.5.2] — 2026-07-28
+
+### Added
+
+#### Sale by square meter (m²)
+- **Sale unit on products** — admin: Adet or m² (`sale_unit`); for m², price and stock are per square meter; optional min quantity and step (default 0.01)
+- **Storefront En × Boy calculator** (Shopmore) — customer enters width and length in metres; live area and line total; add-to-cart sends dimensions
+- **Decimal cart / stock / order qty** — session cart, `products.stock`, `order_detail.qty` support decimals; `order_detail.line_meta` stores `width_m`, `length_m`, `area_m2`
+- **Labels** — cart, checkout, account and admin order lines show e.g. `2 × 3,5 m = 7 m²`; catalog price suffix `/ m²`
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.2 (admin footer)
+
+---
+## [2.5.1] — 2026-07-28
+
+### Added
+
+#### Marketplace — Hepsiburada & N11 integration
+- **Hepsiburada** — API ayarları (merchant ID, key, pass); ürün eşleme / panel; sipariş ve soru senkronu; soru cevaplama; fiyat / stok güncelleme; cron
+- **N11** — API key / secret ayarları; ürün eşleme / panel; sipariş ve soru senkronu; soru cevaplama; fiyat / stok güncelleme; cron
+- **Unified admin** — pazaryeri seçici ile siparişler, sorular, ayarlar ve ürün panelleri (Trendyol + Hepsiburada + N11)
+
+#### Marketplace — unified orders, questions & activity log
+- **Single order table** — `marketplace_orders` replaces per-platform `trendyol_orders` / `hepsiburada_orders` / `n11_orders`; `platform` + unique `(platform, order_number, shipment_package_id)`; cron upsert (insert or update status/lines)
+- **Single questions table** — `marketplace_questions` replaces per-platform question tables; same upsert pattern on sync
+- **`id_product` on rows** — matched local product stored on order/question; line JSON enriched with `id_product` when linked
+- **Schema** — tables in `install/schema.sql` and created/migrated via `MarketplaceTables::ensureSchema()` (legacy tables copied then dropped)
+- **Marketplace logs** — `marketplace_logs` + admin page `/{ADMIN_URI}/marketplace-logs`: new order, stock change (`ORDER […]`, `PHANTOM_STOCK_CHANGE`, `STOCK_UPDATE`), below-min-price (vs product `cost`), price update
+- **Products list** — marketplace catalog rows show stock code and barcode under the product name
+
+#### Storefront — add-to-cart success modal (Shopmore)
+- **Clean success modal** — after add-to-cart: empty header + close, product thumb/name/price, cart count, **Go to cart** (`/cart`) and **Continue shopping**; site `--sm-primary` colors, centered (not full-bleed on mobile)
+- **Cart drawer** — empty/full cart panel restyled to the same simple white card look; old colorful dual-modal stack removed
+
+#### Members-only gate & Google login approval
+- **Google OAuth callback** allowed when `SITE_VISIBILITY=members_only` (`google-login-callback` guest route)
+- **`Customer::authWithGoogle`** respects **Member approval** (`MEMBER_APPROVAL=manual` → inactive account + pending message; existing pending accounts get approval error)
+- **Flash messages** on login/register after Google redirect (same copy as normal registration)
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.1 (admin footer)
+
+---
+## [2.5.0] — 2026-07-25
+
+### Added
+
+#### New admin panel design
+- **Modern dashboard** — KPI cards, chart area, operations summary, and refreshed typography (`dash-*` layout)
+- **Updated admin CSS** — panel cards, tables, toast notifications, and mobile-friendly page headers
+- **Lucide icons** — consistent icon set on dashboard and menu actions
+
+#### Admin accounts and security
+- **My Account** (`/admin/account`) — update profile (name, email) and change password
+- **Multiple admins** — create admins, activate/deactivate accounts, and delete users from one page (at least one active admin required)
+- **Custom admin URL** — hide the panel path via `ADMIN_URI` in `config/env.php`; dashboard warning when default `/admin` is used; guide: [docs/ADMIN_URI.md](docs/ADMIN_URI.md)
+
+#### AI Assistant — broader coverage
+- **Admin header AI bar** — context-aware actions on dashboard, orders, cancellations/returns, blog, CMS, SEO, product edit, and **translations**
+- **Product copy** — improve title, short/long description, and SEO fields in one action
+- **SEO / CMS / Blog** — generate meta and content based on the current page
+- **Orders & panel summary** — AI summaries on list and detail views
+
+#### UI Translations
+- **Storefront / Admin panel tabs** — manage `lang/` (storefront, `translate`) and `lang/admin/` (admin, `adminT`) separately
+- **Add new key** — register strings missing from `en.php` or `lang/admin/en.php` from the panel
+- **Translate with AI** — on the translations page: fill empty rows in the target language or polish English source (`translate-ui` API)
+
+#### AI Assistant — module reports (installed/uninstalled with the module)
+- Module menu: **AI Assistant** → reports + API settings (settings tab)
+- **Sales reports** — date + channel (store, POS, Trendyol) revenue summary
+- **Product SEO reports** — meta and content analysis
+- **Cancel / return reports** — rates, lost revenue, and prevention suggestions
+
+#### Product Set (bundle) module
+- **Set / bundle products** — sell multiple products as one pack from the admin product editor (type “Set”)
+- Component picker on the product form; stock follows the lowest component; cart expands into child lines on checkout
+- Optional fixed pack price override; set contents shown on the product page (`product-set` module)
+
+#### Reviews module — post-delivery invite
+- **Review reminder e-mails** — after order status **Delivered**, a reminder is queued and sent **X days later** (configurable delay)
+- Admin tab: invite template, delay days, optional personal coupon (% off) attached to the e-mail
+- Send queue UI and cron: `/api/module.php?m=reviews&action=cron&token=SHOP_TOKEN`
+
+#### XML Import module
+- **XML product import** — upload a file or paste a feed URL; match existing products by stock code, barcode, or name (update or create)
+- Optional image refresh on update; import limit for test runs; last import summary
+- **Cron / auto refresh** — scheduled feed URL via module API cron endpoint (`xml-import` module, Catalog menu)
+
+#### Mobile App (PWA) module
+- **Configurable PWA** — app name, short name, description, theme/background colors, orientation, and icons from the admin panel (`mobil-app` module)
+- **Dynamic manifest & service worker** — `manifest.json` and `sw.js` are generated from site settings (correct `scope` / `start_url` for subfolder installs)
+- **Mobile menu install action** — “Download mobile app” in the drawer; Chrome install prompt on Android, Safari “Add to Home Screen” hint on iOS
+- **Offline page** — basic offline fallback cached by the service worker
+
+#### Live admin notifications
+- **Live new order alerts** — while the admin panel is open, new orders trigger a toast (with optional sound) and update the Orders menu badge
+- **Live new message alerts** — new contact form messages trigger a toast and update the Messages badge
+- **Background polling** — `/{ADMIN_URI}/live-poll` every 30 seconds; sidebar/header badges stay in sync without a full page reload
+- **Click-through** — toasts link to Orders or Messages
+
+#### Google reCAPTCHA module (`recaptcha`)
+- **Form protection** — contact, customer login/register (page + auth modal), and admin login
+- **v2 & v3** — checkbox (“I’m not a robot”) or invisible score-based verification; per-form enable/disable in admin
+- **Core hook** — `form.captcha.validate` + `core/Captcha.php`; CSP updated for `google.com` / `gstatic.com` reCAPTCHA scripts
+- Admin: `/admin/module-recaptcha` — Site Key, Secret Key, version, v3 score threshold
+
+#### Recent Viewed Products module (`recent-viewed`)
+- **Recently viewed list** — tracks product detail views in a cookie; shows a compact home-page block (image left, name + price right)
+- **No core changes** — uses `product_detail` hook (silent tracking) and `home_promo_slider` hook (display on fyazilim, blue, restoran themes)
+- Admin: title, display count, cookie storage limit
+
+#### Facebook Pixel module (`facebook-pixel`)
+- **Meta Pixel tracking** — PageView, ViewContent (product), AddToCart, InitiateCheckout, Purchase events
+- Admin toggles per event; Pixel ID from Meta Events Manager
+- Loads via `head.top` + `footer` + `product_detail` hooks; CSP updated for `connect.facebook.net`
+
+#### Instagram Gallery module (`instagram-gallery`)
+- **Homepage photo grid** — manual image URLs with optional Instagram post links; profile button
+- **Easy upload** — JPG/PNG/WEBP from computer or phone; no “inspect element” image URL needed
+- **Instagram post import** — paste `instagram.com/p/...` or `/reel/...` link; thumbnail fetched automatically via oEmbed
+- New display hook **`home_bottom`** — rendered at the bottom of home.tpl (fyazilim, blue, restoran)
+- Admin CRUD for gallery items
+
+#### FiyatTrend module (`fiyattrend`)
+- **Price comparison feed** — Google Merchant (RSS 2.0) compatible XML for [fiyattrend.com](https://fiyattrend.com)
+- **Secure feed URL** — token-protected endpoint for FiyatTrend panel XML import
+- Admin: feed preview/regenerate, currency, stock filters, category exclusions; setup guide links to [fiyattrend.com/panel](https://fiyattrend.com/panel)
+
+#### Tax rates (VAT) — admin management
+- **`taxes` table + `core/Tax.php`** — add, edit, delete, and set default VAT rates from admin (`/admin/taxes`)
+- **Product editor** — KDV dropdown loads from defined rates (replaces fixed 1/10/20 list)
+- First run seeds **1%, 10%, 20%**; changing a rate updates products using the old rate
+- **Fresh install** — `install/patch_taxes.sql` runs automatically after `schema.sql` in the installer
+
+#### Performance & PageSpeed (storefront)
+- **Static asset caching** — `.htaccess` sets 1-year browser cache for CSS, JS, images, and fonts (`Cache-Control: immutable`)
+- **Asset versioning** — `Performance::versionedUrl()` and Smarty `|asset_url` append `?v={version}.{mtime}` so long cache is safe after updates
+- **LCP helper** — `core/Lcp.php` resolves the largest-content image per page (home slider/banner, product, category)
+- **LCP preload** — `<link rel="preload" as="image" fetchpriority="high">` in theme headers when an LCP URL is known
+
+#### Core catalog filtering
+- **`CatalogFilter`** — category pages auto-derive filters from products in the category: brand, price range, stock status, discount yes/no, and variation facets (JSON-aware SQL)
+- **Theme filter UI** — updated `catalogFilters.tpl` / `catalogToolbar.tpl` on fyazilim, blue, nova, and restoran themes (no module hook required on category pages)
+
+#### Shopmore theme (`templates/shopmore/`)
+- **New storefront theme** — mobile-first layout inspired by modern app-style commerce: purple accent, rounded cards, pill search bar, category circles, horizontal deal row, trust bar, desktop icon nav, mobile bottom navigation
+- **Homepage** — hero slider hook, category shortcuts, discounted products with countdown, best sellers, category block
+- **Category pages** — core `CatalogFilter` sidebar + mobile offcanvas
+- Activate from **Admin → Templates → Shopmore**
+
+#### Abandoned cart module (`abandoned-cart`)
+- **Cart tracking** — syncs from `cart.changed`; marks converted on `order.placed`
+- **Admin page** — abandoned/active/converted list, manual reminder modal (optional coupon)
+- **Cron** — `/api/cron.php?action=abandoned-cart&token=SHOP_TOKEN` for automatic reminders
+
+#### Stock analysis (core admin)
+- **`/admin/stock-analysis`** — Sales menu: daily sales rate, estimated stock lifetime, critical and out-of-stock best sellers
+- **Quick stock add** — inline stock update from the analysis table
+- **`stock_empty_at`** column on products (via `Product::ensureSchema()`)
+
+#### Module admin improvements
+- **KPI cards** on `/admin/modules` — total, installed, active, inactive, not installed counts
+- **ZIP upload** — upload modal with security notice and FriSay store link; extracts to `modules/`; post-upload redirect highlights the new module for install
+
+#### Alert module (`alert`)
+- **Admin e-mail alerts** (toggleable) — new order notification; critical stock when quantity drops below a configurable threshold
+- **Back in stock (storefront)** — “Notify me when back in stock” form on out-of-stock product pages (`product_detail` hook); e-mail sent when stock returns
+- **Admin panel notifications** — order and critical-stock entries in `admin_notifications`
+- **Subscription list** — admin tab for pending/sent customer stock-alert requests
+
+#### Install package & CI
+- **Install wizard restored** — `install/index.php`, `schema.sql`, `seed_demo.sql`, `tools/verify-install.php`
+- **GitHub Actions** — `.github/workflows/verify-install.yml` runs install verification on push/PR
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.0 (admin footer)
+- **Marketplace orders UI** — single marketplace selector + date range + unified “Siparişleri Çek” action; order list redesigned as compact cards instead of three separate tables
+- **Marketplace help** — cron links moved from order page panels to the help tab
+- **AI Assistant module** — dashboard side panel removed; reports and settings on the module page; admin APIs fixed to load `Admin.php`
+- **Translations page** — English as source language; target language picker; paginated editing and missing-translation filter
+- **Module front assets** — CSS/JS load only when declared in `$frontStylesheets` / `$frontScripts` or via `head.assets` hook; empty array no longer auto-loads every file in `assets/css/` (avoids loading admin-only styles on the storefront)
+- **Theme asset URLs** — fyazilim, blue, and restoran headers/footers use versioned CSS/JS links
+- **CSS bundle (optional)** — Admin → Performance → “CSS birleştirme” merges theme stylesheets into one cached file (`cache/assets/css/`); module CSS stays separate
+- **Hero slider (PWA / LCP)** — first slide uses a real `<img>` with `fetchpriority="high"` instead of CSS `background-image` only
+- **New hook `home_bottom`** — homepage bottom section for modules (e.g. Instagram gallery)
+- **Product & catalog images** — main product image and first grid/slider card load eagerly with `fetchpriority="high"`; remaining images keep `loading="lazy"`
+- **`Product::patchQuick()`** — fires `product.updated` when stock is updated (alert module and stock hooks run from quick stock edits)
+- **Module upload redirect** — double redirect after ZIP extract so the module list is fresh before search/filter highlights the uploaded module
+- **`catalog-filters` module removed** — redundant with core `CatalogFilter`; uninstall the module from admin if it was previously installed
+
+### Fixed
+
+- AI report APIs — missing `Admin.php` include for `Admin::isLoggedIn()` (“Could not connect to server” error)
+- Carrier add/edit — Smarty translation placeholder breaking `{literal}` JS block (`cargos.tpl`)
+- **Mobile App (PWA) icons** — uploaded PNG icons from admin are served correctly; `manifest.php` / `pwa-icon.php` read `mobil_app_settings` paths instead of always generating the blue “F” placeholder
+- **PWA production** — standalone `manifest.php`, `pwa-icon.php`, and `sw.php` endpoints (no full bootstrap) to avoid HTTP 500 on shared hosting
+- **reCAPTCHA admin login** — widget and JS now assigned from `login.php` (bootstrap timing); v2 script load order fixed in `front.js`
+- **Captcha helper** — `core/Captcha.php` + safe fallback in `fshop_validate_captcha()` when class file missing on partial deploys
+- **Alert module admin** — Smarty `intval` modifier removed; subscriptions pagination uses shared admin template
+- **Alert module storefront** — “Back in stock” email field editable for logged-in customers (removed incorrect `readonly`)
+- **Category filters** — Smarty undefined index on variation filter groups (`selected` set in PHP)
+- **Admin language switcher** — session now starts before `AdminLang::handleSwitchRequest()` so login/header TR/EN selection persists
+- **Alert module on checkout** — admin order e-mail no longer requires `Admin` class on storefront (`adminPanelUrl` helper)
+- **Alert back-in-stock** — sends when product is saved in stock with pending subscriptions (not only 0→stock transition edge cases)
+- **Virtual products (My Account)** — order detail shows download link, license keys, and text delivery after payment; pending-payment notice for bank transfer orders; fulfillment retried when viewing paid orders
+- **Admin products list** — product ID column on `/admin/products`
+- **Demo mode** — module ZIP upload blocked when `DEMO_MODE` is enabled
+- **Restoran theme** — category page catalog filters (sidebar + mobile offcanvas) aligned with core `CatalogFilter`
+
+---
+## [2.4.1] — 2026-07-18
+
+### Security
+
+- Deny web access: `storage/`, `cache/`, `core/`, `container/`, `lang/` (`.htaccess`)
+- `fx-pricing` refresh requires `SHOP_TOKEN` (cron) or admin CSRF
+- HTML allowlist sanitizer (`Security::sanitizeHtml`) on product/CMS/blog/home-text save
+- Admin module APIs: `Admin::requireModuleApiAuth()` (session + CSRF) for trendyol, shopier, backup-pro, bifatura, etc.
+- Cron tip: always use `token=SHOP_TOKEN` or header `X-Cron-Token`
+
+### Added
+
+#### Configurable admin URL
+- **`ADMIN_URI`** in `config/env.php` — public admin path (filesystem folder stays `admin/`)
+- Example: `'ADMIN_URI' => 'bo_9xK2m7'` → `/bo_9xK2m7/` (bookmark the new URL)
+- `.htaccess` sync via `Admin::syncHtaccessRewrite()` on each admin request / install
+- When URI ≠ `admin`, legacy `/admin` returns 404
+- All panel links use `Admin::url()` / `$adminUrl` (no hardcoded `/admin/` in URL builders)
+- Guide: [docs/ADMIN_URI.md](docs/ADMIN_URI.md)
+
+#### Export Excel modülü
+- **export-excel** — `admin_header` üzerinde ürün içe/dışa aktarma ve sipariş dışa aktarma
+- Ürünler / Siparişler sayfalarında mevcut filtrelerle Excel indirme
+- Ürün içe aktarma mevcut `Product::importFromExcel` mantığını kullanır
+
+#### ftheme-edit — Canlı tema düzenleyici
+- **WordPress-style customizer** — admin entry shows only “Canlı Düzenle”; sidebar left, storefront preview (iframe) right
+- **Click-to-edit** — editable text regions on home/footer/cookie banner (`data-ftheme` hooks in fyazilim theme)
+- **Homepage blocks** — reorder up/down, add/remove block types: slider, featured, promo, categories, home text, custom HTML, **banner** (image, link, width %; consecutive banners render in one row)
+- **Banner media picker** — “Medyadan seç” via admin media library modal
+- **Renkler panel** — only theme variables that actually affect the storefront; `colors.css` aliases for legacy `style.css` / cart variables
+- **CSS / JS panel** — edit `custom.css` and `custom.js` without touching theme core files
+- **Live preview** — `postMessage` sync for text, colors, blocks, and custom CSS (no full reload for every change)
+- **JSON publish** — “Yayınla” saves via fetch; fixes invalid payload errors with large block JSON
+
+#### fyazilim header — arama
+- **header0** — full search bar between logo and cart (desktop); dedicated mobile search row below header
+- **header1** — search icon next to cart; on desktop search replaces the nav row; on mobile search opens full-width below the header row
+- **Autocomplete** — product suggestions with image, name, category, and price (`/api/search-suggest.php`, min. 2 characters)
+- Shared partial: `templates/fyazilim/plugin/header-search.tpl`
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.4.1 (admin footer)
+- **ftheme-edit colors** — removed non-working editor entries (`fy-primary` as “button color”, unused `fy-footer-mid`); button color tied to `fy-gradient`; cart/catalog aliases follow editable gradient
+- **Reviews invite** (see 2.4.0) — e-mail copy clarifies: after **delivered** status, wait **X days**, then invite to review with optional **%Y personal coupon**
+- **Ürünler admin** — Excel içe/dışa aktarma butonları kaldırıldı; `export-excel` modülüne taşındı
+
+### Fixed
+
+- `api/search-suggest.php` — missing bootstrap (`IN_SCRIPT` / `settings.php`); autocomplete now returns product JSON
+- ftheme-edit Smarty path for product slider partial inside block loop
+- ftheme-edit customizer save and live block preview (`syncBlocks` postMessage)
+- Media library modal z-index above customizer overlay
+- `--surface` wired to page background; `--font-family` alias in `custom.css`
+
+---
+
+## [2.4.0] — 2026-07-17
+
+### Added
+
+#### Admin layout hooks
+- `admin_header` — content area top on all admin pages (`{$adminHooks.admin_header}`)
+- `admin_footer` — above version footer on all admin pages (`{$adminHooks.admin_footer}`)
+
+#### AI Assistant 1.2 — scoped header bar
+- AI bar only on: dashboard, orders, cancellations, returns, blog posts, CMS edit, SEO, product edit
+- Product AI moved to header (product side panel hook removed)
+- Blog: idea input → write/edit post; CMS/SEO write actions kept
+- Module page is settings-only (reports removed)
+
+#### AI Assistant 1.1 — header bar
+- Removed left-menu link; module lives in **admin header** when installed/active
+- Contextual actions: summarize page, write SEO metas, write CMS content, analyze dashboard
+- Product edit still uses the side panel (`admin_product_button`); header bar hidden on product page
+- Settings/reports remain at `/admin/module-ai-assistant`
+
+#### Reviews invite (yorum daveti)
+- After an order is **delivered**, wait **X days** then e-mail the customer to review purchased products
+- Admin-editable subject/body with placeholders (`{customer_name}`, `{products_list}`, `{coupon_code}`, …)
+- Optional **personal coupon** (bound to customer) created when the invite is sent
+- Cron: `/api/module.php?m=reviews&action=cron&token=SHOP_TOKEN`
+- Queue UI under **Modules → Ürün Yorumları → Gönderim kuyruğu**
+
+#### Customer-bound coupons (core)
+- `coupons.id_user` — optional customer binding; validation requires login and matching account
+- Admin coupon form: customer selector; list shows assigned customer
+- `Coupon::createPersonal()` for one-time personal codes (used by reviews invite)
+
+#### Product Set (bundle) module
+- **Pack product type** — sell multiple physical products as one set (e.g. newborn kit)
+- Stock = minimum of component stocks; price = sum of components (optional fixed override)
+- Add to cart expands into separate component lines; order stock deducts from children
+- Admin product editor: type “Set (paket)” + component picker
+
+#### Point of Sale (POS) module
+- **Full-screen kasa terminal** — PIN or admin session; product grid, barcode scan, cart, cash / card / transfer checkout
+- **Admin menu** — “Point of Sale” link under General (`/admin/pos`)
+- **Kasa durumu** — today’s sales by payment type (cash, card, transfer, pending transfer) with grand total
+- **Sales receipt** — thermal-style receipt modal after checkout (customer, items, payment, order ref + CODE39 barcode, print)
+- **Customer on POS** — search, visitor default, create customer from pay flow
+- **Admin customers** — “Add customer” modal on customer list (`Customer::createByAdmin`)
+- **Stock rules** — hide out-of-stock products; optionally allow selling when stock is zero
+- **Payment adjustments** — per-method discount or commission for credit card and bank transfer (e.g. 3% transfer discount, 5% card commission)
+- **Module settings** — store label, order status, PIN lock, external card terminal URL (with current-domain presets), auto fullscreen on open
+
+#### Smart Campaign module
+- **Order status triggers** — campaigns can fire on placed / updated order status (e.g. shipped, delivered)
+- Hooks: `order.placed`, `order.updated`
+
+#### System e-mail layout
+- **Three-part template** for all `Mail::send()` messages: editable header + dynamic body + editable footer
+- Admin **Settings → E-posta** tab with header/footer editors and live preview iframe
+- Keys: `MAIL_HEADER`, `MAIL_FOOTER`
+
+#### Store & settings
+- **Tabbed admin settings** — General, Contact, E-mail, Orders, Returns
+- **Store maintenance mode** — toggle shop active/inactive, custom message, IP whitelist (`StoreStatus`, `SHOP_ACTIVE`, `SHOP_MAINTENANCE_*`)
+- **Centralized contact info** — address, hours, social links in Settings → Contact; storefront contact page reads from settings
+
+#### Admin & customers
+- **Customer contact modal** on customer detail — message + WhatsApp (Wapio if configured, else `wa.me`) or e-mail (`CustomerContact`)
+
+#### Themes
+- **Theme schema options** — `theme.schema.json` driven colors/options for **fyazilim** and **blue** themes
+- Social link blocks and option-driven CSS/JS wired in storefront templates
+
+### Changed
+
+- **POS UX** — viewport-fixed layout (no page scroll); 5-column product grid; compact stats; barcode field auto-focus; add-to-cart beep
+- **POS modals** — customer picker stacks above pay modal (no need to close payment first)
+- **POS receipt print** — dedicated print area so full receipt (not only barcode) goes to printer
+- **Site version** — `FShop::VERSION` 2.4.0 (admin footer)
+
+### Fixed
+
+- POS stacked modals (customer behind payment overlay)
+- POS external card URL defaulting to localhost — admin presets use current site domain
+- POS receipt print showing only barcode in print preview
+
+---
+
+## [2.3.0] — 2026-07-16
+
+### Added
+
+- **Admin i18n** — English default admin language; all admin UI strings via `adminT` / `{'Key'|adminT}` with `lang/admin/en.php` and `lang/admin/tr.php`
+- **Admin language switcher** — session-based TR/EN toggle in admin header
+
+### Changed
+
+- **Admin notifications** — page UI and notification titles/messages translated; legacy Turkish records mapped at display time
+- **Site version** — `FShop::VERSION` 2.3.0 (admin footer)
+
+---
+
+## [2.2.0] — 2026-07-15
+
+### Added
+
+- **Login with email or phone** — customers can sign in using either identifier (`Customer::login`, auth API / login form)
+- **`main_menu` display hook** — editable top navigation; **main-menu** module (custom links, category, CMS, blog)
+- **Blog module** — installable posts list (`/blog`), categories (`/blog/kategori/{slug}-{id}`), detail (`/blog/{slug}-{id}`) with admin CRUD, TinyMCE + media library
+- **Admin media picker** — reusable `media-picker.js` for TinyMCE / form fields (besides product attach)
+- **Admin product media library** — “Dosya yöneticisi” modal; browse `img/`, upload to `img/media/`, multi-select, attach to product (`MediaLibrary`, `/api/admin-media.php`)
+- **Admin product editor redesign** — sticky header, card sections, sticky price/media sidebar (`product-editor.css`)
+- **AJAX product images** — cover / delete without full page reload; multi-file upload endpoint
+- **Admin confirm modal** — shared “Vazgeç / Evet, Onayla” dialog for product, category, and brand delete
+- **Bankwire payment discount** — `BANKWIRE_DISCOUNT_PERCENT` (havale indirimi) applied at checkout when bank transfer is selected
+- **Checkout cargo selection** — customer picks carrier; fee from cargo rules (session + AJAX `set_cargo` / `set_payment`)
+- **Order contact attachments** — optional file upload on “Bu sipariş hakkında soru sor” (`img/contact/`, `/api/contact-file.php`)
+- **Admin customer password reset** — set customer password from customer detail page
+- **Admin customer profile edit** — name, phone, and email editable by admin
+
+### Changed
+
+- Checkout shipping: global `FREE_SHIPPING_MIN` / `SHIPPING_FEE` settings removed from flow; rates come only from **Kargolar**
+- Bankwire order confirmation UI — larger amount display, copy buttons for IBAN / holder / reference
+- Customer account order detail — clearer breakdown (subtotal, promotions, coupon, payment discount, shipping, cargo, total)
+- Admin product image workflow — open media library first instead of immediate file-input upload
+- Admin set-password rules — minimum 8 characters (complexity optional for admin resets; e.g. `12345678` allowed)
+
+### Fixed
+
+- New product form warning: undefined `cost` key
+- Media library “Bağlantı hatası” — clean JSON responses from `/api/admin-media.php` (output buffer / bootstrap clash)
+- Returns admin list fatal: `ReturnRequest::adminUrl()` → `adminLink()` / `Admin::url()`
+- Admin customer password change appearing to save while rejecting numeric-only passwords
+
+---
+
+## [2.1.0] — 2026-07-10
+
+### Added
+
+- **Theme gallery** — card-based theme list with activate, preview, edit, ZIP upload, and theme copy
+- **`theme.schema.json`** — per-theme customization (options + colors) for Nova and Blue
+- **Performance panel** (`/admin/performance`) — template cache toggle, cache clear, gzip, HTML minify, debug mode, optional guest page cache
+- **Dashboard news** — RSS feed from [frisay.com/rss.xml](https://frisay.com/rss.xml) with local fallback (`data/frisay-news.json`, `/rss.xml`)
+- **Site version** — `FShop::VERSION` (2.1.0) shown in admin footer
+- **Cart promotions** — admin “Sepet Kampanyaları” (`nth_item`, `buy_x_pay_y`), auto-applied at cart/checkout
+- **Category sidebar filters** — subcategories, brands, price range (Nova + Blue)
+- **Blue cart page** — full cart layout with summary, recommended products, favorites
+- **Related products** — sidebar block on product pages (category → brand → store fallback)
+- **Shopier module** — REST API product sync (create / update / delete)
+- **Discount timer module** — scheduled product discounts with countdown
+- **Product extra text module** — global text on all product pages via module settings
+- **CHANGELOG.md** and streamlined English **README.md**
+
+### Changed
+
+- Admin **Temalar** split into gallery + dedicated customize page (`/admin/theme-customize`)
+- Module list search/filter fixed (Bootstrap `d-flex` conflict)
+- Debug and error display can be controlled from admin (overrides `env.php` when set)
+
+### Fixed
+
+- Admin coupons page 500 when `CartPromotion` class was not bootstrapped
+- Theme color saving now respects per-theme schema (Blue / Nova variables)
+
+---
+
+## [2.0.0] — 2026-06
+
+### Added
+
+- 4-step **install wizard** (`/install/`) with requirements check, DB setup, admin account, optional demo data
+- **Blue** and **Nova** storefront themes; theme customizer (colors, fonts, header variants)
+- **Module system** — install / enable / configure from admin; display hooks and internal hooks
+- **REST Web API** — orders, products, categories, brands ([docs/WEBAPI.md](docs/WEBAPI.md))
+- **Bilingual** storefront and admin (Turkish / English)
+- **Multi-currency** products with cron price refresh (`/api/cron.php?action=currency`)
+- **Virtual / digital products** with secure download tokens
+- **Customer accounts** — registration, login, orders, favorites, addresses
+- **Coupons**, CMS pages, contact form, SEO fields, Schema.org on products
+- **Excel product import**, order print view, dashboard KPIs and charts
+- Bundled modules: PayTR, bank wire, cash on delivery, reviews, slider, WhatsApp, newsletter, Google Analytics / Shopping, and more
+
+### Changed
+
+- Architecture: `container/` + `core/` + Smarty (no Laravel/Symfony)
+- Admin UI refreshed (Bootstrap, sidebar layout)
+
+---
+
+## [1.0.0] — 2025
+
+### Added
+
+- Initial open-source release of the FShop e-commerce codebase
+- Basic catalog, cart, checkout, and admin product/order management
+- `default` storefront theme and `templates/admin` back office
+
+---
+
+[3.0.0]: https://github.com/bera65/frisay/compare/v2.5.6...v3.0.0
+[2.5.6]: https://github.com/bera65/frisay/compare/v2.5.5...v2.5.6
+[2.5.3]: https://github.com/bera65/fshop/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/bera65/fshop/compare/v2.5.1...v2.5.2
+[2.5.1]: https://github.com/bera65/fshop/compare/v2.5.0...v2.5.1
+[2.5.0]: https://github.com/bera65/fshop/compare/v2.4.1...v2.5.0
+[2.4.1]: https://github.com/bera65/fshop/compare/v2.4.0...v2.4.1
+[2.4.0]: https://github.com/bera65/fshop/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/bera65/fshop/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/bera65/fshop/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/bera65/fshop/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/bera65/fshop/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/bera65/fshop/releases/tag/v1.0.0

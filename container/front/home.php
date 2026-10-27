@@ -1,0 +1,64 @@
+<?php
+	if (!defined('IN_SCRIPT')) {
+		header('HTTP/1.0 404 Not Found');
+		header('Location: ../404');
+		exit;
+	}
+
+	$homeSeo = Seo::resolvePage('home');
+	$pageTitle = $homeSeo['title'];
+	$pageDesc = $homeSeo['description'];
+
+	$featuredProducts = Product::getActiveList(null, 12);
+	$topRatedProducts = Product::getTopRatedList(8);
+	$categoryBlocks = [];
+	$homeCategories = [];
+	$homeCategoryRows = Category::getHomeList();
+
+	foreach ($homeCategoryRows as $cat) {
+		$homeCategories[] = [
+			'category' => $cat,
+			'url' => Category::getUrl($cat),
+			'initial' => mb_strtoupper(mb_substr((string) $cat['category_name'], 0, 1)),
+		];
+	}
+
+	foreach ($homeCategoryRows as $cat) {
+		$products = Product::getActiveList((int) $cat['id_category'], 10);
+
+		if (!$products) {
+			continue;
+		}
+
+		$categoryBlocks[] = [
+			'category' => $cat,
+			'products' => $products,
+			'url' => Category::getUrl($cat),
+		];
+	}
+
+	$dealProducts = Product::getDiscountedList(12);
+	$newProducts = Product::getActiveList(null, 8, 0, 'newest');
+	$homeBrands = Brand::getPublicList(12);
+	$cmsBlogLinks = array_slice(Cms::getFooterLinks(), 0, 3);
+	$homeBlogPosts = [];
+	if (Module::isEnabled('blog')) {
+		require_once dirname(__DIR__, 2) . '/modules/blog/lib/BlogService.php';
+		if (class_exists('BlogService', false)) {
+			BlogService::ensureSchema();
+			$homeBlogPosts = BlogService::getList(true, 3);
+		}
+	}
+
+	$smarty->assign([
+		'featuredProducts' => $featuredProducts,
+		'topRatedProducts' => $topRatedProducts,
+		'dealProducts' => $dealProducts,
+		'newProducts' => $newProducts,
+		'homeBrands' => $homeBrands,
+		'cmsBlogLinks' => $cmsBlogLinks,
+		'homeBlogPosts' => $homeBlogPosts,
+		'homeCategories' => $homeCategories,
+		'categoryBlocks' => $categoryBlocks,
+		'activeOrders' => Order::getActiveOrdersForViewer(3),
+	]);

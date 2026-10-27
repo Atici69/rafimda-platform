@@ -1,0 +1,9 @@
+# After installation, install_gate.php redirects; still deny raw SQL dumps.
+<FilesMatch "\.(sql|md)$">
+	Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+	Header set Cache-Control "no-store, no-cache, must-revalidate, private"
+	Header set Pragma "no-cache"
+</IfModule>
