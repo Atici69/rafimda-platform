@@ -17,6 +17,17 @@
 		{else}<p class="rvs-empty">Teslim edilmiş siparişiniz olduğunda ürünleri ve mağazayı buradan değerlendirebilirsiniz.</p>{/if}
 	</section>
 
+	{if $acInvoices !== null}
+	<section id="faturalar">
+		<h2 style="font-size:1.1rem">Faturalarım</h2>
+		{if $acInvoices}<table><thead><tr><th>Sipariş</th><th>Fatura no</th><th>Tarih</th><th>Tutar</th><th>Durum</th><th></th></tr></thead><tbody>
+		{foreach $acInvoices as $i}<tr><td>#{$i.id_order}</td><td>{$i.invoice_no|escape}{if $i.environment == 'test'} <span class="rvs-badge" style="background:#fef3c7;color:#92400e">TEST</span>{/if}</td><td>{$i.sent_at|escape}</td><td>{$i.gross_total|string_format:'%.2f'} TL</td><td>{$acInvoiceStatuses[$i.status]|default:$i.status|escape}{if $i.kind == 'return'} (iade){/if}</td>
+			<td>{if $i.pdf_file}<a href="{$acPdfBase|escape}?id={$i.id_invoice}" target="_blank" rel="noopener">PDF görüntüle / indir</a>{/if}</td></tr>{/foreach}
+		</tbody></table>
+		{else}<p class="rvs-empty">Henüz düzenlenmiş faturanız yok. Faturalar, siparişinizdeki her satıcı tarafından ayrı ayrı düzenlenir.</p>{/if}
+	</section>
+	{/if}
+
 	<section id="destek">
 		<h2 style="font-size:1.1rem">Destek taleplerim</h2>
 		{if $acTicket}

@@ -1,0 +1,4 @@
+-- ELLE ve YEDEK SONRASI. Faturalar yasal saklama süresine tabidir (VUK); silmeden önce mali müşavirinize danışın.
+DROP TABLE IF EXISTS `ri_events`;
+DROP TABLE IF EXISTS `ri_accounts`;
+DROP TABLE IF EXISTS `ri_invoices`;

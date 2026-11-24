@@ -169,6 +169,10 @@ class RvPanel
 			case 'support':
 				[$tpl, $vars] = self::support($vendor, $ctx);
 				break;
+			case 'invoices':
+				// Fatura modülü (rafimda-invoice) kuruluysa gerçek ekran; yoksa "planlandı" bilgisi
+				[$tpl, $vars] = class_exists('RiPanel', false) ? RiPanel::vendor($vendor, $ctx) : ['panel_planned', ['planned' => self::MENU[$section]]];
+				break;
 			default:
 				[$tpl, $vars] = ['panel_planned', ['planned' => self::MENU[$section]]];
 		}
@@ -185,7 +189,7 @@ class RvPanel
 			if (RvContext::can(RvPerm::SECTION_PERMS[$key])) {
 				// XML Hub / Pazaryeri Hub modülleri kuruluysa kendi sayfalarına bağlanır (Pazaryeri Hub'da gerçek API yok; sayfa bunu belirtir)
 				$slug = $key === 'xml' && class_exists('XhPanel', false) ? 'xml-merkezi' : ($key === 'suppliers' && class_exists('XhPanel', false) ? 'xml-merkezi?view=suppliers' : ($key === 'marketplaces' && class_exists('MhPanel', false) ? 'pazaryeri' : ''));
-				$ready = $slug !== '' ? true : ($key === 'campaigns' && class_exists('RsShowcase', false) ? true : $m[2]);
+				$ready = $slug !== '' ? true : ($key === 'campaigns' && class_exists('RsShowcase', false) ? true : ($key === 'invoices' && class_exists('RiPanel', false) ? true : $m[2]));
 
 				if (!$ready) {
 					continue; // henüz geliştirilmemiş bölümler menüde gösterilmez (ölü bağlantı yok)

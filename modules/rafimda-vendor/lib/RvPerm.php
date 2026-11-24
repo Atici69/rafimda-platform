@@ -54,18 +54,18 @@ class RvPerm
 				return array_merge($view, [
 					'products.create', 'products.edit', 'products.delete', 'orders.manage',
 					'xml.manage', 'marketplaces.manage', 'staff.manage', 'store.manage',
-					'questions.answer', 'reviews.reply', 'support.manage',
+					'questions.answer', 'reviews.reply', 'support.manage', 'invoices.manage',
 				]);
 			case 'manager':
 				return array_merge($view, [
 					'products.create', 'products.edit', 'products.delete', 'orders.manage', 'xml.manage', 'marketplaces.manage',
-					'questions.answer', 'reviews.reply', 'support.manage',
+					'questions.answer', 'reviews.reply', 'support.manage', 'invoices.manage',
 				]);
 			case 'catalog':
 				return ['dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',
 					'xml.view', 'xml.manage', 'stock.view', 'pricing.view', 'support.view', 'questions.view', 'questions.answer', 'notifications.view'];
 			case 'orders':
-				return ['dashboard.view', 'products.view', 'orders.view', 'orders.manage', 'customers.view', 'support.view', 'support.manage',
+				return ['dashboard.view', 'products.view', 'orders.view', 'orders.manage', 'customers.view', 'support.view', 'support.manage', 'invoices.view', 'invoices.manage',
 					'questions.view', 'questions.answer', 'reviews.view', 'reviews.reply', 'notifications.view'];
 			case 'viewer':
 				return ['dashboard.view', 'products.view', 'orders.view', 'support.view', 'questions.view', 'reviews.view', 'notifications.view'];
