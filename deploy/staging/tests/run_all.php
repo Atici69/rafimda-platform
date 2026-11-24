@@ -18,6 +18,7 @@ $suites = [
 	'marketplace-hub/run' => 'modules/marketplace-hub/tests/run.php',
 	'marketplace-hub/run_v2' => 'modules/marketplace-hub/tests/run_v2.php',
 	'rafimda-showcase/run' => 'modules/rafimda-showcase/tests/run.php',
+	'rafimda-theme/run' => 'modules/rafimda-theme/tests/run.php',
 	'staging/run' => 'deploy/staging/tests/run.php',
 	'staging/run_seed' => 'deploy/staging/tests/run_seed.php',
 	'live/run' => 'deploy/live/tests/run.php',

@@ -26,7 +26,7 @@ class RafimdaShowcaseModule extends ModuleBase
 		'home_bottom' => 'Ana sayfa altı (yedek konum)',
 	];
 
-	public array $defaultDisplayHooks = ['home_showcase'];
+	public array $defaultDisplayHooks = ['home_bottom'];
 
 	public array $frontStylesheets = ['showcase.css'];
 

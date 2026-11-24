@@ -16,7 +16,7 @@ $m = new $class();
 t($m instanceof ModuleBase && $m->name === $name, 'ModuleBase\'den türüyor, name klasör adıyla aynı');
 t(method_exists($m, 'install') && method_exists($m, 'uninstall') && method_exists($m, 'adminPage') && method_exists($m, 'renderDisplayHook'), 'install/uninstall/adminPage/renderDisplayHook var');
 t(is_file(dirname(__DIR__) . '/assets/templates/admin/admin.tpl') && is_file(dirname(__DIR__) . '/assets/templates/front/showcase.tpl') && is_file(dirname(__DIR__) . '/assets/css/showcase.css'), 'şablonlar ve CSS var');
-t(isset($m->displayHooks['home_showcase']) && $m->defaultDisplayHooks === ['home_showcase'], 'display hook tanımlı ve varsayılan bağlı');
+t(isset($m->displayHooks['home_showcase']) && isset($m->displayHooks['home_bottom']), 'iki kanca tanımlı'); t($m->defaultDisplayHooks === ['home_bottom'], 'varsayılan kanca home_bottom (theme4 home_showcase çizmez)');
 foreach ($m->frontStylesheets as $css) { t(is_file(dirname(__DIR__) . '/assets/css/' . $css), "frontStylesheets dosyası var: $css"); }
 foreach (['install.sql', 'uninstall.sql'] as $f) {
 	$stmts = array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', file_get_contents(dirname(__DIR__) . '/' . $f))));
