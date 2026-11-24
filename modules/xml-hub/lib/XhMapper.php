@@ -28,7 +28,7 @@ class XhMapper
 		'category' => ['Kategori', false, false],
 		'images' => ['Görseller', false, true],
 		'desi' => ['Desi', false, false],
-		'cargo_price' => ['Kargo ücreti (yalnızca kayıt; ürüne yazılmaz)', false, false],
+		'cargo_price' => ['Kargo ücreti (modül tablosunda saklanır, pazaryeri gönderiminde kullanılır)', false, false],
 		'cargo_day' => ['Kargo süresi (gün)', false, false],
 		'vat' => ['KDV oranı', false, false],
 	];

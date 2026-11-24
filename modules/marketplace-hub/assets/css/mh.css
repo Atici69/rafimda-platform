@@ -28,3 +28,5 @@
 .xh .muted{color:var(--mut);font-size:13px}.xh .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .xh .scroll{overflow-x:auto}
 @media (max-width:760px){.xh .g2,.xh .g3{grid-template-columns:1fr}.xh-wrap{padding:12px}.xh th,.xh td{padding:6px}}
+
+.xh .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}.xh .tbl-wrap table{min-width:520px}.xh td,.xh th{text-align:left;padding:8px 10px;border-bottom:1px solid #e5e7eb;word-break:break-word;vertical-align:top}.xh th{background:#f3f6fb;color:#0b2545;white-space:nowrap}
