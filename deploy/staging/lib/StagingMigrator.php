@@ -1,11 +1,18 @@
 <?php
 
+if (PHP_SAPI !== 'cli') {
+	http_response_code(404);
+	exit;
+}
+
 /**
  * Sıralı, durdurucu migration çalıştırıcı (PDO ile doğrudan; FriSay çekirdeği gerekmez).
  * Modüllerin kendi çalıştırıcılarıyla AYNI izleme tablolarını kullanır (rafimda_migrations, xh_migrations, mh_migrations),
  * bu yüzden daha sonra yönetim panelinden modül kurulumu yapılırsa tekrar çalıştırmaz.
  * Farkı: hata yutmaz, ilk hatada durur ve başarısız migration'ı "uygulandı" diye işaretlemez.
- * Yıkıcı ifade (DROP, TRUNCATE, DELETE) içeren migration çalıştırılmaz.
+ * Yıkıcı ifade (DROP, TRUNCATE, DELETE, RENAME) içeren migration çalıştırılmaz.
+ * İşlem modeli: MySQL'de DDL örtük commit yaptığından migration dosyaları transaction'a SARILMAZ. Bir dosya ortasında hata verirse
+ * önceki ifadeler kalır; bu yüzden migration dosyaları yeniden çalıştırılabilir olmalıdır (CREATE TABLE IF NOT EXISTS, korumalı ADD COLUMN, INSERT/UPDATE yok).
  */
 final class StagingMigrator
 {
@@ -103,7 +110,12 @@ final class StagingMigrator
 	/** @return array{ok:bool,detail:string} */
 	private function applyFile(string $file, bool $dryRun): array
 	{
-		$statements = StagingSql::statements((string) file_get_contents($file));
+		try {
+			$statements = StagingSql::statements((string) file_get_contents($file));
+		} catch (RuntimeException $e) {
+			return ['ok' => false, 'detail' => 'SQL ayrıştırılamadı (' . basename($file) . '): ' . $e->getMessage()];
+		}
+
 		$ran = 0;
 		$skipped = 0;
 

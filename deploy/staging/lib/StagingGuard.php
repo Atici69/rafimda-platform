@@ -1,5 +1,7 @@
 <?php
 
+// Not: bu dosya bilerek CLI dışında da yüklenebilir (conf/staging_guard.php web isteğinde kullanır); yalnızca sınıf tanımlar.
+
 /**
  * Staging güvenlik bekçisi. Hiçbir staging aracı, bu kontroller geçmeden veritabanına bağlanmaz.
  * Amaç: canlı veritabanına yanlışlıkla migration/seed çalıştırmayı engellemek.
@@ -70,6 +72,28 @@ final class StagingGuard
 		}
 
 		return ['ok' => $errors === [], 'errors' => $errors];
+	}
+
+	/**
+	 * Web isteği için son savunma kararı (conf/staging_guard.php kullanır).
+	 * env.php yoksa (kurulum sihirbazı henüz çalışmadı) izin verilir; DB adı staging gibi değilse engellenir.
+	 *
+	 * @param array<string,mixed>|null $cfg config/env.php içeriği, dosya yoksa null
+	 * @return array{allow:bool,reason:string}
+	 */
+	public static function requestVerdict(?array $cfg): array
+	{
+		if ($cfg === null) {
+			return ['allow' => true, 'reason' => 'env.php yok (kurulum aşaması)'];
+		}
+
+		$name = strtolower((string) ($cfg['DB_NAME'] ?? ''));
+
+		if ($name === '' || !preg_match('/(staging|stg|test)/', $name)) {
+			return ['allow' => false, 'reason' => 'DB_NAME staging gibi görünmüyor'];
+		}
+
+		return ['allow' => true, 'reason' => ''];
 	}
 
 	/** Ortam değişkenlerini toplar (yalnızca getenv; dosyadan okumaz). @return array<string,string> */

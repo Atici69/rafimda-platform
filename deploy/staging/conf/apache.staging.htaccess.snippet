@@ -1,11 +1,15 @@
-# Apache için: .htaccess dosyasına (RewriteEngine bölümünden ÖNCE) eklenecek parçalar.
+# Apache için: .htaccess dosyasına, mevcut "RewriteEngine On" satırından SONRA ve diğer kurallardan ÖNCE eklenecek parçalar.
+
 <IfModule mod_headers.c>
     Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
 </IfModule>
 
-# robots.txt: tam engel
-RewriteEngine On
-RewriteRule ^robots\.txt$ /deploy/staging/conf/robots.staging.txt [L]
+# robots.txt: tam engel (dahili yeniden yazım; FriSay'ın kökteki robots.txt dosyasına dokunulmaz)
+RewriteRule ^robots\.txt$ deploy/staging/conf/robots.staging.txt [L]
+
+# deploy/ dizini web'den sunulmaz (yalnızca robots.staging.txt hariç). FriSay'ın kendi engel listesinde yok; canlıda da ekleyin.
+RewriteCond %{REQUEST_URI} !^/deploy/staging/conf/robots\.staging\.txt$
+RewriteRule ^deploy(/|$) - [F,L]
 
 # Önerilen Basic Auth (parola dosyası web kökü DIŞINDA olmalı ve repoda tutulmaz):
 #   htpasswd -c /etc/apache2/.htpasswd-rafimda-staging KULLANICI
@@ -13,3 +17,5 @@ RewriteRule ^robots\.txt$ /deploy/staging/conf/robots.staging.txt [L]
 # AuthName "Rafimda Staging"
 # AuthUserFile /etc/apache2/.htpasswd-rafimda-staging
 # Require valid-user
+
+# E-posta: PHP-FPM havuzunda php_admin_value[sendmail_path] = /bin/true (mod_php'de: php_admin_value sendmail_path /bin/true)

@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli') {
+	http_response_code(404);
+	exit;
+}
+
 /**
  * Staging test verisi. YALNIZCA EKLER (silme/güncelleme yok), tekrar çalıştırılabilir (işaretçilerle idempotent).
  * Tüm kayıtlar TEST olarak işaretlidir: e-posta alanı @test.rafimda.invalid, telefon TEST-… ile başlar, ürün kodu TEST-…, sipariş referansı TEST-….
@@ -11,6 +16,12 @@ final class StagingSeed
 {
 	public const EMAIL_DOMAIN = 'test.rafimda.invalid';
 	public const PLAN_CODE = 'test-sinirli';
+
+	/** TEST olmayan sipariş var mı (gerçek veri olabilir). */
+	public static function realOrderCount(PDO $pdo): int
+	{
+		return (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE reference NOT LIKE 'TEST-%'")->fetchColumn();
+	}
 
 	/** @return array{vendors:array<string,int>,products:array<string,list<int>>,orders:list<int>,log:list<string>,checks:list<array{name:string,ok:bool}>} */
 	public static function run(): array

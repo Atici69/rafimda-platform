@@ -1,4 +1,8 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+	http_response_code(404);
+	exit;
+}
 /**
  * Staging paket testleri (SQLite + MySQL→SQLite çevirisi). MySQL'de ÇALIŞTIRILMAMIŞTIR; yalnızca mantığı doğrular.
  * Çalıştırma: php deploy/staging/tests/run.php
@@ -169,6 +173,126 @@ $ve = new StagingVerifier($root);
 $ve->checkRobots();
 t('robots.staging.txt hazır', $ve->failures() === 0);
 t('markdown rapor üretilir', strpos($v->toMarkdown(), '# Rafımda Staging') === 0);
+
+echo "== SQL ayrıştırıcı (yorum, çoklu ifade, tırnak)\n";
+$x = StagingSql::statements("-- baş yorum\nCREATE TABLE a (x varchar(9) DEFAULT 'a;b');  /* blok; yorum */ ALTER TABLE a ADD COLUMN y int; # diyez\nINSERT INTO a VALUES ('it''s;--x', \"q;\"); -- sonda yorum\n");
+t('çoklu ifade doğru bölünür (3)', count($x) === 3, json_encode($x));
+t('tırnak içi ; bölmez', strpos($x[0], "'a;b'") !== false);
+t('tırnak içi -- yorum sayılmaz, doubled quote korunur', $x[2] === "INSERT INTO a VALUES ('it''s;--x', \"q;\")");
+t('blok/# / satır sonu yorumları atılır', strpos(implode('', $x), 'blok') === false && strpos(implode('', $x), 'diyez') === false && strpos(implode('', $x), 'sonda') === false);
+t('yorumdan hemen sonraki ifade kaybolmaz', count(StagingSql::statements("-- a\nSELECT 1;\n-- b\nSELECT 2;")) === 2);
+$thrown = static function (callable $f): bool {
+	try {
+		$f();
+	} catch (RuntimeException $e) {
+		return true;
+	}
+
+	return false;
+};
+t('kapanmamış tırnak istisna', $thrown(static fn() => StagingSql::statements("SELECT 'a;")));
+t('kapanmamış blok yorumu istisna', $thrown(static fn() => StagingSql::statements("SELECT 1; /* a")));
+t('DELIMITER desteklenmez (sessizce bölmez)', $thrown(static fn() => StagingSql::statements("DELIMITER //\nSELECT 1//")));
+t('CREATE PROCEDURE/TRIGGER desteklenmez', $thrown(static fn() => StagingSql::statements("CREATE TRIGGER t BEFORE INSERT ON a FOR EACH ROW SET NEW.x=1;")));
+$allParse = true;
+$dml = [];
+foreach (StagingModules::all() as $m) {
+	$files = array_merge([$m['install']], glob($m['migrations'] . '/*.sql') ?: []);
+	foreach ($files as $f) {
+		try {
+			foreach (StagingSql::statements((string) file_get_contents($f)) as $stmt) {
+				if (preg_match('/^(INSERT|UPDATE|DELETE|REPLACE)\b/i', $stmt)) {
+					$dml[] = basename($f);
+				}
+			}
+		} catch (RuntimeException $e) {
+			$allParse = false;
+		}
+	}
+}
+t('tüm gerçek install/migration dosyaları ayrıştırılır', $allParse);
+t('gerçek migration/install dosyalarında INSERT/UPDATE/DELETE yok (yeniden çalıştırma güvenli)', $dml === [], implode(',', $dml));
+$ai = StagingModules::expectedSchema(StagingModules::all()[0]);
+t('AUTO_INCREMENT sütunları çıkarılır (rafimda_vendors.id_vendor)', in_array('id_vendor', $ai['rafimda_vendors']['auto'], true));
+
+$bf = ['key' => 'zq', 'dir' => $tmp, 'tracker' => 'zq_migrations', 'install' => $tmp . '/install.sql', 'migrations' => $tmp . '/migrations'];
+$pdo->exec("CREATE TABLE IF NOT EXISTS `zq_migrations` (\n  `version` varchar(32) NOT NULL,\n  PRIMARY KEY (`version`)\n) ENGINE=InnoDB;\n");
+@unlink($tmp . '/migrations/004_drop.sql');
+file_put_contents($tmp . '/migrations/005_unclosed.sql', "CREATE TABLE zq_x (a int); SELECT 'yarim;\n");
+$r = $mig->runModule($bf);
+t('ayrıştırılamayan migration FAIL verir ve kaydedilmez', !$r['success'] && !in_array('005_unclosed', $mig->applied('zq_migrations'), true) && strpos(json_encode($r['steps'], JSON_UNESCAPED_UNICODE), 'ayrıştırılamadı') !== false, json_encode($r['steps'], JSON_UNESCAPED_UNICODE));
+
+echo "== İstek bekçisi (staging_guard) kararları\n";
+t('env.php yok → kurulum sihirbazı engellenmez', StagingGuard::requestVerdict(null)['allow']);
+t('DB_NAME staging → izin', StagingGuard::requestVerdict(['DB_NAME' => 'rafimda_staging'])['allow']);
+t('DB_NAME canlı gibi → 503', !StagingGuard::requestVerdict(['DB_NAME' => 'rafimda_live'])['allow']);
+t('DB_NAME boş → 503', !StagingGuard::requestVerdict([])['allow']);
+
+echo "== Doğrulayıcı: AUTO_INCREMENT, izin, dış servis\n";
+$readerNoAuto = new StagingSchemaReader(static function (string $t) use ($pdo) {
+	$r = MysqlToSqlite::readTable($pdo, $t);
+
+	return $r === null ? null : $r + ['auto' => []];
+});
+$va = new StagingVerifier($root);
+$va->checkSchema($readerNoAuto, null);
+t('AUTO_INCREMENT eksikliği FAIL', strpos($va->toText(), 'AUTO_INCREMENT eksik: id_vendor') !== false);
+$vp = new StagingVerifier($root);
+$vp->checkSecretFilePerms('x', 0644);
+t('env.php 0644 → FAIL', $vp->failures() === 1);
+$vp = new StagingVerifier($root);
+$vp->checkSecretFilePerms('x', 0600);
+t('env.php 0600 → OK', $vp->failures() === 0 && $vp->warnings() === 0);
+$vp = new StagingVerifier($root);
+$vp->checkExternalServices(['XML_HUB_SECRET', 'SMTP_PASSWORD', 'NETGSM_USER'], 'smtp');
+t('SMTP sürücüsü ve dolu servis anahtarları WARN; kendi gizli anahtarlarımız hariç', $vp->warnings() === 2 && strpos($vp->toText(), 'SMTP_PASSWORD') !== false && strpos($vp->toText(), 'XML_HUB_SECRET') === false);
+$vp = new StagingVerifier($root);
+$vp->checkExternalServices(['XML_HUB_SECRET'], 'php');
+t('temiz kurulumda dış servis uyarısı yok', $vp->warnings() === 0);
+$vv = new StagingVerifier($root);
+$readerNoVar = new StagingSchemaReader(static fn(string $t) => $t === 'product_variations' ? null : MysqlToSqlite::readTable($pdo, $t));
+$vv->checkSchema($readerNoVar, null, true);
+t('--init-lazy sonrası product_variations yoksa FAIL', strpos($vv->toText(), '[FAIL] product_variations') !== false);
+
+echo "== Komutlar arası canlı-DB koruması tutarlılığı\n";
+$bins = glob(dirname(__DIR__) . '/bin/staging-*.php');
+t('4 komut betiği var', count($bins) === 4);
+foreach ($bins as $b) {
+	$c = (string) file_get_contents($b);
+	$g = strpos($c, 'staging_guard_or_exit()');
+	$conn = strpos($c, 'staging_connect_or_exit(');
+	$boot = strpos($c, 'staging_boot_core_or_exit(');
+	t(basename($b) . ': bekçi çağrılıyor', $g !== false);
+	t(basename($b) . ': bekçi bağlantı/açılıştan ÖNCE', $g !== false && ($conn === false || $g < $conn) && ($boot === false || $g < $boot));
+	t(basename($b) . ': bypass bayrağı yok', stripos($c, 'allow-existing') === false && stripos($c, '--force') === false);
+}
+$cc = (string) file_get_contents(dirname(__DIR__) . '/bin/_common.php');
+t('açılış, env.php ile ortam DB uyuşmazsa reddeder', strpos($cc, "(\$cfg['DB_NAME'] ?? '') !== \$env['DB_NAME']") !== false && strpos($cc, '_DB_NAME_ !== $env') !== false);
+$seedBin = (string) file_get_contents(dirname(__DIR__) . '/bin/staging-seed.php');
+t('seed: gerçek sipariş kontrolü açılıştan önce', strpos($seedBin, 'realOrderCount') < strpos($seedBin, 'staging_boot_core_or_exit('));
+
+echo "== Web'den erişim engeli (deploy/ dizini)\n";
+$exposed = [];
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__), FilesystemIterator::SKIP_DOTS)) as $f) {
+	if ($f->isFile() && substr($f->getFilename(), -4) === '.php' && !in_array($f->getFilename(), ['StagingGuard.php', 'staging_guard.php'], true)) {
+		$head = implode("\n", array_slice(file($f->getPathname()), 0, 12));
+
+		if (strpos($head, 'PHP_SAPI') === false && strpos($head, "/_common.php'") === false) {
+			$exposed[] = substr($f->getPathname(), strlen($root) + 1);
+		}
+	}
+}
+t('tüm PHP dosyaları (bekçi hariç) CLI dışında 404 verir', $exposed === [], implode(',', $exposed));
+t('nginx parçası /deploy/ engelliyor', strpos((string) file_get_contents(dirname(__DIR__) . '/conf/nginx.staging.conf.snippet'), 'location ^~ /deploy/') !== false);
+t('Apache parçası deploy/ engelliyor (robots.staging.txt hariç)', strpos((string) file_get_contents(dirname(__DIR__) . '/conf/apache.staging.htaccess.snippet'), '^deploy(/|$) - [F,L]') !== false);
+t('nginx ve Apache X-Robots-Tag içeriyor', strpos((string) file_get_contents(dirname(__DIR__) . '/conf/nginx.staging.conf.snippet'), 'X-Robots-Tag') !== false && strpos((string) file_get_contents(dirname(__DIR__) . '/conf/apache.staging.htaccess.snippet'), 'X-Robots-Tag') !== false);
+t('robots.staging.txt tam engel', trim((string) file_get_contents(dirname(__DIR__) . '/conf/robots.staging.txt')) !== '' && strpos((string) file_get_contents(dirname(__DIR__) . '/conf/robots.staging.txt'), "Disallow: /\n") !== false);
+$ign = (string) file_get_contents($root . '/.gitignore');
+t('.gitignore yedek/döküm/anahtar dosyalarını kapsar', strpos($ign, 'backups/*') !== false && strpos($ign, '*.sql.gz') !== false && strpos($ign, '*.dump') !== false && strpos($ign, '*.key') !== false);
+$tracked = (string) @shell_exec('cd ' . escapeshellarg($root) . ' && git ls-files 2>/dev/null');
+if ($tracked !== '') {
+	t('git\'te izlenen döküm/anahtar/env dosyası yok', !preg_match('/(\.sql\.gz|\.dump|\.sqlite|\.key|(^|\/)env\.php|(^|\/)\.env)$/m', $tracked));
+}
 
 echo "== Güvenlik / depo hijyeni\n";
 $bad = [];

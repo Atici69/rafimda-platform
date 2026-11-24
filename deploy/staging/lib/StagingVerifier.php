@@ -1,5 +1,10 @@
 <?php
 
+if (PHP_SAPI !== 'cli') {
+	http_response_code(404);
+	exit;
+}
+
 /**
  * Kurulum doğrulayıcı: şema (tablo/sütun/indeks), migration durumu, FriSay çekirdeği bileşenleri, PHP ortamı.
  * Şema okuma kaynağı soyutlanmıştır; MySQL için StagingSchemaReader::mysql() kullanılır.
@@ -9,7 +14,7 @@ final class StagingSchemaReader
 	/** @var callable */
 	private $reader;
 
-	/** @param callable(string):?array{columns:list<string>,indexes:list<string>} $reader */
+	/** @param callable(string):?array{columns:list<string>,indexes:list<string>,auto?:list<string>} $reader */
 	public function __construct(callable $reader)
 	{
 		$this->reader = $reader;
@@ -28,8 +33,10 @@ final class StagingSchemaReader
 
 			$i = $pdo->prepare('SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
 			$i->execute([$table]);
+			$a = $pdo->prepare("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND EXTRA LIKE '%auto_increment%'");
+			$a->execute([$table]);
 
-			return ['columns' => $cols, 'indexes' => array_map('strval', $i->fetchAll(PDO::FETCH_COLUMN))];
+			return ['columns' => $cols, 'indexes' => array_map('strval', $i->fetchAll(PDO::FETCH_COLUMN)), 'auto' => array_map('strval', $a->fetchAll(PDO::FETCH_COLUMN))];
 		});
 	}
 
@@ -123,20 +130,45 @@ final class StagingVerifier
 		}
 	}
 
+	/** env.php izinleri: grup/diğer okuyamamalı (parola içerir). */
+	public function checkSecretFilePerms(string $file, ?int $perms): void
+	{
+		if ($perms === null) {
+			$this->add('Gizli bilgiler', 'config/env.php izinleri', 'WARN', 'dosya yok');
+
+			return;
+		}
+
+		$this->add('Gizli bilgiler', 'config/env.php izinleri (0600/0640)', ($perms & 0007) === 0 ? 'OK' : 'FAIL', sprintf('%04o', $perms) . ' — "diğer" kullanıcılar okuyabiliyor' . (($perms & 0007) === 0 ? ' DEĞİL' : ''));
+	}
+
+	/**
+	 * Staging'de olmaması gereken dış servis ayarları (e-posta/SMS/ödeme/anahtar). Yalnızca ANAHTAR ADLARI listelenir, değerler asla.
+	 *
+	 * @param list<string> $nonEmptyTitles settings tablosunda dolu olan ve desene uyan başlıklar
+	 */
+	public function checkExternalServices(array $nonEmptyTitles, string $mailDriver): void
+	{
+		$own = ['XML_HUB_SECRET', 'MARKETPLACE_HUB_SECRET', 'XML_HUB_CRON_KEY', 'MARKETPLACE_HUB_CRON_KEY'];
+		$risky = array_values(array_diff($nonEmptyTitles, $own));
+		$this->add('Dış servisler', 'e-posta sürücüsü', $mailDriver === 'smtp' ? 'WARN' : 'OK', $mailDriver === 'smtp' ? 'SMTP yapılandırılmış: staging gerçek müşterilere e-posta gönderebilir' : 'php (sunucuda sendmail_path=/bin/true ile boşa çıkarın)');
+		$this->add('Dış servisler', 'dolu SMTP/SMS/ödeme/API anahtarı ayarı', $risky ? 'WARN' : 'OK', $risky ? implode(', ', $risky) : 'yok');
+	}
+
 	public function checkRobots(): void
 	{
 		$f = $this->root . '/deploy/staging/conf/robots.staging.txt';
 		$this->add('Staging', 'robots.staging.txt hazır', is_file($f) && strpos((string) file_get_contents($f), 'Disallow: /') !== false ? 'OK' : 'FAIL');
 	}
 
-	public function checkSchema(StagingSchemaReader $reader, ?callable $appliedVersions = null): void
+	public function checkSchema(StagingSchemaReader $reader, ?callable $appliedVersions = null, bool $requireVariations = false): void
 	{
 		foreach (self::CORE_TABLES as $t) {
 			$this->add('Çekirdek tablolar', $t, $reader->table($t) !== null ? 'OK' : 'FAIL');
 		}
 
 		$pv = $reader->table('product_variations');
-		$this->add('Çekirdek tablolar', 'product_variations (isteğe bağlı)', $pv !== null ? 'OK' : 'WARN', $pv !== null ? '' : 'Çekirdek (ProductVariation::ensureSchema) ilk kullanımda oluşturur; varyant testinden önce bir kez oluşmasını sağlayın.');
+		$this->add('Çekirdek tablolar', 'product_variations (çekirdek tembel tablo)', $pv !== null ? 'OK' : ($requireVariations ? 'FAIL' : 'WARN'), $pv !== null ? '' : 'Çekirdek ProductVariation::ensureSchema() ile ilk kullanımda oluşturur. Şimdi oluşturmak için: staging-verify.php --init-lazy (veya staging-seed.php).');
 
 		foreach (StagingModules::all($this->root) as $m) {
 			$expected = StagingModules::expectedSchema($m);
@@ -151,9 +183,11 @@ final class StagingVerifier
 
 				$missingCols = array_values(array_diff($def['columns'], $actual['columns']));
 				$missingIdx = array_values(array_diff($def['indexes'], $actual['indexes']));
-				$this->add($m['key'], 'tablo ' . $table, $missingCols || $missingIdx ? 'FAIL' : 'OK', $missingCols || $missingIdx
-					? 'eksik sütun: ' . ($missingCols ? implode(',', $missingCols) : '-') . ' | eksik indeks: ' . ($missingIdx ? implode(',', $missingIdx) : '-')
-					: count($def['columns']) . ' sütun, ' . count($def['indexes']) . ' indeks');
+				$missingAuto = isset($actual['auto']) ? array_values(array_diff($def['auto'] ?? [], $actual['auto'])) : [];
+				$bad = $missingCols || $missingIdx || $missingAuto;
+				$this->add($m['key'], 'tablo ' . $table, $bad ? 'FAIL' : 'OK', $bad
+					? 'eksik sütun: ' . ($missingCols ? implode(',', $missingCols) : '-') . ' | eksik indeks: ' . ($missingIdx ? implode(',', $missingIdx) : '-') . ' | AUTO_INCREMENT eksik: ' . ($missingAuto ? implode(',', $missingAuto) : '-')
+					: count($def['columns']) . ' sütun, ' . count($def['indexes']) . ' indeks' . (isset($actual['auto']) && ($def['auto'] ?? []) ? ', AUTO_INCREMENT: ' . implode(',', $def['auto']) : ''));
 			}
 
 			if ($appliedVersions !== null && $m['tracker'] !== null) {

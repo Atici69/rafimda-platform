@@ -59,25 +59,36 @@ Yönetim paneli → Modüller → `rafimda-vendor`, `xml-hub`, `marketplace-hub`
 
 ## 7. Doğrulayın
 ```bash
-php deploy/staging/bin/staging-verify.php --out=logs/staging-verify.md
+php deploy/staging/bin/staging-verify.php --init-lazy --out=logs/staging-verify.md
 ```
+`--init-lazy`: FriSay'ı komut satırında açar ve çekirdeğin tembel tablosunu (`product_variations`, `ProductVariation::ensureSchema()` → `CREATE TABLE IF NOT EXISTS`) oluşturur; bayrak verildiği hâlde tablo yoksa FAIL, bayraksız yoksa yalnızca uyarıdır. (Tablo yokken `RvInventory` hata atmaz ama her ürün satırı için `error_log`'a "no such table" yazar.) Açılış, `config/env.php`'nin ortam değişkenleriyle aynı veritabanını göstermediğini doğrulamadan çalışmaz.
 Kontroller: PHP sürüm/eklentiler, çekirdek dosyalar ve yazılabilir dizinler, `config/env.php` (DB uyumu, APP_ENV, APP_DEBUG), çekirdek tablolar, modüllerin **tüm tabloları, sütunları ve indeksleri** (migration dosyalarından türetilir), bekleyen/yetim migration kayıtları, `robots.staging.txt`. Çıkış kodu 1 = en az bir FAIL. `product_variations` tablosu çekirdek tarafından ilk kullanımda oluşturulur (yoksa uyarı).
 
 ## 8. Test verisini yükleyin (isteğe bağlı)
 ```bash
 php deploy/staging/bin/staging-seed.php
 ```
-Yalnızca **ekler** (silmez/güncellemez), tekrar çalıştırılabilir. Üç satıcı (`TEST Mağaza A/B/C`), her birine 4 ürün, 3 müşteri, 3 sipariş (A+B, B+C, A), satıcı C için 5 ürün limitli `test-sinirli` paketi. Tüm kayıtlar işaretli: e-posta `@test.rafimda.invalid`, telefon `TEST-…`, ürün kodu `TEST-…`, sipariş `TEST-…`. Çalıştırdıktan sonra otomatik denetler: satıcılar arası ürün/sipariş/müşteri erişimi, komisyon = oran × ara toplam, bölünmüş toplam = kalem toplamı, kota. `TEST` olmayan sipariş içeren veritabanında çalışmayı **reddeder**. Kullanıcılara kullanılabilir parola atanmaz; giriş testi için parolayı panelden belirleyin. E-posta/SMS/ödeme/pazaryeri çağrısı yapmaz.
+Yalnızca **ekler** (silmez/güncellemez), tekrar çalıştırılabilir. Üç satıcı (`TEST Mağaza A/B/C`), her birine 4 ürün, 3 müşteri, 3 sipariş (A+B, B+C, A), satıcı C için 5 ürün limitli `test-sinirli` paketi. Tüm kayıtlar işaretli: e-posta `@test.rafimda.invalid`, telefon `TEST-…`, ürün kodu `TEST-…`, sipariş `TEST-…`. Çalıştırdıktan sonra otomatik denetler: satıcılar arası ürün/sipariş/müşteri erişimi, komisyon = oran × ara toplam, bölünmüş toplam = kalem toplamı, kota. `TEST` olmayan sipariş içeren veritabanında çalışmayı **reddeder** (bunu aşan bir bayrak yoktur). Testle doğrulandı: önceden var olan gerçek kullanıcı/kategori/marka/ürün/sipariş/satıcı kayıtları seed sonrası birebir aynı kalır. Yaptığı tek "platform" yazması: varsayılan `free` paketi yoksa ekler (`RvPlans::ensureDefaults`) ve `test-sinirli` paketini oluşturur. Kullanıcılara kullanılabilir parola atanmaz; giriş testi için parolayı panelden belirleyin. E-posta/SMS/ödeme/pazaryeri çağrısı yapmaz.
 
 ## 9. Arama motoru ve erişim koruması
+- **`deploy/` dizini web'e kapatılmalıdır.** FriSay'ın kendi engel listesinde (`.htaccess`/`nginx.conf.example`) yoktur; nginx/Apache parçaları bunu ekler (canlı sunucuda da ekleyin). Ek savunma olarak tüm PHP dosyaları CLI dışında 404 döner.
 - Nginx: `deploy/staging/conf/nginx.staging.conf.snippet` (X-Robots-Tag, tam engel robots.txt, Basic Auth, ayrı loglar). Apache: `apache.staging.htaccess.snippet`.
 - İsteğe bağlı son savunma: `auto_prepend_file = …/deploy/staging/conf/staging_guard.php` — `X-Robots-Tag` ekler ve `env.php` DB adı staging gibi değilse isteği 503 ile durdurur.
 - Basic Auth açıkken cron uçlarını (`/xml-cron`, `/pazaryeri-cron`) muaf tutun; anahtar (`key=`) zorunlu kalır.
 
+### APP_ENV=production ile staging güvenliği
+FriSay `APP_ENV=production` iken: hata ayrıntısını gizler, `Secure` çerez bayrağını ve HSTS'yi uygular. Staging'i bu şekilde çalıştırmak canlı davranışına benzer; ancak:
+- **HSTS** `max-age=31536000; includeSubDomains` gönderir. Yalnızca `test.rafimda.com.tr` ve alt alanlarını etkiler (üst alan `rafimda.com.tr` etkilenmez). Sertifika sorunu yaşarsanız tarayıcılar 1 yıl boyunca HTTP'ye düşmez; staging'de panelden `SECURITY_HSTS` = `off` yapmak isteyebilirsiniz.
+- **E-posta:** `MAIL_DRIVER=php` PHP `mail()` kullanır → gerçek adreslere gidebilir. PHP-FPM havuzunda `php_admin_value[sendmail_path] = /bin/true` kullanın; SMTP'yi staging'de **yapılandırmayın**. `staging-verify.php` SMTP/SMS/ödeme/API anahtarı gibi dolu ayarları (yalnızca anahtar adlarıyla) uyarı olarak listeler.
+- **SMS, ödeme, pazaryeri, kargo, fatura modüllerini** staging'de gerçek kimlikle yapılandırmayın; yalnızca sandbox/mock.
+- Staging'i Basic Auth ve IP kısıtıyla koruyun; test kullanıcılarına gerçek e-posta adresi girmeyin.
+
 ### Gizli anahtarlar
 - Repoda/ortam dosyasında gerçek değer yok; `.gitignore` `config/env.php`'yi dışlar.
 - `XML_HUB_SECRET` ve `MARKETPLACE_HUB_SECRET` ilk kullanımda **otomatik üretilip `settings` tablosuna** yazılır (pazaryeri/XML kimlik bilgilerini şifreler). Staging veritabanı yedeği bu anahtarı da içerir; veritabanı yedeği ve anahtar aynı yerde saklanırsa şifreleme koruması zayıflar — canlıda anahtarı ayrı yedekleyin.
-- Cron anahtarı panelden üretilir; sohbete/repoya yazmayın.
+- Cron anahtarı (`XML_HUB_CRON_KEY`) modül kurulumunda üretilip yine `settings` tablosuna yazılır; sohbete/repoya/ticket'a yazmayın, cron satırı bulunan dosyaların izinlerini kısıtlayın.
+- `config/env.php` (DB parolası) 0600 olmalı; `staging-verify.php` "diğer kullanıcı okuyabiliyor" ise FAIL verir. Ortam değişkenleri dosyası repo dışında ve 0600.
+- **Yedekler:** veritabanı dökümü (`mysqldump`) şifre çözme anahtarını da içerir. Dökümü web kökünün (`backups/` dahil, FriSay orada web erişimini kapatır ama repoya girmesini engellemez) ve git deposunun DIŞINDA saklayın; `.gitignore` artık `backups/*`, `*.sql.gz`, `*.dump`, `*.key` vb. dosyaları dışlar (testle doğrulandı: izlenen dosyalarda döküm/env yok). Canlıda anahtar yedeğini DB yedeğinden ayrı bir yerde tutun.
 
 ## 10. Cron (sunucuda sizin kuracağınız; kurulmadı)
 ```
@@ -111,8 +122,9 @@ Yalnızca **ekler** (silmez/güncellemez), tekrar çalıştırılabilir. Üç sa
 
 ## 13. Otomatik testler (bu pakete ait)
 ```bash
-php deploy/staging/tests/run.php        # koruma, SQL ayrıştırma, migrator, doğrulayıcı, hijyen
-php deploy/staging/tests/run_seed.php   # gerçek çekirdek şeması (SQLite çevirisi) + modül sınıfları üzerinde seed
+php deploy/staging/tests/run.php        # koruma, SQL ayrıştırma, migrator, doğrulayıcı, komut tutarlılığı, web erişimi/hijyen (105)
+php deploy/staging/tests/run_seed.php   # gerçek çekirdek şeması (SQLite çevirisi) + modül sınıfları üzerinde seed (16)
+php deploy/staging/tests/run_all.php    # tüm modül + staging takımları, özet tablo (toplam 933)
 ```
 Bunlar **MySQL'de çalışmaz ve MySQL'i kanıtlamaz**; yalnızca mantığı (ör. hatada durma, sürüm kaydı, ALTER idempotansı, izolasyon kontrollerinin gerçekten yakalayıcı olması) doğrular.
 
