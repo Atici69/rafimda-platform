@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RdMigrator', 'RdAudit', 'RdView', 'RdPlans', 'RdDealer', 'RdContext', 'RdCommission', 'RdReport', 'RdAuthFlow', 'RdPanel'] as $rdClass) {
+foreach (['RdPerm', 'RdMigrator', 'RdAudit', 'RdView', 'RdPlans', 'RdDealer', 'RdContext', 'RdCommission', 'RdReport', 'RdAuthFlow', 'RdPanel'] as $rdClass) {
 	require_once __DIR__ . '/lib/' . $rdClass . '.php';
 }
 

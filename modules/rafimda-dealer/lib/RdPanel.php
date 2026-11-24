@@ -41,9 +41,10 @@ class RdPanel
 		}
 
 		$top = (int) $dealer['id_parent'] === 0;
+		$role = RdPerm::roleOf($dealer);
 		$section = (string) Tools::getValue('s', 'dashboard');
 
-		if (!isset(self::MENU[$section]) || (self::MENU[$section][2] && !$top)) {
+		if (!isset(self::MENU[$section]) || !RdPerm::can($role, 'panel.' . $section)) {
 			$section = 'dashboard';
 		}
 
@@ -51,10 +52,10 @@ class RdPanel
 
 		if (RdView::isPost()) {
 			Security::requireCsrf('front');
-			self::post($dealer, $top, $section);
+			self::post($dealer, $top, $section, $role);
 		}
 
-		if ($section === 'earnings' && (string) Tools::getValue('export') === 'csv') {
+		if ($section === 'earnings' && (string) Tools::getValue('export') === 'csv' && RdPerm::can($role, 'earnings.export')) {
 			self::exportCsv($id);
 		}
 
@@ -96,15 +97,15 @@ class RdPanel
 	}
 
 	/** @param array<string,mixed> $dealer */
-	private static function post(array $dealer, bool $top, string $section): void
+	private static function post(array $dealer, bool $top, string $section, string $role): void
 	{
 		$id = (int) $dealer['id_dealer'];
 		$action = RdView::post('action');
 
-		if ($action === 'plan_request' && $section === 'subscription') {
+		if ($action === 'plan_request' && $section === 'subscription' && RdPerm::can($role, 'subscription.request')) {
 			$r = RdPlans::request($id, RdView::post('plan_code'));
 			RdView::flash($r['success'] ? 'success' : 'danger', $r['message']);
-		} elseif (in_array($action, ['sub_pause', 'sub_resume'], true) && $top && $section === 'subdealers') {
+		} elseif (in_array($action, ['sub_pause', 'sub_resume'], true) && RdPerm::can($role, 'subdealers.manage') && $section === 'subdealers') {
 			$ok = RdDealer::setPausedByParent($id, (int) RdView::post('id_dealer'), $action === 'sub_pause');
 			RdView::flash($ok ? 'success' : 'danger', $ok ? 'Alt bayi durumu güncellendi.' : 'Bu alt bayi size ait değil.');
 		}
@@ -134,7 +135,7 @@ class RdPanel
 		$menu = [];
 
 		foreach (self::MENU as $k => $m) {
-			if ($m[2] && !$top) {
+			if (!RdPerm::can(RdPerm::roleOf($dealer), 'panel.' . $k)) {
 				continue;
 			}
 
