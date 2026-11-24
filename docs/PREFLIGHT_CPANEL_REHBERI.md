@@ -40,7 +40,7 @@ Satır biçimi: `[OK]`, `[WARN]`, `[FAIL]`. Son satır: `ÖZET: N kontrol, X ba�
 |---|---|---|
 | PHP sürüm >= 7.4 | OK | FAIL ise kurulum yapmayın; PHP'yi yükseltmek ayrı karar (benim onayımla) |
 | eklenti pdo_mysql, mbstring, json, sodium, curl | OK | Zorunlu biri FAIL ise modüller çalışmaz; cPanel → PHP eklentileri |
-| eklenti (diğerleri) | OK/WARN | WARN önerilir demektir (ör. zip, gd) |
+| eklenti (diğerleri) | OK/WARN | WARN önerilir demektir (xmlreader, xmlwriter, dom, gd; XML içe aktarma için xmlreader/dom önemlidir) |
 | Çekirdek: dosya index.php, core/Module.php… | OK | FAIL ise paket eksik/yanlış yere açılmış |
 | Çekirdek: modül dizini (5 adet) | OK | FAIL ise zip düzgün açılmamış |
 | yazılabilir cache/ logs/ tmp/ | OK | FAIL ise klasör izni (755/775) düzeltilmeli |
