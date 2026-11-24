@@ -1,0 +1,70 @@
+/* Rafımda Satıcı Paneli — lacivert / turuncu / beyaz. Mağaza temasından bağımsız. */
+:root{--rv-navy:#0b2545;--rv-navy-2:#13315c;--rv-orange:#ff7a00;--rv-orange-d:#e06a00;--rv-bg:#f3f5f9;--rv-card:#fff;--rv-text:#1b2430;--rv-muted:#6b7686;--rv-line:#e2e7ef;--rv-ok:#16a34a;--rv-warn:#d97706;--rv-bad:#dc2626;--rv-r:10px}
+*{box-sizing:border-box}
+body.rv{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--rv-text);background:var(--rv-bg)}
+.rv a{color:var(--rv-navy-2)}
+.rv h1,.rv h2,.rv h3{margin:0 0 .5rem;line-height:1.25}
+.rv-shell{display:flex;min-height:100vh}
+.rv-side{width:260px;background:var(--rv-navy);color:#fff;flex:0 0 260px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.rv-brand{padding:18px 20px;font-weight:700;font-size:18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.rv-brand span{color:var(--rv-orange)}
+.rv-brand small{display:block;font-weight:400;font-size:12px;opacity:.7;margin-top:2px}
+.rv-nav{list-style:none;margin:8px 0;padding:0}
+.rv-nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:#cfd9e8;text-decoration:none;border-left:3px solid transparent}
+.rv-nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.rv-nav a.is-active{background:rgba(255,122,0,.14);color:#fff;border-left-color:var(--rv-orange)}
+.rv-nav .ico{width:20px;text-align:center;opacity:.9}
+.rv-nav .soon{margin-left:auto;font-size:10px;background:rgba(255,255,255,.14);padding:1px 6px;border-radius:99px}
+.rv-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.rv-top{display:flex;align-items:center;gap:12px;background:#fff;border-bottom:1px solid var(--rv-line);padding:10px 24px;position:sticky;top:0;z-index:5}
+.rv-top .grow{flex:1}
+.rv-burger{display:none;background:none;border:0;font-size:24px;cursor:pointer;color:var(--rv-navy)}
+.rv-content{padding:24px;max-width:1280px;width:100%}
+.rv-card{background:var(--rv-card);border:1px solid var(--rv-line);border-radius:var(--rv-r);padding:20px;margin-bottom:20px}
+.rv-grid{display:grid;gap:16px}
+.rv-grid.c4{grid-template-columns:repeat(4,1fr)}
+.rv-grid.c2{grid-template-columns:repeat(2,1fr)}
+.rv-grid.c3{grid-template-columns:repeat(3,1fr)}
+.rv-stat{background:#fff;border:1px solid var(--rv-line);border-radius:var(--rv-r);padding:16px;border-top:3px solid var(--rv-orange)}
+.rv-stat b{display:block;font-size:28px;color:var(--rv-navy)}
+.rv-stat span{color:var(--rv-muted);font-size:13px}
+.rv-btn{display:inline-block;background:var(--rv-orange);color:#fff!important;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.rv-btn:hover{background:var(--rv-orange-d)}
+.rv-btn.navy{background:var(--rv-navy)}.rv-btn.ghost{background:#fff;color:var(--rv-navy)!important;border:1px solid var(--rv-line)}
+.rv-btn.danger{background:var(--rv-bad)}.rv-btn.sm{padding:5px 10px;font-size:13px}
+.rv label{display:block;font-weight:600;font-size:13px;margin:12px 0 4px}
+.rv input[type=text],.rv input[type=email],.rv input[type=password],.rv input[type=number],.rv select,.rv textarea{width:100%;padding:9px 11px;border:1px solid #cdd5e1;border-radius:8px;font:inherit;background:#fff}
+.rv input:focus,.rv select:focus,.rv textarea:focus{outline:2px solid rgba(255,122,0,.35);border-color:var(--rv-orange)}
+.rv .err{color:var(--rv-bad);font-size:13px;margin-top:3px}
+.rv-alert{padding:11px 14px;border-radius:8px;margin-bottom:16px;border:1px solid}
+.rv-alert.success{background:#ecfdf3;border-color:#a7e3c0;color:#14532d}.rv-alert.danger{background:#fef2f2;border-color:#f5b5b5;color:#7f1d1d}
+.rv-alert.warning{background:#fffbeb;border-color:#f3d28a;color:#78350f}.rv-alert.info{background:#eff6ff;border-color:#b6d0f5;color:#1e3a8a}
+.rv table{width:100%;border-collapse:collapse}
+.rv th,.rv td{padding:10px 8px;border-bottom:1px solid var(--rv-line);text-align:left;vertical-align:middle}
+.rv th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--rv-muted)}
+.rv .thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:#eef1f6}
+.rv .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.rv .pill.ok{background:#dcfce7;color:#166534}.rv .pill.off{background:#e5e7eb;color:#374151}.rv .pill.warn{background:#fef3c7;color:#92400e}
+.rv-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.rv-toolbar .grow{flex:1}
+.rv-pager{display:flex;gap:6px;margin-top:14px}
+.rv-imgs{display:flex;flex-wrap:wrap;gap:12px}.rv-imgs figure{margin:0;width:120px;text-align:center;font-size:12px}
+.rv-imgs img{width:120px;height:120px;object-fit:cover;border-radius:8px;border:2px solid var(--rv-line)}
+.rv-imgs img.cover{border-color:var(--rv-orange)}
+.rv-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rv-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rv-guest{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,var(--rv-navy),var(--rv-navy-2))}
+.rv-guest .rv-card{width:100%;max-width:520px;margin:0}.rv-guest.wide .rv-card{max-width:760px}
+.rv-guest h1{color:var(--rv-navy)}.rv-guest .tag{color:var(--rv-orange);font-weight:700}
+.rv-scrim{display:none}
+@media (max-width:900px){
+ .rv-side{position:fixed;left:0;top:0;z-index:30;transform:translateX(-100%);transition:transform .2s;height:100%}
+ body.rv-open .rv-side{transform:none}
+ body.rv-open .rv-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+ .rv-burger{display:inline-block}
+ .rv-grid.c4,.rv-grid.c3{grid-template-columns:repeat(2,1fr)}
+ .rv-content{padding:14px}.rv-top{padding:10px 14px}
+ .rv-row2,.rv-row3{grid-template-columns:1fr}
+ .rv .rv-resp thead{display:none}.rv .rv-resp tr{display:block;border:1px solid var(--rv-line);border-radius:8px;margin-bottom:10px;padding:6px}
+ .rv .rv-resp td{display:flex;justify-content:space-between;gap:10px;border:0;padding:5px 6px}.rv .rv-resp td::before{content:attr(data-l);color:var(--rv-muted);font-size:12px}
+}
+@media (max-width:520px){.rv-grid.c4,.rv-grid.c2,.rv-grid.c3{grid-template-columns:1fr}}

@@ -1,0 +1,7 @@
+-- DİKKAT: Bu dosya otomatik çalışmaz. Önce veritabanı yedeği alın.
+-- Satıcı tabloları siliniyor; ürünler (products) silinmez, yalnızca sahiplik bağı kalkar.
+DROP TABLE IF EXISTS `rafimda_audit_log`;
+DROP TABLE IF EXISTS `rafimda_vendor_products`;
+DROP TABLE IF EXISTS `rafimda_vendor_staff`;
+DROP TABLE IF EXISTS `rafimda_vendors`;
+DROP TABLE IF EXISTS `rafimda_migrations`;

@@ -1,0 +1,471 @@
+<?php
+
+/**
+ * Satıcıya kapsamlı (scoped) ürün işlemleri.
+ *
+ * KURAL: Bu sınıfın dışından bir ürün ID'si ile Product::save/deleteById çağrılmamalıdır.
+ * Her yazma işlemi önce rafimda_vendor_products sahiplik kaydını doğrular (assertOwned).
+ * Asıl ürün mantığı FriSay `Product` ve `ProductVariation` sınıflarından yeniden kullanılır.
+ */
+class RvProducts
+{
+	public const MAX_IMAGES_PER_UPLOAD = 10;
+	public const MAX_IMAGE_BYTES = 5242880;
+
+	public static function owns(int $idVendor, int $idProduct): bool
+	{
+		if ($idVendor <= 0 || $idProduct <= 0) {
+			return false;
+		}
+
+		return (bool) DB::getRowSafe('rafimda_vendor_products', 'id_product = ? AND id_vendor = ?', [$idProduct, $idVendor]);
+	}
+
+	/** @return list<int> yalnızca satıcıya ait olan ID'ler */
+	public static function filterOwned(int $idVendor, array $ids): array
+	{
+		$ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn(int $i): bool => $i > 0)));
+
+		if ($ids === [] || $idVendor <= 0) {
+			return [];
+		}
+
+		$in = implode(',', array_fill(0, count($ids), '?'));
+		$rows = DB::execute(
+			'SELECT id_product FROM rafimda_vendor_products WHERE id_vendor = ? AND id_product IN (' . $in . ')',
+			array_merge([$idVendor], $ids)
+		) ?: [];
+
+		return array_map(static fn(array $r): int => (int) $r['id_product'], $rows);
+	}
+
+	/**
+	 * @return array{rows:list<array<string,mixed>>, total:int}
+	 */
+	public static function listFor(int $idVendor, string $q = '', string $state = '', int $limit = 20, int $offset = 0): array
+	{
+		$where = 'vp.id_vendor = ?';
+		$params = [$idVendor];
+
+		if ($q !== '') {
+			$where .= ' AND (p.product_name LIKE ? OR p.stock_code LIKE ? OR p.barcode LIKE ?)';
+			$like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $q) . '%';
+			array_push($params, $like, $like, $like);
+		}
+
+		if ($state === 'active') {
+			$where .= ' AND p.active = 1';
+		} elseif ($state === 'passive') {
+			$where .= ' AND p.active = 0';
+		} elseif ($state === 'lowstock') {
+			$where .= ' AND p.stock <= 5';
+		}
+
+		$total = (int) DB::getValue(
+			'SELECT COUNT(*) FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE ' . $where,
+			$params
+		);
+
+		$rows = DB::execute(
+			'SELECT p.id_product, p.product_name, p.price, p.old_price, p.stock, p.stock_code, p.barcode, p.active,
+				b.brand_name, c.category_name,
+				(SELECT i.id_image FROM images i WHERE i.id_product = p.id_product AND i.cover = 1 LIMIT 1) AS id_image
+			FROM rafimda_vendor_products vp
+			INNER JOIN products p ON p.id_product = vp.id_product
+			LEFT JOIN brands b ON b.id_brand = p.id_brand
+			LEFT JOIN categories c ON c.id_category = p.id_category
+			WHERE ' . $where . ' ORDER BY p.id_product DESC LIMIT ' . max(1, min(100, $limit)) . ' OFFSET ' . max(0, $offset),
+			$params
+		) ?: [];
+
+		foreach ($rows as &$row) {
+			$row['image_url'] = !empty($row['id_image']) ? Product::getImageUrl((int) $row['id_image']) : '';
+		}
+		unset($row);
+
+		return ['rows' => $rows, 'total' => $total];
+	}
+
+	/** @return array<string,mixed>|null */
+	public static function getOwned(int $idVendor, int $idProduct): ?array
+	{
+		if (!self::owns($idVendor, $idProduct)) {
+			return null;
+		}
+
+		$row = Product::getByIdAdmin($idProduct);
+
+		if (!$row) {
+			return null;
+		}
+
+		$row['images'] = Product::getImages($idProduct);
+		$row['variations'] = ProductVariation::getByProduct($idProduct);
+
+		return $row;
+	}
+
+	/**
+	 * Formdan gelen alanları beyaz listeyle temizler. Yetki/sahiplik alanları (id_vendor vb.) asla kabul edilmez.
+	 *
+	 * @param array<string,mixed> $post
+	 * @return array{data:array<string,mixed>, errors:array<string,string>}
+	 */
+	public static function sanitizeInput(array $post): array
+	{
+		$errors = [];
+		$num = static fn($v): float => (float) str_replace(',', '.', trim((string) $v));
+
+		$name = trim(strip_tags((string) ($post['product_name'] ?? '')));
+		$idCategory = (int) ($post['id_category'] ?? 0);
+		$idBrand = (int) ($post['id_brand'] ?? 0);
+		$price = $num($post['price'] ?? 0);
+		$oldPrice = $num($post['old_price'] ?? 0);
+		$stock = $num($post['stock'] ?? 0);
+
+		if (mb_strlen($name) < 3 || mb_strlen($name) > 128) {
+			$errors['product_name'] = 'Ürün adı 3-128 karakter olmalı.';
+		}
+
+		if ($idCategory <= 0 || !DB::getRowSafe('categories', 'id_category = ? AND active = 1', [$idCategory])) {
+			$errors['id_category'] = 'Geçerli bir kategori seçin.';
+		}
+
+		if ($idBrand <= 0 || !DB::getRowSafe('brands', 'id_brand = ? AND active = 1', [$idBrand])) {
+			$errors['id_brand'] = 'Geçerli bir marka seçin.';
+		}
+
+		if ($price <= 0) {
+			$errors['price'] = 'Fiyat 0\'dan büyük olmalı.';
+		}
+
+		if ($stock < 0) {
+			$errors['stock'] = 'Stok negatif olamaz.';
+		}
+
+		$data = [
+			'product_name' => $name,
+			'id_category' => $idCategory,
+			'id_brand' => $idBrand,
+			'price' => $price,
+			'old_price' => $oldPrice > $price ? $oldPrice : 0,
+			'stock' => $stock,
+			'barcode' => mb_substr(trim(strip_tags((string) ($post['barcode'] ?? ''))), 0, 64),
+			'stock_code' => mb_substr(trim(strip_tags((string) ($post['stock_code'] ?? ''))), 0, 64),
+			'short_description' => mb_substr(trim(strip_tags((string) ($post['short_description'] ?? ''))), 0, 500),
+			'description' => (string) ($post['description'] ?? ''), // Product::save içinde Security::sanitizeHtml uygulanır
+			'active' => !empty($post['active']) ? 1 : 0,
+		];
+
+		if (isset($post['vat']) && $post['vat'] !== '') {
+			$data['vat'] = $num($post['vat']);
+		}
+
+		if (!empty($post['variations_present'])) {
+			$rows = is_array($post['variations'] ?? null) ? $post['variations'] : [];
+			$clean = [];
+
+			foreach (array_slice($rows, 0, 100) as $r) {
+				if (!is_array($r)) {
+					continue;
+				}
+
+				$clean[] = [
+					'option1_name' => mb_substr(trim(strip_tags((string) ($r['option1_name'] ?? ''))), 0, 40),
+					'option1_value' => mb_substr(trim(strip_tags((string) ($r['option1_value'] ?? ''))), 0, 60),
+					'option2_name' => mb_substr(trim(strip_tags((string) ($r['option2_name'] ?? ''))), 0, 40),
+					'option2_value' => mb_substr(trim(strip_tags((string) ($r['option2_value'] ?? ''))), 0, 60),
+					'sku' => mb_substr(trim(strip_tags((string) ($r['sku'] ?? ''))), 0, 64),
+					'barcode' => mb_substr(trim(strip_tags((string) ($r['barcode'] ?? ''))), 0, 64),
+					'price' => (string) ($r['price'] ?? ''),
+					'stock' => (string) ($r['stock'] ?? '0'),
+					'active' => isset($r['active']) ? '1' : '0',
+				];
+			}
+
+			$data['variations'] = $clean;
+			$hasAny = false;
+
+			foreach ($clean as $r) {
+				if ($r['option1_value'] !== '' || $r['option2_value'] !== '' || $r['sku'] !== '') {
+					$hasAny = true;
+					break;
+				}
+			}
+
+			$data['has_variations'] = $hasAny ? '1' : '0';
+		}
+
+		return ['data' => $data, 'errors' => $errors];
+	}
+
+	/**
+	 * @param array<string,mixed> $post
+	 * @return array{success:bool, message:string, id:int, errors?:array<string,string>}
+	 */
+	public static function create(int $idVendor, array $post): array
+	{
+		$in = self::sanitizeInput($post);
+
+		if ($in['errors'] !== []) {
+			return ['success' => false, 'message' => 'Formu kontrol edin.', 'id' => 0, 'errors' => $in['errors']];
+		}
+
+		$res = Product::save($in['data'], 0);
+
+		if (empty($res['success']) || (int) ($res['id'] ?? 0) <= 0) {
+			return ['success' => false, 'message' => (string) ($res['message'] ?? 'Ürün kaydedilemedi.'), 'id' => 0];
+		}
+
+		$id = (int) $res['id'];
+
+		if (!DB::insert('rafimda_vendor_products', ['id_product' => $id, 'id_vendor' => $idVendor])) {
+			// Sahipsiz ürün bırakma: geri al.
+			Product::deleteById($id);
+
+			return ['success' => false, 'message' => 'Ürün sahiplik kaydı oluşturulamadı; işlem geri alındı.', 'id' => 0];
+		}
+
+		RvAudit::log($idVendor, 'product.created', 'product', $id, ['name' => $in['data']['product_name']]);
+
+		return ['success' => true, 'message' => 'Ürün eklendi.', 'id' => $id];
+	}
+
+	/**
+	 * @param array<string,mixed> $post
+	 * @return array{success:bool, message:string, id:int, errors?:array<string,string>}
+	 */
+	public static function update(int $idVendor, int $idProduct, array $post): array
+	{
+		$existing = self::getOwned($idVendor, $idProduct);
+
+		if (!$existing) {
+			return ['success' => false, 'message' => 'Ürün bulunamadı.', 'id' => 0];
+		}
+
+		$in = self::sanitizeInput($post);
+
+		if ($in['errors'] !== []) {
+			return ['success' => false, 'message' => 'Formu kontrol edin.', 'id' => $idProduct, 'errors' => $in['errors']];
+		}
+
+		// Formda olmayan alanları (maliyet, desi, etiket, ürün tipi vb.) sıfırlamamak için mevcut satırla birleştir.
+		$base = $existing;
+		unset($base['images'], $base['variations'], $base['brand_name'], $base['brand_link'], $base['category_name'], $base['category_link']);
+		$data = array_merge($base, $in['data']);
+
+		$res = Product::save($data, $idProduct);
+
+		if (empty($res['success'])) {
+			return ['success' => false, 'message' => (string) ($res['message'] ?? 'Ürün kaydedilemedi.'), 'id' => $idProduct];
+		}
+
+		RvAudit::log($idVendor, 'product.updated', 'product', $idProduct);
+
+		return ['success' => true, 'message' => 'Ürün güncellendi.', 'id' => $idProduct];
+	}
+
+	public static function delete(int $idVendor, int $idProduct): array
+	{
+		if (!self::owns($idVendor, $idProduct)) {
+			return ['success' => false, 'message' => 'Ürün bulunamadı.'];
+		}
+
+		$res = Product::deleteById($idProduct);
+
+		if (empty($res['success'])) {
+			return ['success' => false, 'message' => (string) ($res['message'] ?? 'Silinemedi.')];
+		}
+
+		DB::execute('DELETE FROM rafimda_vendor_products WHERE id_product = ? AND id_vendor = ?', [$idProduct, $idVendor]);
+		RvAudit::log($idVendor, 'product.deleted', 'product', $idProduct);
+
+		return ['success' => true, 'message' => 'Ürün silindi.'];
+	}
+
+	/**
+	 * Hızlı fiyat/stok güncelleme (varyasyonsuz ürünler). product.updated hook'u tetiklenir (pazaryeri senkronu için).
+	 */
+	public static function quickUpdate(int $idVendor, int $idProduct, $price, $stock): array
+	{
+		if (!self::owns($idVendor, $idProduct)) {
+			return ['success' => false, 'message' => 'Ürün bulunamadı.'];
+		}
+
+		$price = (float) str_replace(',', '.', (string) $price);
+		$stock = (float) str_replace(',', '.', (string) $stock);
+
+		if ($price <= 0 || $stock < 0) {
+			return ['success' => false, 'message' => 'Fiyat 0\'dan büyük, stok negatif olmayan bir değer olmalı.'];
+		}
+
+		$res = DB::update('products', ['price' => $price, 'stock' => $stock], 'id_product = :pid', ['pid' => $idProduct]);
+
+		if ($res === false) {
+			return ['success' => false, 'message' => 'Güncellenemedi.'];
+		}
+
+		if (class_exists('Module', false)) {
+			Module::runHook('product.updated', [$idProduct, Product::getByIdAdmin($idProduct) ?: [], false]);
+		}
+
+		RvAudit::log($idVendor, 'product.quick', 'product', $idProduct, ['price' => $price, 'stock' => $stock]);
+
+		return ['success' => true, 'message' => 'Fiyat ve stok güncellendi.'];
+	}
+
+	/**
+	 * @param list<int|string> $ids
+	 * @return array{success:bool, message:string, count:int}
+	 */
+	public static function bulk(int $idVendor, array $ids, string $action): array
+	{
+		$owned = self::filterOwned($idVendor, $ids);
+
+		if ($owned === []) {
+			return ['success' => false, 'message' => 'Seçili ürün yok.', 'count' => 0];
+		}
+
+		$count = 0;
+
+		if ($action === 'activate' || $action === 'deactivate') {
+			$val = $action === 'activate' ? 1 : 0;
+
+			foreach ($owned as $id) {
+				if (DB::update('products', ['active' => $val], 'id_product = :pid', ['pid' => $id]) !== false) {
+					$count++;
+				}
+			}
+		} elseif ($action === 'delete') {
+			foreach ($owned as $id) {
+				if (!empty(self::delete($idVendor, $id)['success'])) {
+					$count++;
+				}
+			}
+		} else {
+			return ['success' => false, 'message' => 'Geçersiz işlem.', 'count' => 0];
+		}
+
+		RvAudit::log($idVendor, 'product.bulk.' . $action, 'product', 0, ['count' => $count]);
+
+		return ['success' => true, 'message' => $count . ' ürün işlendi.', 'count' => $count];
+	}
+
+	/**
+	 * @param array<string,mixed> $files $_FILES['images'] (çoklu)
+	 * @return array{uploaded:int, errors:list<string>}
+	 */
+	public static function uploadImages(int $idVendor, int $idProduct, array $files): array
+	{
+		if (!self::owns($idVendor, $idProduct)) {
+			return ['uploaded' => 0, 'errors' => ['Ürün bulunamadı.']];
+		}
+
+		$list = [];
+
+		if (isset($files['name']) && is_array($files['name'])) {
+			foreach ($files['name'] as $i => $n) {
+				$list[] = [
+					'name' => $n,
+					'tmp_name' => $files['tmp_name'][$i] ?? '',
+					'size' => (int) ($files['size'][$i] ?? 0),
+					'error' => (int) ($files['error'][$i] ?? UPLOAD_ERR_NO_FILE),
+				];
+			}
+		} elseif (isset($files['name'])) {
+			$list[] = $files;
+		}
+
+		$uploaded = 0;
+		$errors = [];
+
+		foreach (array_slice($list, 0, self::MAX_IMAGES_PER_UPLOAD) as $f) {
+			if (($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+				continue;
+			}
+
+			if (($f['error'] ?? 0) !== UPLOAD_ERR_OK || (int) ($f['size'] ?? 0) > self::MAX_IMAGE_BYTES) {
+				$errors[] = (string) ($f['name'] ?? 'dosya') . ': yükleme hatası veya 5 MB sınırı aşıldı.';
+				continue;
+			}
+
+			$res = Product::uploadImage($idProduct, $f);
+
+			if (!empty($res['success'])) {
+				$uploaded++;
+			} else {
+				$errors[] = (string) ($f['name'] ?? 'dosya') . ': ' . (string) ($res['message'] ?? 'yüklenemedi');
+			}
+		}
+
+		if ($uploaded > 0) {
+			RvAudit::log($idVendor, 'product.images', 'product', $idProduct, ['count' => $uploaded]);
+		}
+
+		return ['uploaded' => $uploaded, 'errors' => $errors];
+	}
+
+	/** Görselin ait olduğu ürünün satıcıya ait olduğunu doğrular. */
+	public static function ownsImage(int $idVendor, int $idImage): bool
+	{
+		$img = DB::getRowSafe('images', 'id_image = ?', [$idImage]);
+
+		return $img ? self::owns($idVendor, (int) $img['id_product']) : false;
+	}
+
+	public static function deleteImage(int $idVendor, int $idImage): array
+	{
+		if (!self::ownsImage($idVendor, $idImage)) {
+			return ['success' => false, 'message' => 'Görsel bulunamadı.'];
+		}
+
+		return Product::deleteImage($idImage);
+	}
+
+	public static function setCover(int $idVendor, int $idImage): array
+	{
+		if (!self::ownsImage($idVendor, $idImage)) {
+			return ['success' => false, 'message' => 'Görsel bulunamadı.'];
+		}
+
+		return Product::setCover($idImage);
+	}
+
+	/** @return array{total:int, active:int, passive:int, low_stock:int} */
+	public static function stats(int $idVendor): array
+	{
+		$row = DB::execute(
+			'SELECT COUNT(*) AS total, SUM(CASE WHEN p.active = 1 THEN 1 ELSE 0 END) AS active_c,
+				SUM(CASE WHEN p.active = 0 THEN 1 ELSE 0 END) AS passive_c,
+				SUM(CASE WHEN p.stock <= 5 THEN 1 ELSE 0 END) AS low_c
+			FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE vp.id_vendor = ?',
+			[$idVendor]
+		)[0] ?? [];
+
+		return [
+			'total' => (int) ($row['total'] ?? 0),
+			'active' => (int) ($row['active_c'] ?? 0),
+			'passive' => (int) ($row['passive_c'] ?? 0),
+			'low_stock' => (int) ($row['low_c'] ?? 0),
+		];
+	}
+
+	/**
+	 * Satıcının siparişleri: yalnızca kendi ürünlerini içeren sipariş satırları (salt okunur).
+	 *
+	 * @return list<array<string,mixed>>
+	 */
+	public static function ordersFor(int $idVendor, int $limit = 30, int $offset = 0): array
+	{
+		return DB::execute(
+			'SELECT o.id_order, o.reference, o.status, o.date_add, o.customer_name, o.address_city,
+				SUM(od.total) AS vendor_total, SUM(od.qty) AS vendor_qty, COUNT(*) AS line_count
+			FROM order_detail od
+			INNER JOIN rafimda_vendor_products vp ON vp.id_product = od.id_product AND vp.id_vendor = ?
+			INNER JOIN orders o ON o.id_order = od.id_order
+			GROUP BY o.id_order, o.reference, o.status, o.date_add, o.customer_name, o.address_city
+			ORDER BY o.id_order DESC LIMIT ' . max(1, min(100, $limit)) . ' OFFSET ' . max(0, $offset),
+			[$idVendor]
+		) ?: [];
+	}
+}
