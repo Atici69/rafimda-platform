@@ -19,6 +19,7 @@ $suites = [
 	'rafimda-campaign/run' => 'modules/rafimda-campaign/tests/run.php',
 	'rafimda-legal/run' => 'modules/rafimda-legal/tests/run.php',
 	'rafimda-invoice/run' => 'modules/rafimda-invoice/tests/run.php',
+	'rafimda-social/run' => 'modules/rafimda-social/tests/run.php',
 	'xml-hub/run' => 'modules/xml-hub/tests/run.php',
 	'xml-hub/run_v2' => 'modules/xml-hub/tests/run_v2.php',
 	'xml-hub/run_v3' => 'modules/xml-hub/tests/run_v3.php',

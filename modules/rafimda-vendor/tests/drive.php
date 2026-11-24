@@ -50,6 +50,11 @@ if (!empty($cfg['invoice'])) {
 	foreach (array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', rv_mysql_to_sqlite(file_get_contents(dirname(__DIR__, 2) . '/rafimda-invoice/install.sql'))))) as $st) { $GLOBALS['db']->exec($st); }
 	RiInvoice::$storageOverride = sys_get_temp_dir() . '/ri_drive';
 }
+if (!empty($cfg['social'])) {
+	require_once dirname(__DIR__, 2) . '/rafimda-social/rafimda-social.php';
+	foreach (array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', rv_mysql_to_sqlite(file_get_contents(dirname(__DIR__, 2) . '/rafimda-social/install.sql'))))) as $st) { $GLOBALS['db']->exec($st); }
+	RsoContent::$mediaDirOverride = sys_get_temp_dir() . '/rso_drive';
+}
 if (!empty($cfg['pending_app'])) {
 	DB::execute("UPDATE rafimda_vendors SET status = 'pending' WHERE id_vendor = ?", [$vA]);
 	$ap = RvApplication::submit(1, $vA, ['person_type' => 'company', 'contact_name' => 'Kişi 1', 'address' => 'Moda Cad. No:1', 'district' => 'Kadıköy', 'categories' => [1 => 'Giyim']], true);

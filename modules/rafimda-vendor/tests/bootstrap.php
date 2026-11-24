@@ -116,7 +116,7 @@ function rv_mysql_to_sqlite(string $sql): string
 	$sql = preg_replace('/^\s*UNIQUE KEY\s+`[^`]+`\s*(\([^)]*\)),?\s*$/m', 'UNIQUE $1,', $sql);
 	$sql = preg_replace('/^\s*KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/`(\w+)` (?:int\(11\)|bigint\(20\)) NOT NULL AUTO_INCREMENT,/', '`$1` INTEGER PRIMARY KEY AUTOINCREMENT,', $sql);
-	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge|id_application|id_doc|id_app_log|id_notification|id_document|id_version|id_acceptance|id_consent|id_follow|id_store_question|id_vote|id_store_review|id_ticket|id_ticket_message|id_invoice|id_event|id_account)`\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge|id_application|id_doc|id_app_log|id_notification|id_document|id_version|id_acceptance|id_consent|id_follow|id_store_question|id_vote|id_store_review|id_ticket|id_ticket_message|id_invoice|id_event|id_account|id_post|id_metric)`\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/,(\s*\))/', '$1', $sql);
 	return $sql;
 }
