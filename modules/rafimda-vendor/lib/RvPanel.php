@@ -102,7 +102,8 @@ class RvPanel
 
 		foreach (self::MENU as $key => $m) {
 			if (RvContext::can(RvPerm::SECTION_PERMS[$key])) {
-				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $m[2], 'url' => RvView::panelUrl($key)];
+				$hub = $key === 'xml' && class_exists('XhPanel', false); // XML Hub modülü kuruluysa kendi sayfasına bağlanır
+				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $hub ? true : $m[2], 'url' => $hub ? RvView::url('xml-merkezi') : RvView::panelUrl($key)];
 			}
 		}
 
