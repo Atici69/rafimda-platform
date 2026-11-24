@@ -16,7 +16,10 @@ require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 class RafimdaThemeModule extends ModuleBase
 {
 	public const VERSION = '0.2.0';
-	public const KEYS = ['hero' => 'RAFIMDA_THEME_HERO', 'title' => 'RAFIMDA_THEME_TITLE', 'subtitle' => 'RAFIMDA_THEME_SUBTITLE', 'footer' => 'RAFIMDA_THEME_FOOTER_LINKS', 'sections' => 'RAFIMDA_THEME_SECTIONS', 'banners' => 'RAFIMDA_THEME_BANNERS', 'hero_image' => 'RAFIMDA_THEME_HERO_IMAGE'];
+	public const KEYS = ['hero' => 'RAFIMDA_THEME_HERO', 'title' => 'RAFIMDA_THEME_TITLE', 'subtitle' => 'RAFIMDA_THEME_SUBTITLE', 'footer' => 'RAFIMDA_THEME_FOOTER_LINKS', 'sections' => 'RAFIMDA_THEME_SECTIONS', 'banners' => 'RAFIMDA_THEME_BANNERS', 'hero_image' => 'RAFIMDA_THEME_HERO_IMAGE', 'slides' => 'RAFIMDA_THEME_SLIDES', 'slide_seconds' => 'RAFIMDA_THEME_SLIDE_SECONDS'];
+
+	/** Hero'ya ilk slayt dışında eklenebilecek en fazla slayt sayısı (toplam 5). */
+	public const EXTRA_SLIDES = 4;
 	public const BANNER_SLOTS = 4;
 
 	public string $name = 'rafimda-theme';
@@ -37,6 +40,8 @@ class RafimdaThemeModule extends ModuleBase
 	public array $defaultDisplayHooks = ['home_slider', 'home_bottom', 'footer', 'mobile_menu', 'auth_register'];
 
 	public array $frontStylesheets = ['rafimda-theme.css'];
+
+	public array $frontScripts = ['rafimda-slider.js'];
 
 	public function install(): bool
 	{
@@ -94,7 +99,62 @@ class RafimdaThemeModule extends ModuleBase
 			'rtDealerApplyUrl' => $base . 'bayi-basvuru',
 			'rtTitle' => self::setting('title', 'Aradığınız Her Şey, Rafımda!'),
 			'rtSubtitle' => self::setting('subtitle', 'Binlerce satıcıdan güvenle alışveriş yapın; kendi mağazanızı açın.'),
+			'rtSlides' => self::slides($base),
+			'rtSlideSeconds' => self::slideSeconds(),
 		];
+	}
+
+	/** Otomatik geçiş süresi (sn): 3–15, varsayılan 6. */
+	public static function slideSeconds(): int
+	{
+		$n = (int) self::setting('slide_seconds', '6');
+
+		return max(3, min(15, $n > 0 ? $n : 6));
+	}
+
+	/**
+	 * İlk slayt her zaman başlık/alt metin/hero görselinden (şablonda) çizilir; bu liste ek slaytlardır.
+	 * Yönetici slayt tanımladıysa yalnızca onlar; tanımlamadıysa etkin modüllere göre varsayılan satıcı/bayi slaytları.
+	 *
+	 * @return list<array{title:string,text:string,link:string,image:string,cta:string}>
+	 */
+	public static function slides(string $base = ''): array
+	{
+		$raw = json_decode(self::setting('slides', '[]'), true);
+		$out = [];
+
+		if (is_array($raw)) {
+			foreach (array_slice($raw, 0, self::EXTRA_SLIDES) as $b) {
+				$n = self::cleanBanner(is_array($b) ? $b : []);
+
+				if ($n['title'] !== '') {
+					$out[] = $n;
+				}
+			}
+		}
+
+		if ($out !== []) {
+			return $out;
+		}
+
+		if (self::setting('slides', '') === '[]') {
+			return []; // yönetici varsayılan slaytları bilerek kapattı
+		}
+
+		if ($base === '') {
+			global $domain;
+			$base = rtrim((string) ($domain ?? ''), '/') . '/';
+		}
+
+		if (self::vendorEnabled()) {
+			$out[] = ['title' => 'Satışlarınızı büyütmek için yeni adresiniz Rafımda!', 'text' => 'Kendi mağazanızı dakikalar içinde açın; ürünlerinizi, siparişlerinizi ve stoklarınızı tek panelden yönetin.', 'link' => $base . 'satici-kayit', 'image' => '', 'cta' => 'Satıcımız Olmak İster misiniz?'];
+		}
+
+		if (self::dealerEnabled()) {
+			$out[] = ['title' => 'Rafımda bayisi olmak ister misiniz?', 'text' => 'Rafımda ailesine katılın, kendi bayi ağınızı oluşturun ve birlikte büyüyelim.', 'link' => $base . 'bayi-basvuru', 'image' => '', 'cta' => 'Bayi Başvurusu Yap'];
+		}
+
+		return $out;
 	}
 
 	/**
@@ -296,8 +356,22 @@ class RafimdaThemeModule extends ModuleBase
 		}
 
 		$smarty->assign(['pageTitle' => $this->title, 'rtFlash' => $flash, 'rtToken' => $adminToken, 'rtMods' => $mods, 'rtBannerSlots' => $banners, 'rtSet' => [
-			'hero_image' => self::setting('hero_image', ''), 'hero' => self::setting('hero', '1'), 'footer' => self::setting('footer', '1'), 'sections' => self::setting('sections', '1'), 'title' => self::setting('title', ''), 'subtitle' => self::setting('subtitle', ''),
-		]]);
+			'hero_image' => self::setting('hero_image', ''), 'hero' => self::setting('hero', '1'), 'footer' => self::setting('footer', '1'), 'sections' => self::setting('sections', '1'), 'title' => self::setting('title', ''), 'subtitle' => self::setting('subtitle', ''), 'slide_seconds' => (string) self::slideSeconds(),
+		], 'rtSlideSlots' => self::slideSlots()]);
+	}
+
+	/** Yönetim formu için sabit sayıda slayt alanı (kayıtlı slaytlar + boş alanlar). @return list<array<string,string>> */
+	public static function slideSlots(): array
+	{
+		$raw = json_decode(self::setting('slides', '[]'), true);
+		$raw = is_array($raw) ? array_values($raw) : [];
+		$slots = [];
+
+		for ($i = 0; $i < self::EXTRA_SLIDES; $i++) {
+			$slots[$i] = self::cleanBanner(is_array($raw[$i] ?? null) ? $raw[$i] : []);
+		}
+
+		return $slots;
 	}
 
 	/** @param array<string,mixed> $in */
@@ -320,5 +394,24 @@ class RafimdaThemeModule extends ModuleBase
 		}
 
 		Settings::set(self::KEYS['banners'], json_encode($list, JSON_UNESCAPED_UNICODE) ?: '[]');
+
+		if (isset($in['slide']) && is_array($in['slide'])) {
+			$sl = [];
+
+			for ($i = 0; $i < self::EXTRA_SLIDES; $i++) {
+				$b = self::cleanBanner(is_array($in['slide'][$i] ?? null) ? $in['slide'][$i] : []);
+
+				if ($b['title'] !== '') {
+					$sl[] = $b;
+				}
+			}
+
+			// Hiç slayt girilmezse '' (varsayılan satıcı/bayi slaytları); "[]" yalnızca bilerek kapatma işaretidir
+			Settings::set(self::KEYS['slides'], $sl === [] ? (!empty($in['slides_off']) ? '[]' : '') : (json_encode($sl, JSON_UNESCAPED_UNICODE) ?: ''));
+		}
+
+		if (isset($in['slide_seconds'])) {
+			Settings::set(self::KEYS['slide_seconds'], (string) max(3, min(15, (int) $in['slide_seconds'])));
+		}
 	}
 }

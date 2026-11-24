@@ -36,7 +36,7 @@ $out = rtrim($argv[1] ?? sys_get_temp_dir(), '/');
 @mkdir($out, 0777, true);
 $svg = static function (string $label, string $c1, string $c2): string {
 	$label = htmlspecialchars($label, ENT_XML1);
-	$s = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' . $c1 . '"/><stop offset="1" stop-color="' . $c2 . '"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><text x="200" y="215" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff" text-anchor="middle">' . $label . '</text><text x="200" y="250" font-family="sans-serif" font-size="16" fill="#fff" fill-opacity=".85" text-anchor="middle">ÖRNEK GÖRSEL</text></svg>';
+	$s = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' . $c1 . '"/><stop offset="1" stop-color="' . $c2 . '"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/>' . ($label === '' ? '' : '<text x="200" y="215" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff" text-anchor="middle">' . $label . '</text><text x="200" y="250" font-family="sans-serif" font-size="16" fill="#fff" fill-opacity=".85" text-anchor="middle">ÖRNEK GÖRSEL</text>') . '</svg>';
 	return 'data:image/svg+xml;base64,' . base64_encode($s);
 };
 $pal = [['#0a2540', '#1d4f91'], ['#ff7a1a', '#ffb066'], ['#0f766e', '#34d399'], ['#7c3aed', '#c4b5fd'], ['#be123c', '#fb7185'], ['#334155', '#94a3b8']];
@@ -69,6 +69,46 @@ $css .= '<link rel="stylesheet" href="https://test.local/modules/rafimda-theme/a
 $shell = static fn(string $inner, string $title): string => '<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $title . '</title>' . $GLOBALS['css'] . '<style>body{margin:0;font-family:Inter,system-ui,sans-serif}.pv-top{background:#0a2540;color:#fff;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}.pv-top b{font-size:22px}.pv-top input{flex:1;min-width:160px;padding:9px 12px;border-radius:8px;border:0}.pv-top a{color:#fff;text-decoration:none;font-size:14px}.pv-foot{background:#0a2540;color:#cbd5e1;padding:24px 16px;text-align:center;font-size:13px}</style></head><body><div class="pv-top"><b>Rafımda</b><input placeholder="Aradığınız her şey burada…"><a href="#">Giriş</a><a href="#">Sepet</a></div>' . $inner . '<div class="pv-foot">Önizleme kabuğu (basitleştirilmiş üst/alt bilgi). Rafımda tema bölümleri gerçek şablonlardan çizildi.</div></body></html>';
 file_put_contents("$out/home.html", $shell($hero . $bottom . $foot, 'Rafımda ana sayfa'));
 file_put_contents("$out/home-empty.html", $shell(trim($m->renderFrontTemplate('hero', $v + ['rtCategories' => []])) . trim($m->renderFrontTemplate('home_bottom', $v + ['rtSections' => [], 'rtBanners' => [], 'rtShowPromo' => true])), 'Rafımda ana sayfa (ürün yok)'));
+
+// ===== GERÇEK theme4 (header1 + home.tpl + footer1 + mobil menü + sepet/giriş modalı) =====
+// templates/theme4 dosyaları DEĞİŞTİRİLMEDEN, gerçek Smarty ile çizilir; yalnızca veri örnektir.
+if (!class_exists('Tools')) { class Tools { public static function displayPrice($v) { return number_format((float) $v, 2, ',', '.') . ' ₺'; } public static function getDiscount($o, $n) { return $o > 0 ? (int) round(($o - $n) * 100 / $o) : 0; } public static function getValue($k, $d = '') { return $d; } } }
+$t4 = new Smarty\Smarty();
+$t4->setTemplateDir($root . '/templates/');
+$t4->setCompileDir($tmp . '/c'); $t4->setCacheDir($tmp . '/t');
+$t4->setEscapeHtml(false);
+$trDict = is_file($root . '/lang/tr.php') ? (array) require $root . '/lang/tr.php' : [];
+$t4->registerPlugin('modifier', 'translate', static fn($x) => (string) ($trDict[(string) $x] ?? $x));
+$t4->registerPlugin('modifier', 'asset_url', static fn($x) => (string) $x);
+$t4->registerPlugin('modifier', 'js', static fn($x) => json_encode((string) $x, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT));
+$t4->registerPlugin('modifier', 'json_script', static fn($x) => json_encode($x, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP));
+$t4->registerPlugin('modifier', 'contains', static fn($h, $n) => $n !== '' && strpos((string) $h, (string) $n) !== false);
+$t4->registerPlugin('modifier', 'split', static fn($v, $d = ',') => array_values(array_filter(array_map('trim', explode((string) $d, (string) $v)), 'strlen')));
+$menuCats = [];
+foreach (['Giyim', 'Ayakkabı', 'Elektronik', 'Ev & Yaşam', 'Kozmetik', 'Spor'] as $n) {
+	$menuCats[] = ['category_name' => $n, 'category_link' => '#', 'subcategories' => [['category_name' => $n . ' Alt 1', 'category_link' => '#'], ['category_name' => $n . ' Alt 2', 'category_link' => '#']]];
+}
+$t4Base = 'https://test.local/';
+$common = [
+	'domain' => $t4Base, 'selectLang' => 'tr', 'siteName' => 'Rafımda', 'documentTitle' => 'Rafımda — Aradığınız Her Şey, Rafımda!', 'pageDesc' => '',
+	'pageName' => 'home', 'token' => 'tok', 'isLoggedIn' => false, 'themeOptions' => ['header' => 'header1'],
+	't4Chrome' => ['header_bar_1' => 'Ücretsiz kargo 500 ₺ üzeri', 'header_bar_2' => 'Güvenli ödeme'],
+	'siteLogos' => ['header' => '', 'footer' => ''], 'minute' => 1, 'year' => date('Y'), 't4Copyright' => '© Rafımda',
+	'menuCategories' => $menuCats, 'cmsFooterLinks' => [['title' => 'Hakkımızda', 'url' => '#'], ['title' => 'İletişim', 'url' => '#']],
+	'contactPhone' => '', 'contactEmail' => 'destek@rafimda.example', 'cart' => ['count' => 0, 'items' => [], 'empty' => true, 'grand_total_formatted' => '0,00 ₺'], 'css_dir' => $t4Base . 'templates/theme4/css/', 'js_dir' => $t4Base . 'templates/theme4/js/',
+	'css' => '', 'js' => '', 'moduleAssets' => ['css' => [$t4Base . 'modules/rafimda-theme/assets/css/rafimda-theme.css'], 'js' => [$t4Base . 'modules/rafimda-theme/assets/js/rafimda-slider.js']],
+	'langSwitcher' => [], 'recaptchaConfigJson' => '', 'cartI18nJson' => '{"empty":"Sepet boş"}', 'auth_login' => [], 'auth_register' => [], 'featuredProducts' => [], 'categoryBlocks' => [], 'searchQuery' => '', 'themeCssBundleUrl' => '',
+	'hooks' => ['home_slider' => $hero, 'home_bottom' => $bottom, 'footer' => $foot, 'mobile_menu' => $mob, 'footer_menu' => '', 'home' => '', 'head' => ['top' => '<meta name="theme-color" content="#0a2540">']],
+];
+$t4->assign($common);
+$page = '';
+foreach (['header', 'home', 'footer'] as $part) { $page .= $t4->fetch("theme4/$part.tpl"); }
+// footer.tpl </body></html> içerir; header.tpl <body> açar: tek belge
+file_put_contents("$out/home-theme4.html", $page);
+$t4->assign('hooks', ['home_slider' => trim($m->renderFrontTemplate('hero', $v + ['rtCategories' => []])), 'home_bottom' => trim($m->renderFrontTemplate('home_bottom', $v + ['rtSections' => [], 'rtBanners' => [], 'rtShowPromo' => true])), 'footer' => $foot, 'mobile_menu' => $mob, 'footer_menu' => '', 'home' => '', 'head' => ['top' => '']]);
+$pageEmpty = '';
+foreach (['header', 'home', 'footer'] as $part) { $pageEmpty .= $t4->fetch("theme4/$part.tpl"); }
+file_put_contents("$out/home-theme4-empty.html", $pageEmpty);
 // admin
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $m->adminPage();

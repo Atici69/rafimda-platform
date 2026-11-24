@@ -97,3 +97,31 @@ html:root {
 .rt-hero--img { background-size: cover; background-position: center; position: relative; }
 .rt-hero--img::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 37, 64, .88), rgba(10, 37, 64, .35)); border-radius: inherit; }
 .rt-hero--img > .rt-hero__inner { position: relative; }
+
+/* Çok slaytlı hero */
+.rt-slider { position: relative; overflow: hidden; }
+.rt-slider .rt-slide { position: relative; }
+.rt-slider .rt-slide--img { background-size: cover; background-position: center; }
+.rt-slider .rt-slide--img::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 37, 64, .88), rgba(10, 37, 64, .35)); }
+.rt-slider .rt-slide--img > .rt-hero__inner { position: relative; }
+/* JS yoksa yalnızca ilk slayt görünür (ek slaytlar gizli kalır, sayfa bozulmaz) */
+.rt-slider .rt-slide[aria-hidden="true"] { display: none; }
+.rt-slider.is-js { display: grid; }
+.rt-slider.is-js .rt-slide { grid-area: 1 / 1; display: block; opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s; }
+.rt-slider.is-js .rt-slide.is-active { opacity: 1; visibility: visible; z-index: 1; }
+.rt-slider.is-js .rt-slide[aria-hidden="true"] { display: block; }
+.rt-slider .rt-hero__inner { padding-left: 64px; padding-right: 64px; }
+.rt-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; background: rgba(255, 255, 255, .16); color: #fff; font-size: 28px; line-height: 1; }
+.rt-nav:hover, .rt-nav:focus-visible { background: var(--rt-orange); outline: 2px solid #fff; }
+.rt-nav--prev { left: 10px; }
+.rt-nav--next { right: 10px; }
+.rt-dots { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 3; display: flex; justify-content: center; gap: 8px; pointer-events: none; }
+.rt-dot { pointer-events: auto; width: 12px; height: 12px; padding: 0; border-radius: 50%; border: 2px solid #fff; background: transparent; cursor: pointer; }
+.rt-dot.is-active { background: var(--rt-orange); border-color: var(--rt-orange); }
+@media (max-width: 600px) {
+	.rt-slider .rt-hero__inner { padding: 32px 14px 44px; }
+	.rt-nav { width: 34px; height: 34px; font-size: 22px; top: auto; bottom: 6px; transform: none; }
+	.rt-nav--prev { left: 8px; }
+	.rt-nav--next { right: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .rt-slider.is-js .rt-slide { transition: none; } }

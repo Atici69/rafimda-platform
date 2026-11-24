@@ -132,5 +132,38 @@ foreach (['rtRegisterUrl' => $vSrc, 'rtLoginUrl' => $vSrc, 'rtDealerApplyUrl' =>
 	t(preg_match("/'" . preg_quote($slug, '/') . "'\\s*=>\\s*'front\\/[a-z]+\\.php'/", $srcMod) === 1, "tema bağlantısı /$slug gerçek modül rotasına çıkar");
 }
 t(is_file(dirname(__DIR__, 2) . '/rafimda-dealer/front/apply.php') && is_file(dirname(__DIR__, 2) . '/rafimda-vendor/front/register.php'), 'rota hedef dosyaları mevcut');
+
+// ---- Çok slaytlı slider ----
+Module::$en = ['rafimda-vendor', 'rafimda-dealer'];
+Settings::set('RAFIMDA_THEME_SLIDES', ''); 
+$sl = RafimdaThemeModule::slides('https://rafimda.example/');
+t(count($sl) === 2 && str_contains($sl[0]['link'], 'satici-kayit') && str_contains($sl[1]['link'], 'bayi-basvuru'), 'varsayılan slaytlar: etkin modüllere göre satıcı + bayi');
+$h = $m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtHeroImage' => '']);
+t(substr_count($h, 'class="rt-slide') === 3 && str_contains($h, 'rt-nav--prev') && str_contains($h, 'rt-nav--next') && preg_match_all('/class="rt-dot[ "]/', $h) === 3 && str_contains($h, 'data-rt-slider') && str_contains($h, 'data-interval="6"'), '3 slayt, ileri/geri düğmesi, 3 nokta, 6 sn aralık');
+t(substr_count($h, '<h1') === 1, 'sayfada tek h1 (ek slaytlar h2)');
+Module::$en = [];
+$h = $m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtHeroImage' => '']);
+t(substr_count($h, 'class="rt-slide') === 1 && !str_contains($h, 'rt-nav--prev') && !str_contains($h, 'rt-dot'), 'modül yoksa tek slayt: gezinti kontrolü çizilmez');
+Module::$en = ['rafimda-vendor'];
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_POST = ['token' => 'tok123', 'hero' => '1', 'slide_seconds' => '99', 'slide' => [
+	['title' => '<b>Yaz</b> Fırsatı', 'text' => 'Metin', 'link' => '/kampanya', 'image' => '/img/s1.jpg', 'cta' => 'İncele'],
+	['title' => '', 'text' => 'boş başlıklı atlanır', 'link' => '/x'],
+	['title' => 'Kötü', 'link' => 'javascript:alert(1)', 'image' => 'data:text/html,x', 'cta' => 'Git'],
+]];
+$m->adminPage(); $_SERVER['REQUEST_METHOD'] = 'GET';
+$saved = RafimdaThemeModule::slides('https://rafimda.example/');
+t(count($saved) === 2 && $saved[0]['title'] === 'Yaz Fırsatı' && $saved[0]['link'] === '/kampanya', 'yönetici slaytları kaydedilir, boş başlıklı atlanır, HTML temizlenir');
+t($saved[1]['link'] === '' && $saved[1]['image'] === '', 'slaytta javascript:/data: adresleri reddedilir');
+t(RafimdaThemeModule::slideSeconds() === 15, 'geçiş süresi 3–15 sn aralığına sıkıştırılır');
+$h = $m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtHeroImage' => '']);
+t(str_contains($h, 'Yaz Fırsatı') && str_contains($h, "url('/img/s1.jpg')") && str_contains($h, 'data-interval="15"') && str_contains($h, 'Yaz Fırsatı'), 'özel slayt şablonda çizilir, varsayılanların yerini alır');
+t(!str_contains($h, 'Satışlarınızı büyütmek') , 'özel slayt varken varsayılan slayt çizilmez');
+t(!str_contains($h, 'javascript:'), 'şablonda javascript: yok');
+$_SERVER['REQUEST_METHOD'] = 'POST'; $_POST = ['token' => 'tok123', 'hero' => '1', 'slides_off' => '1', 'slide' => []]; $m->adminPage(); $_SERVER['REQUEST_METHOD'] = 'GET';
+t(RafimdaThemeModule::slides('https://rafimda.example/') === [], '"varsayılan slaytları gösterme" seçeneği ek slaytları kapatır');
+$js = (string) file_get_contents(dirname(__DIR__) . '/assets/js/rafimda-slider.js');
+t(str_contains($js, 'setInterval') && str_contains($js, 'prefers-reduced-motion') && str_contains($js, 'touchstart') && str_contains($js, 'ArrowLeft') && str_contains($js, 'visibilitychange'), 'slider JS: otomatik geçiş, azaltılmış hareket, dokunmatik, klavye, sekme gizliyken durma');
+t(in_array('rafimda-slider.js', $m->frontScripts, true) && is_file(dirname(__DIR__) . '/assets/js/rafimda-slider.js'), 'slider betiği modüle kayıtlı ve dosya mevcut');
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 exit($fail ? 1 : 0);
