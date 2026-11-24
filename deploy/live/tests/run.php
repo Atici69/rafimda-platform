@@ -135,6 +135,63 @@ $out = [];
 exec('env -i PATH=' . escapeshellarg((string) getenv('PATH')) . ' REQUEST_METHOD=GET ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/live-preflight.php') . ' 2>&1', $out, $rc);
 t('HTTP değişkenli oturumda live-preflight 404 ile çıkar (guard\'a ulaşmaz)', $rc === 0 && stripos(implode("\n", $out), 'REDDEDİLDİ') === false);
 
+echo "== Yedek dosyası denetimi (LiveBackup; DB'ye bağlanmaz, geçici dosyalar)\n";
+require_once dirname(__DIR__) . '/lib/LiveBackup.php';
+$td = sys_get_temp_dir() . '/rf_bkt_' . bin2hex(random_bytes(3));
+mkdir($td);
+$dump = "-- MySQL dump\n";
+foreach (LiveBackup::CORE_TABLES as $tb) {
+	$dump .= "CREATE TABLE `$tb` (id int);\nINSERT INTO `$tb` VALUES (1),(2);\n";
+}
+for ($i = 0; $i < 120; $i++) {
+	$dump .= '-- ' . bin2hex(random_bytes(12)) . "\n"; // sıkıştırmada da >1 KB kalsın
+}
+$dump .= "-- Dump completed\n";
+file_put_contents("$td/ok.sql", $dump);
+file_put_contents("$td/ok.sql.gz", gzencode($dump));
+$r = LiveBackup::inspect("$td/ok.sql");
+t('sql yedeği: kabul, tablolar ve INSERT sayılır, sha256 var', $r['ok'] && count($r['tables']) === 7 && $r['entries'] === 7 && strlen($r['sha256']) === 64);
+t('sql.gz yedeği: kabul', LiveBackup::inspect("$td/ok.sql.gz")['ok']);
+file_put_contents("$td/noinsert.sql", str_replace('INSERT', '-- X', $dump));
+t('INSERT yoksa uyarı (yalnızca yapı)', ($r2 = LiveBackup::inspect("$td/noinsert.sql")) && $r2['warnings'] !== []);
+file_put_contents("$td/partial.sql", str_replace("CREATE TABLE `orders` (id int);", '', $dump));
+t('çekirdek tablo (orders) eksikse RET', !($r3 = LiveBackup::inspect("$td/partial.sql"))['ok'] && in_array('orders', $r3['missing_core'], true));
+file_put_contents("$td/notdump.sql", str_repeat("select 1;\n", 400));
+t('döküm olmayan .sql RET', !LiveBackup::inspect("$td/notdump.sql")['ok']);
+file_put_contents("$td/tiny.sql", 'x');
+t('1 KB altı RET', !LiveBackup::inspect("$td/tiny.sql")['ok']);
+file_put_contents("$td/bad.sql.gz", substr(gzencode($dump), 0, 120) . str_repeat('Z', 1500));
+t('bozuk gz RET', !LiveBackup::inspect("$td/bad.sql.gz")['ok']);
+t('olmayan dosya RET', !LiveBackup::inspect("$td/yok.sql")['ok']);
+file_put_contents("$td/a.txt", str_repeat('x', 2000));
+t('desteklenmeyen uzantı RET', !LiveBackup::inspect("$td/a.txt")['ok']);
+$z = new ZipArchive();
+$z->open("$td/site.zip", ZipArchive::CREATE);
+$z->addFromString('public_html/index.php', '<?php');
+$z->addFromString('public_html/core/App.php', random_bytes(2000));
+$z->addFromString('public_html/modules/a/a.php', '<?php');
+$z->addFromString('public_html/config/env.php', '<?php return [];');
+$z->addFromString('public_html/img/p.jpg', 'x');
+$z->close();
+$rz = LiveBackup::inspect("$td/site.zip");
+t('site ZIP: index/core/modules görülür → kabul; env.php içerdiği bilgi notu olur', $rz['ok'] && $rz['notes'] !== []);
+$z = new ZipArchive();
+$z->open("$td/part.zip", ZipArchive::CREATE);
+$z->addFromString('x/readme.txt', str_repeat('x', 2000));
+$z->close();
+t('uygulama dosyası içermeyen ZIP RET', !LiveBackup::inspect("$td/part.zip")['ok']);
+file_put_contents("$td/bad.zip", str_repeat('PK-not-zip', 300));
+t('bozuk ZIP RET', !LiveBackup::inspect("$td/bad.zip")['ok']);
+t('denetleyici dosyaları değiştirmez/silmez', md5_file("$td/ok.sql") === md5($dump) && is_file("$td/site.zip"));
+$bsrc = (string) file_get_contents(dirname(__DIR__) . '/lib/LiveBackup.php') . (string) file_get_contents(dirname(__DIR__) . '/bin/live-backup-check.php');
+t('LiveBackup: PDO/yazma/silme işlevi kullanmaz', !preg_match('/\b(new PDO|unlink|rename|file_put_contents|fwrite\(\$h|rmdir|DROP|DELETE)\b/', preg_replace('#/\*.*?\*/#s', '', $bsrc)) || strpos(preg_replace('#/\*.*?\*/#s', '', $bsrc), 'new PDO') === false);
+exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/live-backup-check.php') . ' ' . escapeshellarg("$td/ok.sql") . ' 2>&1', $o, $rc);
+t('CLI: geçerli yedek exit 0, çıktıda içerik/parola yok', $rc === 0 && strpos(implode("\n", $o), 'CREATE TABLE') === false && strpos(implode("\n", $o), 'kullanılabilir görünüyor') !== false);
+exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/live-backup-check.php') . ' ' . escapeshellarg("$td/tiny.sql") . ' 2>&1', $o2, $rc2);
+t('CLI: şüpheli yedek exit 1', $rc2 === 1);
+array_map('unlink', glob("$td/*") ?: []);
+rmdir($td);
+
 echo "== PDO açılış noktaları envanteri\n";
 $sites = [];
 $rootDir = dirname(__DIR__, 3);
