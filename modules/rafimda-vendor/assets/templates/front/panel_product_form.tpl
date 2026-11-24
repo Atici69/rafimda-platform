@@ -24,7 +24,9 @@
 	</div>
 	<label>Kısa açıklama</label><textarea name="short_description" rows="2">{$form.short_description|default:''}</textarea>
 	<label>Açıklama</label><textarea name="description" rows="6">{$form.description|default:''}</textarea>
-	<label style="font-weight:400"><input type="checkbox" name="active" value="1"{if $form.active|default:0} checked{/if}> Ürün satışta (aktif)</label>
+	{if $isEdit && $form.moderation|default:'approved' == 'pending'}<div class="rv-alert warning">Bu ürün yönetici onayı bekliyor; onaylanana kadar mağazada görünmez.</div>{/if}
+	{if $isEdit && $form.moderation|default:'approved' == 'rejected'}<div class="rv-alert danger">Ürün reddedildi. {$form.moderation_note|default:''}</div>{/if}
+	<label style="font-weight:400"><input type="checkbox" name="active" value="1"{if $form.active|default:0} checked{/if}> Ürün satışta (aktif) — yeni ürünler onaydan sonra yayına girer</label>
 
 	<h3 style="margin-top:22px">Varyantlar</h3>
 	<p style="color:var(--rv-muted);font-size:13px">Renk/beden gibi seçenekler. Varyant eklerseniz toplam stok varyant stoklarından hesaplanır.</p>

@@ -67,7 +67,7 @@ class RvProducts
 		);
 
 		$rows = DB::execute(
-			'SELECT p.id_product, p.product_name, p.price, p.old_price, p.stock, p.stock_code, p.barcode, p.active,
+			'SELECT p.id_product, p.product_name, p.price, p.old_price, p.stock, p.stock_code, p.barcode, p.active, vp.moderation, vp.moderation_note,
 				b.brand_name, c.category_name,
 				(SELECT i.id_image FROM images i WHERE i.id_product = p.id_product AND i.cover = 1 LIMIT 1) AS id_image
 			FROM rafimda_vendor_products vp
@@ -101,6 +101,9 @@ class RvProducts
 
 		$row['images'] = Product::getImages($idProduct);
 		$row['variations'] = ProductVariation::getByProduct($idProduct);
+		$mod = DB::getRowSafe('rafimda_vendor_products', 'id_product = ?', [$idProduct]) ?: [];
+		$row['moderation'] = (string) ($mod['moderation'] ?? 'approved');
+		$row['moderation_note'] = (string) ($mod['moderation_note'] ?? '');
 
 		return $row;
 	}
@@ -211,6 +214,12 @@ class RvProducts
 			return ['success' => false, 'message' => 'Formu kontrol edin.', 'id' => 0, 'errors' => $in['errors']];
 		}
 
+		$moderate = self::moderationEnabled();
+
+		if ($moderate) {
+			$in['data']['active'] = 0; // onaylanana kadar mağazada görünmez
+		}
+
 		$res = Product::save($in['data'], 0);
 
 		if (empty($res['success']) || (int) ($res['id'] ?? 0) <= 0) {
@@ -219,16 +228,20 @@ class RvProducts
 
 		$id = (int) $res['id'];
 
-		if (!DB::insert('rafimda_vendor_products', ['id_product' => $id, 'id_vendor' => $idVendor])) {
+		if (!DB::insert('rafimda_vendor_products', [
+			'id_product' => $id,
+			'id_vendor' => $idVendor,
+			'moderation' => $moderate ? 'pending' : 'approved',
+		])) {
 			// Sahipsiz ürün bırakma: geri al.
 			Product::deleteById($id);
 
 			return ['success' => false, 'message' => 'Ürün sahiplik kaydı oluşturulamadı; işlem geri alındı.', 'id' => 0];
 		}
 
-		RvAudit::log($idVendor, 'product.created', 'product', $id, ['name' => $in['data']['product_name']]);
+		RvAudit::log($idVendor, 'product.created', 'product', $id, ['name' => $in['data']['product_name'], 'moderation' => $moderate ? 'pending' : 'approved']);
 
-		return ['success' => true, 'message' => 'Ürün eklendi.', 'id' => $id];
+		return ['success' => true, 'message' => $moderate ? 'Ürün eklendi; yönetici onayından sonra yayına girecek.' : 'Ürün eklendi.', 'id' => $id];
 	}
 
 	/**
@@ -251,8 +264,12 @@ class RvProducts
 
 		// Formda olmayan alanları (maliyet, desi, etiket, ürün tipi vb.) sıfırlamamak için mevcut satırla birleştir.
 		$base = $existing;
-		unset($base['images'], $base['variations'], $base['brand_name'], $base['brand_link'], $base['category_name'], $base['category_link']);
+		unset($base['images'], $base['variations'], $base['moderation'], $base['moderation_note'], $base['brand_name'], $base['brand_link'], $base['category_name'], $base['category_link']);
 		$data = array_merge($base, $in['data']);
+
+		if (($existing['moderation'] ?? 'approved') !== 'approved') {
+			$data['active'] = 0; // onaysız/reddedilmiş ürün satıcı tarafından yayına alınamaz
+		}
 
 		$res = Product::save($data, $idProduct);
 
@@ -330,6 +347,10 @@ class RvProducts
 
 		if ($action === 'activate' || $action === 'deactivate') {
 			$val = $action === 'activate' ? 1 : 0;
+
+			if ($val === 1) {
+				$owned = self::filterApproved($owned);
+			}
 
 			foreach ($owned as $id) {
 				if (DB::update('products', ['active' => $val], 'id_product = :pid', ['pid' => $id]) !== false) {
@@ -467,5 +488,220 @@ class RvProducts
 			ORDER BY o.id_order DESC LIMIT ' . max(1, min(100, $limit)) . ' OFFSET ' . max(0, $offset),
 			[$idVendor]
 		) ?: [];
+	}
+
+	// ---- Ürün onay (moderasyon) ----
+
+	public static function moderationEnabled(): bool
+	{
+		return Settings::get('RAFIMDA_PRODUCT_MODERATION') !== '0';
+	}
+
+	/** @param list<int> $ids @return list<int> yalnızca onaylı olanlar */
+	public static function filterApproved(array $ids): array
+	{
+		if ($ids === []) {
+			return [];
+		}
+
+		$in = implode(',', array_fill(0, count($ids), '?'));
+		$rows = DB::execute(
+			'SELECT id_product FROM rafimda_vendor_products WHERE moderation = ? AND id_product IN (' . $in . ')',
+			array_merge(['approved'], array_map('intval', $ids))
+		) ?: [];
+
+		return array_map(static fn(array $r): int => (int) $r['id_product'], $rows);
+	}
+
+	/** Ana yönetici: ürünü onaylar ve yayına alır. */
+	public static function approve(int $idProduct, int $idAdmin): bool
+	{
+		$vp = DB::getRowSafe('rafimda_vendor_products', 'id_product = ?', [$idProduct]);
+
+		if (!$vp) {
+			return false;
+		}
+
+		DB::update('rafimda_vendor_products', ['moderation' => 'approved', 'moderation_note' => '', 'moderated_at' => date('Y-m-d H:i:s')], 'id_product = :pid', ['pid' => $idProduct]);
+		DB::update('products', ['active' => 1], 'id_product = :pid', ['pid' => $idProduct]);
+
+		if (class_exists('Module', false)) {
+			Module::runHook('product.updated', [$idProduct, Product::getByIdAdmin($idProduct) ?: [], false]);
+		}
+
+		RvAudit::log((int) $vp['id_vendor'], 'product.approved', 'product', $idProduct, [], $idAdmin);
+
+		return true;
+	}
+
+	/** Ana yönetici: ürünü reddeder ve yayından kaldırır. */
+	public static function reject(int $idProduct, string $note, int $idAdmin): bool
+	{
+		$vp = DB::getRowSafe('rafimda_vendor_products', 'id_product = ?', [$idProduct]);
+
+		if (!$vp) {
+			return false;
+		}
+
+		$note = mb_substr(trim(strip_tags($note)), 0, 255);
+		DB::update('rafimda_vendor_products', ['moderation' => 'rejected', 'moderation_note' => $note, 'moderated_at' => date('Y-m-d H:i:s')], 'id_product = :pid', ['pid' => $idProduct]);
+		DB::update('products', ['active' => 0], 'id_product = :pid', ['pid' => $idProduct]);
+		RvAudit::log((int) $vp['id_vendor'], 'product.rejected', 'product', $idProduct, ['note' => $note], $idAdmin);
+
+		return true;
+	}
+
+	/** @return list<array<string,mixed>> */
+	public static function moderationQueue(string $state = 'pending', int $limit = 100): array
+	{
+		$state = in_array($state, ['pending', 'approved', 'rejected'], true) ? $state : 'pending';
+
+		return DB::execute(
+			'SELECT p.id_product, p.product_name, p.price, p.stock, v.id_vendor, v.store_name, vp.moderation, vp.moderation_note, vp.date_add
+			FROM rafimda_vendor_products vp
+			INNER JOIN products p ON p.id_product = vp.id_product
+			INNER JOIN rafimda_vendors v ON v.id_vendor = vp.id_vendor
+			WHERE vp.moderation = ? ORDER BY vp.date_add ASC LIMIT ' . max(1, min(300, $limit)),
+			[$state]
+		) ?: [];
+	}
+
+	// ---- CSV içe aktarma ----
+
+	public const CSV_MAX_ROWS = 500;
+	public const CSV_MAX_BYTES = 2097152;
+	public const CSV_COLUMNS = ['urun_adi', 'kategori_id', 'marka_id', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'aciklama'];
+
+	public static function csvTemplate(): string
+	{
+		return "\xEF\xBB\xBF" . implode(';', self::CSV_COLUMNS) . "\r\n" . 'Örnek Tişört;1;1;99,90;25;TSH-001;8690000000001;Pamuklu tişört' . "\r\n";
+	}
+
+	/**
+	 * CSV (UTF-8, ; veya , ayraçlı) içe aktarma. stok_kodu mevcut ve bu satıcıya aitse yalnızca fiyat/stok güncellenir,
+	 * değilse yeni ürün (onay kuralına tabi) oluşturulur. Başka satıcının stok koduyla eşleşme asla yapılmaz.
+	 *
+	 * @return array{success:bool, message:string, total:int, created:int, updated:int, failed:int, errors:list<string>}
+	 */
+	public static function importCsv(int $idVendor, string $path, string $fileName): array
+	{
+		$res = ['success' => false, 'message' => '', 'total' => 0, 'created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+
+		if (!is_file($path) || filesize($path) > self::CSV_MAX_BYTES) {
+			$res['message'] = 'Dosya bulunamadı veya 2 MB sınırını aşıyor.';
+
+			return $res;
+		}
+
+		$raw = (string) file_get_contents($path);
+		$raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw;
+
+		if (!mb_check_encoding($raw, 'UTF-8')) {
+			$res['message'] = 'Dosya UTF-8 olmalı (Excel: "CSV UTF-8" olarak kaydedin).';
+
+			return $res;
+		}
+
+		$firstLine = strtok($raw, "\n") ?: '';
+		$delim = substr_count($firstLine, ';') >= substr_count($firstLine, ',') ? ';' : ',';
+		$fh = fopen('php://temp', 'r+');
+		fwrite($fh, $raw);
+		rewind($fh);
+
+		$header = fgetcsv($fh, 0, $delim, '"', '');
+		$header = is_array($header) ? array_map(static fn($h): string => strtolower(trim((string) $h)), $header) : [];
+		$missing = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header);
+
+		if ($missing !== []) {
+			fclose($fh);
+			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Şablonu indirip kullanın.';
+
+			return $res;
+		}
+
+		$line = 1;
+
+		while (($cells = fgetcsv($fh, 0, $delim, '"', '')) !== false) {
+			$line++;
+
+			if ($cells === [null] || $cells === []) {
+				continue;
+			}
+
+			if ($res['total'] >= self::CSV_MAX_ROWS) {
+				$res['errors'][] = 'Satır sınırı (' . self::CSV_MAX_ROWS . ') aşıldı; kalan satırlar işlenmedi.';
+				break;
+			}
+
+			$res['total']++;
+			$row = [];
+
+			foreach ($header as $i => $h) {
+				$row[$h] = trim((string) ($cells[$i] ?? ''));
+			}
+
+			$code = mb_substr(strip_tags($row['stok_kodu'] ?? ''), 0, 64);
+			$owned = false;
+
+			if ($code !== '') {
+				$hit = DB::execute(
+					'SELECT p.id_product FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE vp.id_vendor = ? AND p.stock_code = ? LIMIT 1',
+					[$idVendor, $code]
+				);
+				$owned = ($hit && isset($hit[0])) ? $hit[0] : false;
+			}
+
+			if ($owned) {
+				$u = self::quickUpdate($idVendor, (int) $owned['id_product'], $row['fiyat'] ?? 0, $row['stok'] ?? 0);
+
+				if (!empty($u['success'])) {
+					$res['updated']++;
+				} else {
+					$res['failed']++;
+					$res['errors'][] = 'Satır ' . $line . ': ' . $u['message'];
+				}
+
+				continue;
+			}
+
+			$c = self::create($idVendor, [
+				'product_name' => $row['urun_adi'] ?? '',
+				'id_category' => $row['kategori_id'] ?? 0,
+				'id_brand' => $row['marka_id'] ?? 0,
+				'price' => $row['fiyat'] ?? 0,
+				'stock' => $row['stok'] ?? 0,
+				'stock_code' => $code,
+				'barcode' => $row['barkod'] ?? '',
+				'description' => $row['aciklama'] ?? '',
+				'active' => 1,
+			]);
+
+			if (!empty($c['success'])) {
+				$res['created']++;
+			} else {
+				$res['failed']++;
+				$detail = !empty($c['errors']) ? implode(' ', $c['errors']) : $c['message'];
+				$res['errors'][] = 'Satır ' . $line . ': ' . $detail;
+			}
+		}
+
+		fclose($fh);
+		$res['success'] = true;
+		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.';
+
+		$idUser = class_exists('Customer', false) && Customer::isLoggedIn() ? Customer::getId() : 0;
+		DB::insert('rafimda_import_log', [
+			'id_vendor' => $idVendor,
+			'id_user' => $idUser,
+			'file_name' => mb_substr($fileName, 0, 190),
+			'rows_total' => $res['total'],
+			'rows_created' => $res['created'],
+			'rows_updated' => $res['updated'],
+			'rows_failed' => $res['failed'],
+			'errors' => $res['errors'] === [] ? null : json_encode(array_slice($res['errors'], 0, 50), JSON_UNESCAPED_UNICODE),
+		]);
+		RvAudit::log($idVendor, 'product.import_csv', 'import', 0, ['created' => $res['created'], 'updated' => $res['updated'], 'failed' => $res['failed']]);
+
+		return $res;
 	}
 }

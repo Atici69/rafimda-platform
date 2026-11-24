@@ -6,7 +6,7 @@
 			<select name="state" style="width:auto"><option value="">Tümü</option><option value="active"{if $state == 'active'} selected{/if}>Aktif</option><option value="passive"{if $state == 'passive'} selected{/if}>Pasif</option><option value="lowstock"{if $state == 'lowstock'} selected{/if}>Düşük stok</option></select>
 			<button class="rv-btn ghost sm" type="submit">Filtrele</button>
 		</form>
-		{if $can.create}<a class="rv-btn" href="{$newUrl}">+ Yeni ürün</a>{/if}
+		{if $can.create}<a class="rv-btn ghost" href="{$rvDomain}satici-panel?s=products&amp;a=import">CSV yükle</a> <a class="rv-btn" href="{$newUrl}">+ Yeni ürün</a>{/if}
 	</div>
 	<form method="post" id="rv-bulk"><input type="hidden" name="token" value="{$rvToken}"><input type="hidden" name="action" value="bulk">
 	{if $can.edit || $can.delete}
@@ -24,7 +24,7 @@
 		<td data-l="Kategori">{$p.category_name}<br><small style="color:var(--rv-muted)">{$p.brand_name}</small></td>
 		<td data-l="Fiyat">{$p.price|string_format:"%.2f"} ₺</td>
 		<td data-l="Stok">{$p.stock|string_format:"%g"}</td>
-		<td data-l="Durum">{if $p.active}<span class="pill ok">Aktif</span>{else}<span class="pill off">Pasif</span>{/if}</td>
+		<td data-l="Durum">{if $p.moderation == 'pending'}<span class="pill warn">Onay bekliyor</span>{elseif $p.moderation == 'rejected'}<span class="pill off" title="{$p.moderation_note}">Reddedildi</span>{elseif $p.active}<span class="pill ok">Aktif</span>{else}<span class="pill off">Pasif</span>{/if}</td>
 		<td><a class="rv-btn ghost sm" href="{$rvDomain}satici-panel?s=products&amp;a=edit&amp;id={$p.id_product}">Düzenle</a></td>
 	</tr>{foreachelse}<tr><td colspan="8" style="text-align:center;color:var(--rv-muted);padding:30px">Henüz ürün yok. {if $can.create}<a href="{$newUrl}">İlk ürününüzü ekleyin.</a>{/if}</td></tr>{/foreach}
 	</tbody></table></form>
