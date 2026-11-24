@@ -69,6 +69,12 @@ final class StagingVerifier
 		$this->checks[] = ['group' => $group, 'name' => $name, 'status' => $status, 'detail' => $detail];
 	}
 
+	/** Dış araçların (canlı ön kontrol) ek kontrol eklemesi için. */
+	public function note(string $group, string $name, string $status, string $detail = ''): void
+	{
+		$this->add($group, $name, $status, $detail);
+	}
+
 	/** @return list<array{group:string,name:string,status:string,detail:string}> */
 	public function checks(): array
 	{

@@ -20,6 +20,7 @@ $suites = [
 	'rafimda-showcase/run' => 'modules/rafimda-showcase/tests/run.php',
 	'staging/run' => 'deploy/staging/tests/run.php',
 	'staging/run_seed' => 'deploy/staging/tests/run_seed.php',
+	'live/run' => 'deploy/live/tests/run.php',
 ];
 $total = 0;
 $failed = 0;
