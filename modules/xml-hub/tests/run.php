@@ -23,7 +23,7 @@ function fresh_rows(): array { return DB::execute('SELECT * FROM products ORDER 
 // ---------- 1. Migration ----------
 section('Migration');
 xh_fresh_db();
-ok(XhMigrator::files() === ['001_init', '002_source_meta_credentials'], 'migration dosyası bulundu');
+ok(XhMigrator::files() === ['001_init', '002_source_meta_credentials', '003_export_feeds'], 'migration dosyası bulundu');
 $raw = file_get_contents(dirname(__DIR__) . '/migrations/001_init.sql');
 ok(!preg_match('/\b(DROP|TRUNCATE|DELETE\s+FROM|ALTER)\b/i', $raw) && !preg_match('/^\s*--/m', $raw) && preg_match_all('/CREATE TABLE(?! IF NOT EXISTS)/', $raw) === 0, 'migration yıkıcı değil, IF NOT EXISTS, "--" ifadesi yok');
 foreach (['xh_suppliers', 'xh_connections', 'xh_items', 'xh_runs', 'xh_errors', 'xh_price_history', 'xh_stock_history'] as $t) {

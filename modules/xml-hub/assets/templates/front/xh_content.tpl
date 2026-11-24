@@ -6,6 +6,19 @@
 </nav>
 {/if}
 
+{if $view == 'export'}
+<div class="xh-card"><h2>XML dışa aktarma</h2>
+	<p class="muted">Onaylı ve aktif ürünlerinizi gizli bir adresten XML olarak yayınlayın. Adres bir parola gibi saklanmalıdır; ele geçerse beslemeyi iptal edip yenisini oluşturun.</p>
+	{if $newUrl}<div class="alert success"><strong>Yeni besleme adresi (yalnızca bir kez gösterilir):</strong><br><code style="word-break:break-all">{$newUrl|escape}</code></div>{/if}
+	{if $xhCanManage}<form method="post" class="row"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="export_create">
+		<input type="text" name="name" placeholder="Besleme adı" maxlength="120" required> <label><input type="checkbox" name="only_in_stock" value="1"> Yalnızca stokta olanlar</label> <button class="btn" type="submit">Besleme oluştur</button></form>{/if}
+	<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ad</th><th>Adres</th><th>Durum</th><th>İstek</th><th>Son istek</th><th></th></tr></thead><tbody>
+	{foreach $feeds as $f}<tr><td>{$f.name|escape}</td><td><code>…?t={$f.token_hint|escape}…</code></td><td><span class="pill {if $f.active}ok{else}warn{/if}">{if $f.active}Aktif{else}İptal{/if}</span></td><td>{$f.hits|escape}</td><td>{$f.last_hit|escape}</td>
+		<td>{if $f.active && $xhCanManage}<form method="post" style="margin:0"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="export_revoke"><input type="hidden" name="id_feed" value="{$f.id_feed|escape}"><button class="btn ghost sm" type="submit">İptal et</button></form>{/if}</td></tr>{foreachelse}<tr><td colspan="6" class="muted">Henüz besleme yok.</td></tr>{/foreach}
+	</tbody></table></div>
+</div>
+{/if}
+
 {if $view == 'changes'}
 <div class="xh-card"><h2>Fiyat, stok ve içerik değişimleri</h2>
 	<p class="muted">XML senkronizasyonunun ürünlerinizde yaptığı değişikliklerin kaydı (yeniden eskiye).</p>

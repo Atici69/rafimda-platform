@@ -69,13 +69,22 @@ class XhPanel
 		}
 
 		$view = (string) ($_GET['view'] ?? 'list');
-		$common = ['xhAdmin' => $this->admin, 'xhBase' => $this->base, 'xhTitles' => ['list' => 'Bağlantılarım', 'new' => 'Yeni XML', 'suppliers' => 'Tedarikçiler', 'runs' => 'İşlem geçmişi', 'changes' => 'Fiyat/stok değişimleri', 'errors' => 'Hata raporları']];
+		$common = ['xhAdmin' => $this->admin, 'xhBase' => $this->base, 'xhTitles' => ['list' => 'Bağlantılarım', 'new' => 'Yeni XML', 'suppliers' => 'Tedarikçiler', 'runs' => 'İşlem geçmişi', 'changes' => 'Fiyat/stok değişimleri', 'errors' => 'Hata raporları'] + ($this->admin ? [] : ['export' => 'XML dışa aktarma'])];
 
 		switch ($view) {
 			case 'new':
 				return ['new', $common + ['suppliers' => XhRepo::suppliers($this->scope() ?? 0), 'categories' => $this->categories(), 'brands' => $this->brands(), 'intervals' => $this->intervals(), 'opt' => XhRepo::DEFAULT_OPTIONS]];
 			case 'suppliers':
 				return ['suppliers', $common + ['suppliers' => XhRepo::suppliers($this->scope() ?? 0), 'edit' => XhRepo::supplier((int) ($_GET['id'] ?? 0), $this->scope() ?? 0)]];
+			case 'export':
+				if ($this->admin) {
+					break;
+				}
+
+				$nt = (string) ($_SESSION['xh_new_token'] ?? '');
+				unset($_SESSION['xh_new_token']);
+
+				return ['export', $common + ['feeds' => XhExport::feeds($this->vendor), 'newUrl' => $nt !== '' ? XhExport::feedUrl(str_replace('/xml-merkezi', '', $this->base), $nt) : '']];
 			case 'changes':
 				return ['changes', $common + ['changes' => XhRepo::changeHistory($this->scope(), 150)]];
 
@@ -233,6 +242,25 @@ class XhPanel
 			case 'supplier_save':
 				$r = XhRepo::saveSupplier($this->ownerFor(), (int) self::post('id_supplier'), self::post('name'), self::post('website'), self::post('notes'));
 				$this->go(['view' => 'suppliers'], $r['success'] ? 'success' : 'danger', $r['message']);
+				break;
+
+			case 'export_create':
+				if ($this->admin || $this->vendor <= 0) {
+					$this->go(['view' => 'list'], 'danger', 'Dışa aktarma yalnızca satıcı hesapları içindir.');
+				}
+
+				$r = XhExport::create($this->vendor, self::post('name'), self::post('only_in_stock') === '1');
+
+				if ($r['success']) {
+					$_SESSION['xh_new_token'] = $r['token'];
+				}
+
+				$this->go(['view' => 'export'], $r['success'] ? 'success' : 'danger', $r['message'] . ($r['success'] ? ' Adres yalnızca şimdi gösterilir; kopyalayıp saklayın.' : ''));
+				break;
+
+			case 'export_revoke':
+				$ok = !$this->admin && XhExport::revoke($this->vendor, (int) self::post('id_feed'));
+				$this->go(['view' => 'export'], $ok ? 'success' : 'danger', $ok ? 'Besleme iptal edildi.' : 'Besleme bulunamadı.');
 				break;
 
 			case 'conn_create':

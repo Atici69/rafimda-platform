@@ -135,7 +135,7 @@ class XhSink
 			return ['success' => false, 'message' => 'Güncellenemedi.'];
 		}
 
-		if (class_exists('Module', false)) {
+		if (class_exists('Module')) {
 			Module::runHook('product.updated', [$id, Product::getByIdAdmin($id) ?: [], false]);
 		}
 
@@ -167,7 +167,7 @@ class XhSink
 	/** Varyant stok/fiyat eşitleme (SKU ile eşleşenler). Dönüş: güncellenen varyant sayısı. */
 	public static function syncVariants(int $idVendor, int $id, array $variants, bool $price, bool $stock, bool $create = false, ?int &$created = null): int
 	{
-		if (!XhOwner::owns($idVendor, $id) || !class_exists('ProductVariation', false) || !method_exists('ProductVariation', 'getByProductSku')) {
+		if (!XhOwner::owns($idVendor, $id) || !class_exists('ProductVariation') || !method_exists('ProductVariation', 'getByProductSku')) {
 			return 0;
 		}
 

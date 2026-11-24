@@ -34,3 +34,8 @@ Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destruct
 - Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
 - Her tick offset'e kadar yeniden akış okur (O(n)).
 - Mobil/görsel arayüz tarayıcıda denenmedi; MySQL, gerçek curl/DNS/TLS ve gerçek `Product::save` ile uçtan uca test edilmedi.
+
+## v0.3.0 — Satıcı bazlı XML dışa aktarma
+- Rota `/xml-export?t=TOKEN` (`front/export.php`, `lib/XhExport.php`, migration `003_export_feeds.sql`). Satıcı, panelde "XML dışa aktarma" sekmesinden gizli adresli besleme oluşturur (en çok 10 etkin); token yalnızca bir kez gösterilir, veritabanında SHA-256 özeti tutulur; iptal edilebilir.
+- Yalnızca o satıcıya ait, moderasyondan onaylı ve aktif ürünler; varyant, görsel, kargo ücreti (`xh_product_meta`) dahil. XMLWriter ile sayfalı akış (bellek sabit). Yanlış/iptal token → 404.
+- Testler: `tests/run_v3.php`.

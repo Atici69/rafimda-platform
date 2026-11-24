@@ -15,7 +15,7 @@ t(class_exists($class), "sınıf adı kurala uyuyor: $class");
 $m = new $class();
 t($m instanceof ModuleBase, 'ModuleBase\'den türüyor');
 t($m->name === $name, 'name özelliği klasör adıyla aynı');
-t(count($m->routes) === 2, '2 rota tanımlı');
+t(count($m->routes) === 3, '3 rota tanımlı');
 foreach ($m->routes as $slug => $file) {
 	t(preg_match('/^[a-z0-9_-]+$/', $slug) === 1, "rota slug'ı tek segment ve güvenli: $slug");
 	t(is_file(dirname(__DIR__) . '/' . $file), "rota dosyası var: $file");
@@ -23,7 +23,7 @@ foreach ($m->routes as $slug => $file) {
 t(method_exists($m, 'install') && method_exists($m, 'uninstall') && method_exists($m, 'adminPage'), 'install/uninstall/adminPage var');
 t(is_file(dirname(__DIR__) . '/assets/templates/admin/admin.tpl'), 'admin şablonu var');
 // runSqlFile her ifadeyi atlamadan çalıştırmalı: '--' ile başlayan ifade ATLANIR, bu yüzden kurulum dosyalarında olmamalı
-foreach (['install.sql', 'uninstall.sql', 'migrations/001_init.sql', 'migrations/002_source_meta_credentials.sql'] as $f) {
+foreach (['install.sql', 'uninstall.sql', 'migrations/001_init.sql', 'migrations/002_source_meta_credentials.sql', 'migrations/003_export_feeds.sql'] as $f) {
 	$sql = file_get_contents(dirname(__DIR__) . '/' . $f);
 	$stmts = array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', $sql)));
 	$skipped = array_filter($stmts, fn($s) => strpos($s, '--') === 0);

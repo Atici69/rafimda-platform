@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $xhClass) {
+foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $xhClass) {
 	require_once __DIR__ . '/lib/' . $xhClass . '.php';
 }
 
@@ -19,7 +19,7 @@ foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 
  */
 class XmlHubModule extends ModuleBase
 {
-	public const VERSION = '0.2.0';
+	public const VERSION = '0.3.0';
 
 	public string $name = 'xml-hub';
 	public string $title = 'XML Hub';
@@ -30,6 +30,7 @@ class XmlHubModule extends ModuleBase
 	public array $routes = [
 		'xml-merkezi' => 'front/hub.php',
 		'xml-cron' => 'front/cron.php',
+		'xml-export' => 'front/export.php',
 	];
 
 	public function install(): bool
