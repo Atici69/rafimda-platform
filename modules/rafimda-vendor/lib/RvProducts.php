@@ -464,7 +464,7 @@ class RvProducts
 		$row = DB::execute(
 			'SELECT COUNT(*) AS total, SUM(CASE WHEN p.active = 1 THEN 1 ELSE 0 END) AS active_c,
 				SUM(CASE WHEN p.active = 0 THEN 1 ELSE 0 END) AS passive_c,
-				SUM(CASE WHEN p.stock <= 5 THEN 1 ELSE 0 END) AS low_c
+				SUM(CASE WHEN p.stock <= ' . RvPrefs::lowStock($idVendor) . ' THEN 1 ELSE 0 END) AS low_c
 			FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE vp.id_vendor = ?',
 			[$idVendor]
 		)[0] ?? [];

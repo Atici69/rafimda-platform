@@ -104,7 +104,7 @@ class Product { // TAKLİT
 }
 class RafimdaVendorModule { public const VERSION = 'test'; }
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView'] as $c) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvPrefs', 'RvReports'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 

@@ -1,8 +1,10 @@
+{if $links|default:[]}<div class="rv-card" style="padding:14px 20px"><strong>Hızlı işlemler:</strong>
+	{foreach $links as $l} <a class="rv-btn sm ghost" href="{$l.url}" style="margin:3px 4px 3px 0">{$l.label}</a>{/foreach}</div>{/if}
 <div class="rv-grid c4" style="margin-bottom:20px">
 	<div class="rv-stat"><b>{$stats.total}</b><span>Toplam ürün</span></div>
 	<div class="rv-stat"><b>{$stats.active}</b><span>Aktif ürün</span></div>
 	<div class="rv-stat"><b>{$stats.passive}</b><span>Pasif ürün</span></div>
-	<div class="rv-stat"><b>{$stats.low_stock}</b><span>Düşük stok (≤5)</span></div>
+	<div class="rv-stat"><b>{$stats.low_stock}</b><span>Düşük stok (≤{$lowLimit|default:5})</span></div>
 </div>
 <div class="rv-grid c3" style="margin-bottom:20px">
 	<div class="rv-stat"><b>{$balances.available|string_format:"%.2f"} ₺</b><span>Ödenebilir bakiye</span></div>

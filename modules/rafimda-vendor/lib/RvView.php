@@ -33,8 +33,15 @@ class RvView
 		return self::url('satici-panel', array_merge(['s' => $section], $query));
 	}
 
+	/** Yalnızca testler için: yönlendirmeyi yakalar (üretimde null). @var callable|null */
+	public static $onRedirect = null;
+
 	public static function redirect(string $url): void
 	{
+		if (self::$onRedirect !== null) {
+			(self::$onRedirect)($url);
+		}
+
 		header('Location: ' . $url);
 		exit;
 	}

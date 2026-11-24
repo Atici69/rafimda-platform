@@ -17,12 +17,13 @@ class RvPanel
 		'pricing'      => ['Fiyat Yönetimi', '₺', true, ''],
 		'customers'    => ['Müşteriler', '☺', true, ''],
 		'campaigns'    => ['Kampanyalar ve Vitrin', '✦', false, 'Vitrin modülü (rafimda-showcase) kurulu değil. Kurulduğunda ana sayfada öne çıkan/kampanyalı ürün yerleşimi talep edebilirsiniz.'],
-		'reports'      => ['Raporlar', '▨', false, 'Satış ve stok raporları sonraki aşamada.'],
+		'reports'      => ['Raporlar', '▨', true, ''],
 		'finance'      => ['Finans', '₿', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
 		'subscription' => ['Abonelik', '★', true, ''],
-		'store'        => ['Mağaza Ayarları', '⚑', true, ''],
+		'store'        => ['Mağaza Yönetimi', '⚑', true, ''],
+		'settings'     => ['Ayarlar', '⚙', true, ''],
 		'support'      => ['Destek', '?', false, 'Destek talepleri sonraki aşamada.'],
 	];
 
@@ -101,6 +102,12 @@ class RvPanel
 			case 'store':
 				[$tpl, $vars] = self::store($vendor);
 				break;
+			case 'reports':
+				[$tpl, $vars] = self::reports($vendor);
+				break;
+			case 'settings':
+				[$tpl, $vars] = self::settings($vendor);
+				break;
 			default:
 				[$tpl, $vars] = ['panel_planned', ['planned' => self::MENU[$section]]];
 		}
@@ -117,7 +124,13 @@ class RvPanel
 			if (RvContext::can(RvPerm::SECTION_PERMS[$key])) {
 				// XML Hub / Pazaryeri Hub modülleri kuruluysa kendi sayfalarına bağlanır (Pazaryeri Hub'da gerçek API yok; sayfa bunu belirtir)
 				$slug = $key === 'xml' && class_exists('XhPanel', false) ? 'xml-merkezi' : ($key === 'suppliers' && class_exists('XhPanel', false) ? 'xml-merkezi?view=suppliers' : ($key === 'marketplaces' && class_exists('MhPanel', false) ? 'pazaryeri' : ''));
-				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $slug !== '' ? true : ($key === 'campaigns' && class_exists('RsShowcase', false) ? true : $m[2]), 'url' => $slug !== '' ? RvView::url($slug) : RvView::panelUrl($key)];
+				$ready = $slug !== '' ? true : ($key === 'campaigns' && class_exists('RsShowcase', false) ? true : $m[2]);
+
+				if (!$ready) {
+					continue; // henüz geliştirilmemiş bölümler menüde gösterilmez (ölü bağlantı yok)
+				}
+
+				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => true, 'url' => $slug !== '' ? RvView::url($slug) : RvView::panelUrl($key)];
 			}
 		}
 
@@ -183,7 +196,7 @@ class RvPanel
 
 		return [$section === 'stock' ? 'panel_stock' : 'panel_pricing', [
 			'rows' => $list['rows'], 'total' => $list['total'], 'filter' => $filter, 'q' => $q, 'page' => $page,
-			'pages' => max(1, (int) ceil($list['total'] / $perPage)), 'sum' => RvInventory::summary($idVendor), 'lowLimit' => RvInventory::LOW_STOCK,
+			'pages' => max(1, (int) ceil($list['total'] / $perPage)), 'sum' => RvInventory::summary($idVendor), 'lowLimit' => RvPrefs::lowStock($idVendor),
 			'sec' => $section,
 		]];
 	}
@@ -269,6 +282,8 @@ class RvPanel
 			'balances' => RvLedger::balances($id),
 			'recentOrders' => RvOrders::listFor($id, '', 5),
 			'audit' => RvAudit::recent($id, 8),
+			'lowLimit' => RvPrefs::lowStock($id),
+			'links' => self::quickLinks(),
 		]];
 	}
 
@@ -476,7 +491,7 @@ class RvPanel
 				RvView::redirect(RvView::panelUrl('orders'));
 			}
 
-			return ['panel_order_view', ['vo' => $vo, 'statuses' => RvOrders::STATUSES, 'listUrl' => RvView::panelUrl('orders'), 'canManage' => RvContext::can('orders.manage')]];
+			return ['panel_order_view', ['vo' => $vo, 'statuses' => RvOrders::STATUSES, 'listUrl' => RvView::panelUrl('orders'), 'canManage' => RvContext::can('orders.manage'), 'defaultCargo' => RvPrefs::get($idVendor)['default_cargo']]];
 		}
 
 		$page = max(1, (int) Tools::getValue('page', 1));
@@ -565,5 +580,54 @@ class RvPanel
 		}
 
 		return ['panel_store', ['form' => $form, 'errors' => $errors]];
+	}
+
+	/** Genel Bakış hızlı bağlantıları: yalnızca kullanıcının izinli olduğu ve hazır bölümlere. @return list<array{label:string,url:string}> */
+	private static function quickLinks(): array
+	{
+		$out = [];
+
+		if (RvContext::can('products.create')) {
+			$out[] = ['label' => 'Yeni ürün ekle', 'url' => RvView::panelUrl('products', ['a' => 'new'])];
+		}
+
+		foreach (['orders' => 'Siparişleri gör', 'stock' => 'Stok güncelle', 'pricing' => 'Fiyat güncelle', 'finance' => 'Kazançlarım', 'reports' => 'Satış raporu', 'subscription' => 'Paketim ve kampanyalar'] as $k => $l) {
+			if (RvContext::can(RvPerm::SECTION_PERMS[$k])) {
+				$out[] = ['label' => $l, 'url' => RvView::panelUrl($k)];
+			}
+		}
+
+		return $out;
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function reports(array $vendor): array
+	{
+		$days = (int) Tools::getValue('days', 30);
+		$days = in_array($days, [7, 30, 90], true) ? $days : 30;
+		$r = RvReports::summary((int) $vendor['id_vendor'], $days);
+		$max = 0.0;
+
+		foreach ($r['daily'] as $d) {
+			$max = max($max, (float) $d['sales']);
+		}
+
+		return ['panel_reports', ['rep' => $r, 'maxDaily' => $max, 'days' => $days, 'statuses' => RvOrders::STATUSES]];
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function settings(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('store.manage');
+			$res = RvPrefs::save($idVendor, ['low_stock' => RvView::post('low_stock'), 'default_cargo' => RvView::post('default_cargo')]);
+			RvView::flash($res['success'] ? 'success' : 'danger', $res['message']);
+			RvView::redirect(RvView::panelUrl('settings'));
+		}
+
+		return ['panel_settings', ['prefs' => RvPrefs::get($idVendor)]];
 	}
 }

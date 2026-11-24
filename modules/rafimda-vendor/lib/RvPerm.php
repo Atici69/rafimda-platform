@@ -32,6 +32,7 @@ class RvPerm
 		'subscription' => 'subscription.view',
 		'store'     => 'store.view',
 		'support'   => 'support.view',
+		'settings'  => 'settings.view',
 	];
 
 	/** @return list<string> */
@@ -40,7 +41,7 @@ class RvPerm
 		$view = [
 			'dashboard.view', 'products.view', 'xml.view', 'suppliers.view', 'orders.view', 'marketplaces.view',
 			'stock.view', 'pricing.view', 'customers.view', 'campaigns.view', 'reports.view', 'finance.view',
-			'invoices.view', 'staff.view', 'subscription.view', 'store.view', 'support.view',
+			'invoices.view', 'staff.view', 'subscription.view', 'store.view', 'support.view', 'settings.view',
 		];
 
 		switch ($role) {

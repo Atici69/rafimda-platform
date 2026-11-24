@@ -6,18 +6,19 @@
  */
 class RvInventory
 {
-	public const LOW_STOCK = 5;
+	public const LOW_STOCK = 5; // varsayılan; satıcı bazında RvPrefs ile değiştirilebilir
 	public const MAX_BULK = 100;
 
 	/** @return array{total:int, out:int, low:int, inactive:int, variant:int} */
 	public static function summary(int $idVendor): array
 	{
 		$base = 'FROM products p JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ?';
+		$lowLimit = RvPrefs::lowStock($idVendor);
 
 		return [
 			'total' => (int) DB::getValue("SELECT COUNT(*) $base", [$idVendor]),
 			'out' => (int) DB::getValue("SELECT COUNT(*) $base AND p.stock <= 0", [$idVendor]),
-			'low' => (int) DB::getValue("SELECT COUNT(*) $base AND p.stock > 0 AND p.stock <= " . self::LOW_STOCK, [$idVendor]),
+			'low' => (int) DB::getValue("SELECT COUNT(*) $base AND p.stock > 0 AND p.stock <= " . $lowLimit, [$idVendor]),
 			'inactive' => (int) DB::getValue("SELECT COUNT(*) $base AND p.active = 0", [$idVendor]),
 			'variant' => self::variantCount($idVendor),
 		];
@@ -41,7 +42,7 @@ class RvInventory
 		if ($filter === 'out') {
 			$where .= ' AND p.stock <= 0';
 		} elseif ($filter === 'low') {
-			$where .= ' AND p.stock > 0 AND p.stock <= ' . self::LOW_STOCK;
+			$where .= ' AND p.stock > 0 AND p.stock <= ' . RvPrefs::lowStock($idVendor);
 		} elseif ($filter === 'inactive') {
 			$where .= ' AND p.active = 0';
 		}

@@ -9,12 +9,12 @@ function section(string $t): void { echo "\n== $t ==\n"; }
 section('Migration');
 rv_fresh_db();
 $files = RvMigrator::files();
-ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans'], 'dört migration dosyası bulundu ve sıralı');
+ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs'], 'beş migration dosyası bulundu ve sıralı');
 ok(RvMigrator::pending() === $files, 'başlangıçta hepsi bekliyor');
 // Çalıştırıcı, MySQL DDL'ini SQLite'a çevirmeden çalışamaz: çeviri sonrası çalıştır
 rv_apply_migrations();
 ok(RvMigrator::pending() === [], 'uygulandıktan sonra bekleyen yok (idempotent)');
-foreach (['rafimda_vendors', 'rafimda_vendor_staff', 'rafimda_vendor_products', 'rafimda_audit_log', 'rafimda_import_log', 'rafimda_vendor_orders', 'rafimda_vendor_order_items', 'rafimda_ledger', 'rafimda_payouts'] as $t) {
+foreach (['rafimda_vendors', 'rafimda_vendor_staff', 'rafimda_vendor_products', 'rafimda_audit_log', 'rafimda_import_log', 'rafimda_vendor_orders', 'rafimda_vendor_order_items', 'rafimda_ledger', 'rafimda_payouts', 'rafimda_vendor_prefs'] as $t) {
 	ok(DB::execute("SELECT name FROM sqlite_master WHERE name = '$t'") !== [], "tablo oluştu: $t");
 }
 foreach ($files as $f) {

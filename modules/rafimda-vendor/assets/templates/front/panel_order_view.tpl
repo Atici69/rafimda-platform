@@ -13,7 +13,7 @@
 	{if $canManage && ($vo.status == 'pending' || $vo.status == 'preparing' || $vo.status == 'shipped')}
 	<form method="post"><input type="hidden" name="token" value="{$rvToken}"><input type="hidden" name="id_vendor_order" value="{$vo.id_vendor_order}">
 		<label>Durum</label><select name="status"><option value="preparing">Hazırlanıyor</option><option value="shipped"{if $vo.status == 'shipped'} selected{/if}>Kargoya verildi</option></select>
-		<label>Kargo firması</label><input type="text" name="cargo_company" value="{$vo.cargo_company}">
+		<label>Kargo firması</label><input type="text" name="cargo_company" value="{if $vo.cargo_company}{$vo.cargo_company}{else}{$defaultCargo|default:''}{/if}">
 		<label>Takip numarası</label><input type="text" name="tracking_number" value="{$vo.tracking_number}">
 		<p><button class="rv-btn" type="submit">Güncelle</button></p></form>
 	{else}<p style="color:var(--rv-muted)">Bu sipariş için işlem yapılamaz.</p>{/if}
