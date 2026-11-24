@@ -69,13 +69,16 @@ class XhPanel
 		}
 
 		$view = (string) ($_GET['view'] ?? 'list');
-		$common = ['xhAdmin' => $this->admin, 'xhBase' => $this->base, 'xhTitles' => ['list' => 'Bağlantılarım', 'new' => 'Yeni XML', 'suppliers' => 'Tedarikçiler', 'runs' => 'Geçmiş', 'errors' => 'Hata raporları']];
+		$common = ['xhAdmin' => $this->admin, 'xhBase' => $this->base, 'xhTitles' => ['list' => 'Bağlantılarım', 'new' => 'Yeni XML', 'suppliers' => 'Tedarikçiler', 'runs' => 'İşlem geçmişi', 'changes' => 'Fiyat/stok değişimleri', 'errors' => 'Hata raporları']];
 
 		switch ($view) {
 			case 'new':
 				return ['new', $common + ['suppliers' => XhRepo::suppliers($this->scope() ?? 0), 'categories' => $this->categories(), 'brands' => $this->brands(), 'intervals' => $this->intervals(), 'opt' => XhRepo::DEFAULT_OPTIONS]];
 			case 'suppliers':
 				return ['suppliers', $common + ['suppliers' => XhRepo::suppliers($this->scope() ?? 0), 'edit' => XhRepo::supplier((int) ($_GET['id'] ?? 0), $this->scope() ?? 0)]];
+			case 'changes':
+				return ['changes', $common + ['changes' => XhRepo::changeHistory($this->scope(), 150)]];
+
 			case 'runs':
 				return ['runs', $common + ['runs' => XhRepo::runs($this->scope(), 0, 100)]];
 			case 'errors':

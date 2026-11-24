@@ -244,6 +244,23 @@ ok($r['flash']['type'] === 'success' && XhRepo::mapping(XhRepo::conn($fc, $vA))[
 $r = $call($vA, 'POST', [], ['xhAction' => 'conn_map_save', 'id_connection' => $fc, 'map_brand' => [base64_encode('Z') => 9999]]);
 ok($r['flash']['type'] === 'danger', 'var olmayan marka ID\'si reddedilir');
 
+section('Fiyat/stok/içerik değişim geçmişi (satıcı izolasyonu)');
+$hv = $call($vA, 'GET', ['view' => 'changes']);
+$rowsA = $hv['vars']['changes'] ?? [];
+$kinds = array_unique(array_column($rowsA, 'kind'));
+ok($hv['view'] === 'changes' && count($rowsA) >= 4 && in_array('price', $kinds, true) && in_array('description', $kinds, true) && in_array('cargo', $kinds, true), 'A\'nın fiyat/açıklama/kargo değişimleri listelenir (' . implode(',', $kinds) . ')');
+$hvB = $call($vB, 'GET', ['view' => 'changes']);
+ok($hvB['view'] === 'changes' && ($hvB['vars']['changes'] ?? []) === [], 'B, A\'nın değişim geçmişini göremez');
+$sorted = $rowsA; usort($sorted, fn($a, $b) => strcmp($b['date_add'], $a['date_add']));
+ok(array_column($sorted, 'date_add') === array_column($rowsA, 'date_add'), 'geçmiş yeniden eskiye sıralı');
+
+section('Gerçek RvContext/RvPerm ile oturum/RBAC kapıları (XML Hub)');
+$rbac = fn(string $args): string => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(dirname(__DIR__, 2) . '/xml-hub/tests/rbac_probe.php') . ' ' . $args . ' 2>/dev/null'));
+foreach ([['0 GET', '302', 'oturumsuz kullanıcı giriş sayfasına yönlenir'], ['6 GET', '403', 'satıcı olmayan oturum 403'], ['2 GET', '403', 'viewer rolü (xml.view yok) 403'], ['3 GET', '403', 'orders rolü 403'], ['1 GET', '200|PAGE|FORMS', 'owner sayfayı ve formları görür'], ['4 GET', '200|PAGE|FORMS', 'catalog rolü (xml.view+manage) erişir'], ['5 GET', '200|PAGE|FORMS', 'manager rolü erişir'], ['7 GET', '200|PAGE|FORMS', 'başka satıcının sahibi yalnızca kendi alanını görür'], ['3 POST', '403', 'orders rolü POST yapamaz'], ['2 POST', '403', 'viewer POST yapamaz'], ['6 POST', '403', 'satıcı olmayan POST yapamaz'], ['1 POST', '200|Fatal error: Uncaught RuntimeException: REDIRECT', 'owner POST işlenir ve yönlendirme üretir (test modunda istisna olarak görünür)']] as [$a, $exp, $name]) {
+	$o = $rbac('xh ' . $a); ok(strpos($o, $exp) === 0, "XML Hub: $name [$o]");
+}
+
+
 // ---------- cron ----------
 section('Cron güvenliği ve sayfa önbelleği');
 $probe = function (string $key, string $mode = '') { return trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(__DIR__ . '/cron_probe.php') . ' ' . escapeshellarg($key) . ' ' . escapeshellarg($mode) . ' 2>/dev/null')); };

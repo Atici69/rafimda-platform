@@ -103,7 +103,7 @@ class RvPanel
 		foreach (self::MENU as $key => $m) {
 			if (RvContext::can(RvPerm::SECTION_PERMS[$key])) {
 				// XML Hub / Pazaryeri Hub modülleri kuruluysa kendi sayfalarına bağlanır (Pazaryeri Hub'da gerçek API yok; sayfa bunu belirtir)
-				$slug = $key === 'xml' && class_exists('XhPanel', false) ? 'xml-merkezi' : ($key === 'marketplaces' && class_exists('MhPanel', false) ? 'pazaryeri' : '');
+				$slug = $key === 'xml' && class_exists('XhPanel', false) ? 'xml-merkezi' : ($key === 'suppliers' && class_exists('XhPanel', false) ? 'xml-merkezi?view=suppliers' : ($key === 'marketplaces' && class_exists('MhPanel', false) ? 'pazaryeri' : ''));
 				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $slug !== '' ? true : $m[2], 'url' => $slug !== '' ? RvView::url($slug) : RvView::panelUrl($key)];
 			}
 		}

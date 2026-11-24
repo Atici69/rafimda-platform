@@ -210,6 +210,33 @@ class XhRepo
 		return ['success' => true, 'message' => 'Eşleştirme kaydedildi.'];
 	}
 
+	/**
+	 * Fiyat/stok ve içerik değişiklik geçmişi (satıcıya göre kapsamlı: bağlantının sahibi). Yeniden eskiye sıralı.
+	 *
+	 * @return list<array{date_add:string,kind:string,id_product:int,product_name:string,conn_name:string,detail:string}>
+	 */
+	public static function changeHistory(?int $vendor, int $limit = 150): array
+	{
+		$w = $vendor === null ? '' : ' WHERE c.id_vendor = ?';
+		$p = $vendor === null ? [] : [$vendor];
+		$lim = max(1, min(500, $limit));
+		$out = [];
+
+		foreach (['price' => 'xh_price_history', 'stock' => 'xh_stock_history'] as $kind => $t) {
+			foreach (DB::execute('SELECT h.date_add, h.id_product, h.old_value, h.new_value, c.name AS conn_name, p.product_name FROM ' . $t . ' h INNER JOIN xh_connections c ON c.id_connection = h.id_connection LEFT JOIN products p ON p.id_product = h.id_product' . $w . ' ORDER BY h.id_history DESC LIMIT ' . $lim, $p) ?: [] as $r) {
+				$out[] = ['date_add' => (string) $r['date_add'], 'kind' => $kind, 'id_product' => (int) $r['id_product'], 'product_name' => (string) $r['product_name'], 'conn_name' => (string) $r['conn_name'], 'detail' => rtrim(rtrim(number_format((float) $r['old_value'], 2, '.', ''), '0'), '.') . ' → ' . rtrim(rtrim(number_format((float) $r['new_value'], 2, '.', ''), '0'), '.')];
+			}
+		}
+
+		foreach (DB::execute('SELECT h.date_add, h.id_product, h.kind, h.summary, c.name AS conn_name, p.product_name FROM xh_changes h INNER JOIN xh_connections c ON c.id_connection = h.id_connection LEFT JOIN products p ON p.id_product = h.id_product' . $w . ' ORDER BY h.id_change DESC LIMIT ' . $lim, $p) ?: [] as $r) {
+			$out[] = ['date_add' => (string) $r['date_add'], 'kind' => (string) $r['kind'], 'id_product' => (int) $r['id_product'], 'product_name' => (string) $r['product_name'], 'conn_name' => (string) $r['conn_name'], 'detail' => (string) $r['summary']];
+		}
+
+		usort($out, static fn(array $a, array $b): int => strcmp($b['date_add'], $a['date_add']));
+
+		return array_slice($out, 0, $lim);
+	}
+
 	/** Kimlik bilgisi kaydeder (şifreli). Boş kullanıcı adı = kaldır. @return array{success:bool,message:string} */
 	public static function saveAuth(int $idConn, string $user, string $pass): array
 	{

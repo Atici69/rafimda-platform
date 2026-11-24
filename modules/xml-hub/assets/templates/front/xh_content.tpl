@@ -6,6 +6,15 @@
 </nav>
 {/if}
 
+{if $view == 'changes'}
+<div class="xh-card"><h2>Fiyat, stok ve içerik değişimleri</h2>
+	<p class="muted">XML senkronizasyonunun ürünlerinizde yaptığı değişikliklerin kaydı (yeniden eskiye).</p>
+	<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tarih</th><th>Tür</th><th>Ürün</th><th>Bağlantı</th><th>Değişim</th></tr></thead><tbody>
+	{foreach $changes as $c}<tr><td>{$c.date_add|escape}</td><td><span class="pill">{$c.kind|escape}</span></td><td>{$c.product_name|escape} <span class="muted">#{$c.id_product|escape}</span></td><td>{$c.conn_name|escape}</td><td>{$c.detail|escape}</td></tr>{foreachelse}<tr><td colspan="5" class="muted">Henüz değişiklik kaydı yok.</td></tr>{/foreach}
+	</tbody></table></div>
+</div>
+{/if}
+
 {if $view == 'list'}
 <div class="xh-card">
 	<div class="row"><h2 style="margin:0">XML bağlantılarım</h2><span style="flex:1"></span>

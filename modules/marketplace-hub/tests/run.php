@@ -168,6 +168,13 @@ $smarty->setEscapeHtml(false); $smarty->assign(array_merge($base, $views['list']
 $html = $smarty->fetch('file:' . $tplDir . 'admin/admin.tpl');
 ok(strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 200 && strpos($html, 'gerçek API entegrasyonu yoktur') !== false, 'admin şablonu render: XSS kaçışı ve "gerçek API yok" uyarısı görünür');
 
+section('Gerçek RvContext/RvPerm ile oturum/RBAC kapıları (Pazaryeri Hub)');
+$rbac = fn(string $args): string => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(dirname(__DIR__, 2) . '/xml-hub/tests/rbac_probe.php') . ' ' . $args . ' 2>/dev/null'));
+foreach ([['0 GET', '302', 'oturumsuz kullanıcı giriş sayfasına yönlenir'], ['6 GET', '403', 'satıcı olmayan oturum 403'], ['2 GET', '403', 'viewer rolü (marketplaces.view yok) 403'], ['3 GET', '403', 'orders rolü 403'], ['1 GET', '200|PAGE|FORMS', 'owner sayfayı ve formları görür'], ['4 GET', '403', 'catalog rolü (marketplaces.view yok) 403'], ['5 GET', '200|PAGE|FORMS', 'manager rolü erişir'], ['7 GET', '200|PAGE|FORMS', 'başka satıcının sahibi yalnızca kendi alanını görür'], ['3 POST', '403', 'orders rolü POST yapamaz'], ['2 POST', '403', 'viewer POST yapamaz'], ['6 POST', '403', 'satıcı olmayan POST yapamaz'], ['1 POST', '302', 'owner POST (CSRF geçerli) işlenir']] as [$a, $exp, $name]) {
+	$o = $rbac('mh ' . $a); ok(strpos($o, $exp) === 0, "Pazaryeri Hub: $name [$o]");
+}
+
+
 section('Cron güvenliği');
 $probe = fn(string $k, string $m = '') => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(__DIR__ . '/cron_probe.php') . ' ' . escapeshellarg($k) . ' ' . escapeshellarg($m) . ' 2>/dev/null'));
 $o = $probe('-'); ok(substr($o, -4) === '|403', 'anahtarsız 403');

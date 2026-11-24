@@ -430,6 +430,7 @@ $base = ['xhFlash' => ['type' => 'danger', 'message' => $xss], 'xhToken' => $xss
 $runRow = ['id_run' => 1, 'conn_name' => $xss, 'kind' => 'import', 'status' => 'queued', 'attempts' => 1, 'total' => 10, 'item_offset' => 5, 'message' => $xss, 'date_add' => 'd'];
 $prev = ['key' => 'sku:1', 'name' => $xss, 'sku' => $xss, 'price' => 10.0, 'old_price' => 12.0, 'stock' => 3.0, 'variants' => [1], 'images' => [1, 2], 'errors' => [$xss], 'action' => 'create'];
 $views = [
+'changes' => ['changes' => [['date_add' => 'd', 'kind' => $xss, 'id_product' => 1, 'product_name' => $xss, 'conn_name' => $xss, 'detail' => $xss]]],
 	'list' => ['conns' => [$conn], 'queue' => 1], 'new' => [], 'suppliers' => ['edit' => ['id_supplier' => 1, 'name' => $xss, 'website' => '', 'notes' => '']], 'runs' => ['runs' => [$runRow]], 'errors' => ['errors' => [['date_add' => 'd', 'conn_name' => $xss, 'item_key' => $xss, 'level' => 'error', 'message' => $xss]]],
 	'conn' => ['conn' => $conn, 'tab' => 'general', 'mapping' => [], 'counts' => ['failed' => 2], 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'sampleOk' => true, 'keys' => [$xss], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'hasAuth' => true, 'unmapped' => ['brand' => [['text' => $xss, 'enc' => 'x', 'n' => 2]], 'category' => [['text' => $xss, 'enc' => 'y', 'n' => 1]]], 'mapBrand' => [$xss => 1], 'mapCategory' => [$xss => 2], 'opt' => XhRepo::DEFAULT_OPTIONS],
 ];
