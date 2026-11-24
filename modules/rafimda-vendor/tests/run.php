@@ -9,7 +9,7 @@ function section(string $t): void { echo "\n== $t ==\n"; }
 section('Migration');
 rv_fresh_db();
 $files = RvMigrator::files();
-ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications'], 'altı migration dosyası bulundu ve sıralı');
+ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications', '007_engagement'], 'yedi migration dosyası bulundu ve sıralı');
 ok(RvMigrator::pending() === $files, 'başlangıçta hepsi bekliyor');
 // Çalıştırıcı, MySQL DDL'ini SQLite'a çevirmeden çalışamaz: çeviri sonrası çalıştır
 rv_apply_migrations();

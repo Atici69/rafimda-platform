@@ -35,6 +35,16 @@ if (!empty($cfg['legal'])) {
 	foreach (array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', rv_mysql_to_sqlite(file_get_contents(dirname(__DIR__, 2) . '/rafimda-legal/install.sql'))))) as $st) { $GLOBALS['db']->exec($st); }
 	RlLegal::installDefaults();
 }
+if (!empty($cfg['engage'])) {
+	foreach (['question', 'reviews'] as $m) {
+		$sql = (string) preg_replace('/ CHARACTER SET \w+ COLLATE \w+/', '', file_get_contents(dirname(__DIR__, 2) . "/$m/install.sql"));
+		$sql = (string) preg_replace('/^\s*PRIMARY KEY \(`(id_question|id_review|id_queue)`\),?\s*$/m', '', rv_mysql_to_sqlite($sql));
+		foreach (array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', (string) preg_replace('/,(\s*\))/', '$1', $sql)))) as $st) { $GLOBALS['db']->exec($st); }
+	}
+	DB::insert('rafimda_store_questions', ['id_vendor' => $vA, 'id_user' => 3, 'author_name' => 'Ayşe', 'question' => 'Kargo ne zaman çıkar?', 'answer' => '', 'status' => 'pending', 'date_add' => date('Y-m-d H:i:s')]);
+	RvNotify::send(['id_vendor' => $vA, 'audience' => 'vendor'], 'order', 'Yeni sipariş', 'Test bildirimi', '');
+	RvTickets::create(['opener' => 'customer', 'id_user' => 3, 'category' => 'order', 'subject' => 'Sipariş sorusu', 'body' => 'Siparişim ne zaman gelir?']);
+}
 if (!empty($cfg['pending_app'])) {
 	DB::execute("UPDATE rafimda_vendors SET status = 'pending' WHERE id_vendor = ?", [$vA]);
 	$ap = RvApplication::submit(1, $vA, ['person_type' => 'company', 'contact_name' => 'Kişi 1', 'address' => 'Moda Cad. No:1', 'district' => 'Kadıköy', 'categories' => [1 => 'Giyim']], true);
@@ -49,6 +59,7 @@ register_shutdown_function(static function () use ($cfg) {
 });
 if (!empty($cfg['register'])) { RvAuthFlow::register(); } elseif (!empty($cfg['admin'])) {
 	// Not: bootstrap gerçek modül sınıfını taklit ettiği için yönetici sekmesi, adminPage'in kullandığı AYNI RvApplication::adminVars ile çizilir.
-	$smarty->setEscapeHtml(false); $smarty->assign(RvApplication::adminVars(true, $_GET) + ['adminToken' => 'admintok', 'flash' => '', 'flashType' => 'info', 'rvTab' => 'applications', 'rvPending' => [], 'rvQuery' => (string) ($_GET['q'] ?? '')]);
+	$atab = (string) ($cfg['atab'] ?? 'applications');
+	$smarty->setEscapeHtml(false); $smarty->assign(RvApplication::adminVars($atab === 'applications', $_GET) + RvEngageAdmin::vars($atab === 'engage', $_GET) + ['adminToken' => 'admintok', 'flash' => '', 'flashType' => 'info', 'rvTab' => $atab, 'rvPending' => [], 'rvQuery' => (string) ($_GET['q'] ?? '')]);
 	echo $smarty->fetch('file:' . dirname(__DIR__) . '/assets/templates/admin/admin.tpl');
 } else { RvPanel::handle(); }

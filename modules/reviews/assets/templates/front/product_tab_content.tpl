@@ -50,11 +50,15 @@
 							<span class="review-date">{$review.date_formatted|escape}</span>
 							<span class="review-sep">|</span>
 							<span class="review-author">{$review.author_masked|escape}</span>
+							{if $review.verified|default:false}<span class="review-verified">✓ Doğrulanmış satın alma</span>{/if}
 						</div>
 						<div class="review-bubble">
 							{if $review.title}<div class="review-bubble-title">{$review.title|escape}</div>{/if}
 							<p class="review-bubble-text">{$review.comment|escape}</p>
 						</div>
+						{if $review.photos|default:[]}<div class="review-photos">{foreach $review.photos as $ph}<a href="{$ph|escape}" target="_blank" rel="noopener"><img src="{$ph|escape}" alt="Müşteri fotoğrafı" loading="lazy" width="72" height="72"></a>{/foreach}</div>{/if}
+						{if $review.vendor_reply|default:''}<div class="review-vendor-reply"><strong>Satıcı yanıtı:</strong> {$review.vendor_reply|escape}</div>{/if}
+						{if isset($review.helpful)}<form method="post" action="{$domain|default:'/'}magaza-islem" class="review-helpful"><input type="hidden" name="token" value="{$smarty.session.csrf_token|default:''|escape}"><input type="hidden" name="action" value="helpful"><input type="hidden" name="kind" value="product"><input type="hidden" name="id_review" value="{$review.id_review}"><button type="submit">👍 Faydalı buldum{if $review.helpful} ({$review.helpful}){/if}</button></form>{/if}
 					</div>
 				</article>
 				{/foreach}

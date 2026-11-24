@@ -15,7 +15,7 @@
 				<p>{$item.question|escape}</p>
 			</div>
 			<div class="question-bubble question-bubble--answer">
-				<span class="question-label">Cevap</span>
+				<span class="question-label">{if $item.answered_by_vendor|default:false}Satıcı yanıtı{if $item.answer_store|default:''} · {$item.answer_store|escape}{/if}{else}Cevap{/if}</span>
 				<p>{$item.answer|escape}</p>
 				{if $item.answer_formatted}
 				<small class="question-answer-date">{$item.answer_formatted|escape}</small>

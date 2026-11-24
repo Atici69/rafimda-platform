@@ -23,8 +23,12 @@ class RvPanel
 		'staff'        => ['Personel', '☻', true, ''],
 		'subscription' => ['Abonelik', '★', true, ''],
 		'store'        => ['Mağaza Yönetimi', '⚑', true, ''],
+		'storefront'   => ['Mağaza Vitrini', '❖', true, ''],
+		'questions'    => ['Soru-Cevap', '❓', true, ''],
+		'reviews'      => ['Değerlendirmeler', '☆', true, ''],
+		'notifications' => ['Bildirimler', '✉', true, ''],
 		'settings'     => ['Ayarlar', '⚙', true, ''],
-		'support'      => ['Destek', '?', false, 'Destek talepleri sonraki aşamada.'],
+		'support'      => ['Destek', '?', true, ''],
 	];
 
 	/** Onaylanmamış mağaza: başvuru durumu, eksik belge bildirimi, belge yükleme ve geçmiş. Yalnızca mağaza SAHİBİ belge yükleyebilir. */
@@ -149,6 +153,21 @@ class RvPanel
 				break;
 			case 'settings':
 				[$tpl, $vars] = self::settings($vendor);
+				break;
+			case 'storefront':
+				[$tpl, $vars] = self::storefront($vendor);
+				break;
+			case 'questions':
+				[$tpl, $vars] = self::questions($vendor, $ctx);
+				break;
+			case 'reviews':
+				[$tpl, $vars] = self::reviews($vendor);
+				break;
+			case 'notifications':
+				[$tpl, $vars] = self::notifications($vendor);
+				break;
+			case 'support':
+				[$tpl, $vars] = self::support($vendor, $ctx);
 				break;
 			default:
 				[$tpl, $vars] = ['panel_planned', ['planned' => self::MENU[$section]]];
@@ -671,5 +690,104 @@ class RvPanel
 		}
 
 		return ['panel_settings', ['prefs' => RvPrefs::get($idVendor)]];
+	}
+
+	private static function storefront(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('store.manage');
+			$kind = RvView::post('action');
+
+			if (in_array($kind, ['logo', 'cover'], true)) {
+				$r = RvStorefront::uploadImage($idVendor, $kind, (array) ($_FILES['image'] ?? []));
+			} else {
+				$ok = RvStorefront::saveProfile($idVendor, $_POST);
+				$r = ['success' => $ok, 'message' => $ok ? 'Vitrin bilgileri kaydedildi.' : 'Kaydedilemedi.'];
+			}
+
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl('storefront'));
+		}
+
+		return ['panel_storefront', ['profile' => RvStorefront::profile($idVendor), 'publicUrl' => RvStorefront::url($vendor), 'rating' => RvStorefront::rating($idVendor), 'followers' => RvStorefront::followers($idVendor)]];
+	}
+
+	private static function questions(array $vendor, array $ctx): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('questions.answer');
+			$r = RvView::post('kind') === 'store'
+				? RvQA::answerStore($idVendor, (int) $ctx['id_user'], (int) RvView::post('id'), RvView::post('answer'))
+				: RvQA::answerProduct($idVendor, (int) $ctx['id_user'], (int) RvView::post('id'), RvView::post('answer'));
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl('questions', ['f' => (string) Tools::getValue('f', 'open')]));
+		}
+
+		$f = (string) Tools::getValue('f', 'open');
+
+		return ['panel_questions', ['qaAvailable' => RvQA::available(), 'productQuestions' => RvQA::productQuestions($idVendor, $f), 'storeQuestions' => RvQA::storeQuestions($idVendor),
+			'filter' => $f, 'storeStatuses' => RvQA::STORE_STATUSES, 'moderation' => RvQA::moderation(), 'canAnswer' => RvContext::can('questions.answer')]];
+	}
+
+	private static function reviews(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('reviews.reply');
+			$r = RvReviews::reply($idVendor, RvView::post('kind') === 'store' ? 'store' : 'product', (int) RvView::post('id'), RvView::post('reply'));
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl('reviews'));
+		}
+
+		return ['panel_reviews', ['reviewsAvailable' => RvReviews::available(), 'reviews' => RvReviews::forVendor($idVendor), 'rating' => RvStorefront::rating($idVendor), 'canReply' => RvContext::can('reviews.reply')]];
+	}
+
+	private static function notifications(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			RvNotify::markReadForVendor($idVendor, (int) RvView::post('id'));
+			RvView::redirect(RvView::panelUrl('notifications'));
+		}
+
+		return ['panel_notifications', ['items' => RvNotify::forVendor($idVendor, 100), 'types' => RvNotify::TYPES, 'channels' => RvNotify::channelStatus()]];
+	}
+
+	private static function support(array $vendor, array $ctx): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+		$idUser = (int) $ctx['id_user'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('support.manage');
+			$a = RvView::post('action');
+
+			if ($a === 'create') {
+				$r = RvTickets::create(['opener' => 'vendor', 'id_user' => $idUser, 'id_vendor' => $idVendor, 'category' => RvView::post('category'), 'subject' => RvView::post('subject'), 'body' => RvView::post('body')]);
+				RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+				RvView::redirect($r['success'] ? RvView::panelUrl('support', ['t' => (int) $r['id_ticket']]) : RvView::panelUrl('support'));
+			}
+
+			$t = (int) RvView::post('id_ticket');
+			$r = $a === 'close' ? ['success' => RvTickets::close($t, 'vendor', $idUser, $idVendor), 'message' => 'Talep kapatıldı.'] : RvTickets::reply($t, 'vendor', $idUser, RvView::post('body'), $idUser, $idVendor);
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['success'] ? $r['message'] : ($r['message'] ?? 'İşlem başarısız.'));
+			RvView::redirect(RvView::panelUrl('support', ['t' => $t]));
+		}
+
+		$t = (int) Tools::getValue('t', 0);
+		$ticket = $t > 0 ? RvTickets::get($t, 'vendor', $idUser, $idVendor) : null;
+
+		return ['panel_support', ['tickets' => RvTickets::listFor('vendor', $idUser, $idVendor), 'ticket' => $ticket, 'statuses' => RvTickets::STATUSES, 'categories' => RvTickets::CATEGORIES, 'canManage' => RvContext::can('support.manage')]];
 	}
 }

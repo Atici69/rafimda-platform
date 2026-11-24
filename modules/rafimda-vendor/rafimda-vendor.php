@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication', 'RvPanel'] as $rvClass) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication', 'RvPrivacy', 'RvStorefront', 'RvQA', 'RvReviews', 'RvTickets', 'RvEngageAdmin', 'RvPanel'] as $rvClass) {
 	require_once __DIR__ . '/lib/' . $rvClass . '.php';
 }
 
@@ -29,7 +29,19 @@ class RafimdaVendorModule extends ModuleBase
 		'satici-kayit' => 'front/register.php',
 		'satici-cikis' => 'front/logout.php',
 		'satici-panel' => 'front/panel.php',
+		'magaza' => 'front/store.php',
+		'magaza-islem' => 'front/store_action.php',
+		'degerlendir' => 'front/review.php',
+		'hesap-merkezi' => 'front/account.php',
 	];
+
+	public array $displayHooks = [
+		'product_detail' => 'Ürün sayfası: satıcı mağaza bilgisi, kargo/iade notu, mağaza bağlantısı',
+	];
+
+	public array $defaultDisplayHooks = ['product_detail'];
+
+	public array $frontStylesheets = ['store.css'];
 
 	public function install(): bool
 	{
@@ -71,6 +83,27 @@ class RafimdaVendorModule extends ModuleBase
 		});
 	}
 
+	public function renderDisplayHook(string $hook, array $context = []): ?string
+	{
+		if ($hook !== 'product_detail') {
+			return null;
+		}
+
+		$idProduct = (int) ($context['id_product'] ?? ($context['product']['id_product'] ?? Tools::getValue('id_product', 0)));
+		$vendor = $idProduct > 0 ? RvStorefront::vendorOfProduct($idProduct) : null;
+
+		if (!$vendor) {
+			return null; // Rafımda'nın kendi ürünü veya satıcısı olmayan ürün: satıcı kutusu gösterilmez
+		}
+
+		$html = $this->renderFrontTemplate('product_seller', [
+			'sv' => $vendor, 'svProfile' => RvStorefront::profile((int) $vendor['id_vendor']), 'svRating' => RvStorefront::rating((int) $vendor['id_vendor']),
+			'svUrl' => RvStorefront::url($vendor), 'svFollowers' => RvStorefront::followers((int) $vendor['id_vendor']),
+		]);
+
+		return $html !== '' ? $html : null;
+	}
+
 	public function adminPage(): void
 	{
 		global $smarty, $adminToken;
@@ -83,7 +116,7 @@ class RafimdaVendorModule extends ModuleBase
 		$adminId = Admin::getId();
 		$tab = (string) Tools::getValue('tab', 'applications');
 
-		if (!in_array($tab, ['applications', 'vendors', 'products', 'orders', 'finance', 'plans', 'settings'], true)) {
+		if (!in_array($tab, ['applications', 'vendors', 'products', 'orders', 'finance', 'plans', 'engage', 'settings'], true)) {
 			$tab = 'applications';
 		}
 
@@ -130,6 +163,13 @@ class RafimdaVendorModule extends ModuleBase
 					if ($ok) {
 						RvApplication::syncFromVendor((int) Tools::getValue('id_vendor'), (string) Tools::getValue('to_status'), $adminId, (string) Tools::getValue('reason'));
 					}
+					break;
+				case 'eng_question':
+				case 'eng_review':
+				case 'eng_ticket_reply':
+				case 'eng_ticket_close':
+				case 'eng_settings':
+					[$ok, $msg] = RvEngageAdmin::handle($a, $_POST, $adminId);
 					break;
 				case 'app_transition':
 					$r = RvApplication::transition((int) Tools::getValue('id_application'), (string) Tools::getValue('to'), $adminId, (string) Tools::getValue('note'));
@@ -202,6 +242,7 @@ class RafimdaVendorModule extends ModuleBase
 		}
 
 		$smarty->assign(RvApplication::adminVars($tab === 'applications', $_GET));
+		$smarty->assign(RvEngageAdmin::vars($tab === 'engage', $_GET));
 		$smarty->assign([
 			'pageTitle' => $this->title,
 			'flash' => $flash,

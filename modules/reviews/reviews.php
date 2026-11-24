@@ -265,6 +265,14 @@ class ReviewsModule extends ModuleBase
 			$authorName = 'Müşteri';
 		}
 
+		if (class_exists('RvReviews', false)) {
+			$guard = RvReviews::guard($idProduct, $idUser); // Rafımda: kendi mağazasını değerlendirme engeli, satın alma kuralı
+
+			if ($guard !== null) {
+				return $guard;
+			}
+		}
+
 		$existing = DB::getValue(
 			'SELECT id_review FROM product_reviews WHERE id_product = ? AND id_user = ? LIMIT 1',
 			[$idProduct, $idUser]
@@ -296,6 +304,10 @@ class ReviewsModule extends ModuleBase
 		if ($id) {
 			$_SESSION['review_last_submit'] = time();
 			unset($_SESSION['review_form_started']);
+
+			if (class_exists('RvReviews', false)) {
+				RvReviews::onReviewCreated((int) $id, $idProduct, $idUser); // Rafımda: doğrulanmış satın alma + satıcı bildirimi
+			}
 		}
 
 		return $id
@@ -485,6 +497,10 @@ class ReviewsModule extends ModuleBase
 		$row['rating'] = (int) $row['rating'];
 		$row['author_initials'] = self::getInitials($row['author_name']);
 		$row['author_masked'] = Tools::maskName($row['author_name']);
+
+		if (class_exists('RvReviews', false)) {
+			$row = RvReviews::decorate($row); // Rafımda: doğrulanmış satın alma, fotoğraf, faydalı, satıcı yanıtı
+		}
 
 		return $row;
 	}

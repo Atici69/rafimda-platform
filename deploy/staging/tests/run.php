@@ -91,7 +91,7 @@ foreach (StagingModules::all() as $m) {
 	}
 }
 t('tüm modüller sırayla kuruldu', $allOk);
-t('rafimda_migrations: 001-006 kayıtlı', $mig->applied('rafimda_migrations') === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications']);
+t('rafimda_migrations: 001-007 kayıtlı', $mig->applied('rafimda_migrations') === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications', '007_engagement']);
 t('xh_migrations: 001-003 kayıtlı', $mig->applied('xh_migrations') === ['001_init', '002_source_meta_credentials', '003_export_feeds']);
 t('mh_migrations kayıtlı', count($mig->applied('mh_migrations')) >= 1);
 

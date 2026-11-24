@@ -9,8 +9,8 @@
 {/if}
 
 <ul class="nav nav-tabs mb-3">
-	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'settings' => 'Ayarlar'] as $k => $l}
-	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}{if $k == 'applications' && $rvAppOpen|default:0 > 0} <span class="badge text-bg-warning">{$rvAppOpen}</span>{/if}</a></li>
+	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'engage' => 'Soru · Yorum · Destek', 'settings' => 'Ayarlar'] as $k => $l}
+	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}{if $k == 'applications' && $rvAppOpen|default:0 > 0} <span class="badge text-bg-warning">{$rvAppOpen}</span>{/if}{if $k == 'engage' && $rvEngTicketOpen|default:0 > 0} <span class="badge text-bg-info">{$rvEngTicketOpen}</span>{/if}</a></li>
 	{/foreach}
 </ul>
 
@@ -63,6 +63,55 @@
 {foreach $rvApps as $a}<tr><td>{$a.app_no|escape}</td><td>{$a.store_name|escape}</td><td>{$rvPersonTypes[$a.person_type]|default:''|escape}</td><td>{$a.contact_name|escape}</td><td>{$a.city|escape}</td><td>{$a.doc_count}</td><td>{$rvAppStatuses[$a.status]|escape}</td><td>{$a.date_add|escape}</td><td><a class="btn btn-sm btn-outline-primary" href="?tab=applications&app={$a.id_application}">İncele</a></td></tr>{foreachelse}<tr><td colspan="9" class="text-muted">Başvuru yok.</td></tr>{/foreach}
 </tbody></table></div></div>
 {/if}
+{/if}
+
+{if $rvTab == 'engage'}
+<div class="row g-3">
+<div class="col-lg-6">
+	<div class="card mb-3"><div class="card-body">
+		<h2 class="h6">Destek talepleri</h2>
+		{if $rvEngTicket}
+			<p><a href="?tab=engage">← Tüm talepler</a></p>
+			<p><strong>{$rvEngTicket.ticket_no|escape}</strong> · {$rvEngTicket.subject|escape} · {$rvEngCategories[$rvEngTicket.category]|default:''|escape} · {if $rvEngTicket.opener == 'vendor'}Satıcı #{$rvEngTicket.id_vendor}{else}Müşteri #{$rvEngTicket.id_user}{/if}{if $rvEngTicket.id_order} · Sipariş #{$rvEngTicket.id_order}{/if}</p>
+			<ul class="small">{foreach $rvEngTicket.messages as $m}<li><strong>{$m.author|escape}</strong> {$m.date_add|escape}<br>{$m.body|escape|nl2br nofilter}</li>{/foreach}</ul>
+			<form method="post"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="eng_ticket_reply"><input type="hidden" name="id_ticket" value="{$rvEngTicket.id_ticket}">
+				<textarea class="form-control mb-2" name="body" rows="3" required placeholder="Yanıt (talep sahibine bildirilir)"></textarea>
+				<select class="form-select mb-2" name="status">{foreach ['answered', 'waiting', 'closed'] as $st}<option value="{$st}">{$rvEngTicketStatuses[$st]|escape}</option>{/foreach}</select>
+				<button class="btn btn-primary btn-sm" type="submit">Yanıtla</button></form>
+		{else}
+			<table class="table table-sm"><thead><tr><th>No</th><th>Kimden</th><th>Konu</th><th>Durum</th></tr></thead><tbody>
+			{foreach $rvEngTickets as $t}<tr><td><a href="?tab=engage&ticket={$t.id_ticket}">{$t.ticket_no|escape}</a></td><td>{if $t.opener == 'vendor'}Satıcı{else}Müşteri{/if}</td><td>{$t.subject|escape}</td><td>{$rvEngTicketStatuses[$t.status]|escape}</td></tr>{foreachelse}<tr><td colspan="4" class="text-muted">Talep yok.</td></tr>{/foreach}
+			</tbody></table>
+		{/if}
+	</div></div>
+	<div class="card"><div class="card-body">
+		<h2 class="h6">Ayarlar</h2>
+		<form method="post"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="eng_settings">
+			<div class="form-check"><input class="form-check-input" type="checkbox" name="qa_moderation" value="1" id="eng-qa"{if $rvEngQaMod} checked{/if}><label class="form-check-label" for="eng-qa">Satıcı yanıtları yönetici onayından sonra yayınlansın</label></div>
+			<div class="form-check"><input class="form-check-input" type="checkbox" name="purchase_only" value="1" id="eng-po"{if $rvEngPurchaseOnly} checked{/if}><label class="form-check-label" for="eng-po">Ürün yorumu yalnızca teslim alınmış ürüne yapılabilsin</label></div>
+			<button class="btn btn-outline-primary btn-sm mt-2" type="submit">Kaydet</button></form>
+		<p class="small text-muted mt-2">Ürün soruları ve ürün yorumları FriSay "Soru-Cevap" ve "Yorumlar" modül ekranlarından onaylanır{if !$rvEngQaAvailable} (soru modülü kurulu değil){/if}{if !$rvEngReviewsAvailable} (yorum modülü kurulu değil){/if}. E-posta: {if $rvEngChannels.email == 'configured'}yapılandırıldı{else}<strong>yapılandırılmadı</strong>{/if}; SMS: altyapı yok.</p>
+	</div></div>
+</div>
+<div class="col-lg-6">
+	<div class="card mb-3"><div class="card-body">
+		<h2 class="h6">Mağaza soruları (moderasyon)</h2>
+		{foreach $rvEngStoreQ as $q}<div class="border rounded p-2 mb-2"><small class="text-muted">{$q.store_name|escape} · {$q.date_add|escape} · {$q.status|escape}</small><p class="mb-1">{$q.question|escape}</p>{if $q.answer}<p class="mb-1 text-primary">↳ {$q.answer|escape}</p>{/if}
+			<form method="post" class="d-inline"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="eng_question"><input type="hidden" name="id" value="{$q.id_store_question}">{if $q.answer}<button class="btn btn-sm btn-success" name="to" value="published">Yayınla</button>{/if} <button class="btn btn-sm btn-outline-danger" name="to" value="rejected">Reddet</button></form></div>
+		{foreachelse}<p class="text-muted">Bekleyen mağaza sorusu yok.</p>{/foreach}
+	</div></div>
+	<div class="card mb-3"><div class="card-body">
+		<h2 class="h6">Mağaza değerlendirmeleri (moderasyon)</h2>
+		{foreach $rvEngStoreR as $r}<div class="border rounded p-2 mb-2"><small class="text-muted">{$r.store_name|escape} · {$r.rating}/5 · sipariş #{$r.id_order} · doğrulanmış</small><p class="mb-1">{$r.comment|escape}</p>
+			<form method="post" class="d-inline"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="eng_review"><input type="hidden" name="id" value="{$r.id_store_review}"><button class="btn btn-sm btn-success" name="to" value="approved">Onayla</button> <button class="btn btn-sm btn-outline-danger" name="to" value="rejected">Reddet</button></form></div>
+		{foreachelse}<p class="text-muted">Bekleyen mağaza değerlendirmesi yok.</p>{/foreach}
+	</div></div>
+	<div class="card"><div class="card-body">
+		<h2 class="h6">Yönetici bildirimleri</h2>
+		<ul class="small mb-0">{foreach $rvEngNotifications as $n}<li>{$n.date_add|escape} · {$n.title|escape}</li>{foreachelse}<li class="text-muted">Bildirim yok.</li>{/foreach}</ul>
+	</div></div>
+</div>
+</div>
 {/if}
 
 {if $rvTab == 'vendors'}

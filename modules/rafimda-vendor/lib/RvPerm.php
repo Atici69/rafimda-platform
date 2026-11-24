@@ -33,6 +33,10 @@ class RvPerm
 		'store'     => 'store.view',
 		'support'   => 'support.view',
 		'settings'  => 'settings.view',
+		'storefront' => 'store.view',
+		'questions' => 'questions.view',
+		'reviews'   => 'reviews.view',
+		'notifications' => 'notifications.view',
 	];
 
 	/** @return list<string> */
@@ -42,6 +46,7 @@ class RvPerm
 			'dashboard.view', 'products.view', 'xml.view', 'suppliers.view', 'orders.view', 'marketplaces.view',
 			'stock.view', 'pricing.view', 'customers.view', 'campaigns.view', 'reports.view', 'finance.view',
 			'invoices.view', 'staff.view', 'subscription.view', 'store.view', 'support.view', 'settings.view',
+			'questions.view', 'reviews.view', 'notifications.view',
 		];
 
 		switch ($role) {
@@ -49,18 +54,21 @@ class RvPerm
 				return array_merge($view, [
 					'products.create', 'products.edit', 'products.delete', 'orders.manage',
 					'xml.manage', 'marketplaces.manage', 'staff.manage', 'store.manage',
+					'questions.answer', 'reviews.reply', 'support.manage',
 				]);
 			case 'manager':
 				return array_merge($view, [
 					'products.create', 'products.edit', 'products.delete', 'orders.manage', 'xml.manage', 'marketplaces.manage',
+					'questions.answer', 'reviews.reply', 'support.manage',
 				]);
 			case 'catalog':
 				return ['dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',
-					'xml.view', 'xml.manage', 'stock.view', 'pricing.view', 'support.view'];
+					'xml.view', 'xml.manage', 'stock.view', 'pricing.view', 'support.view', 'questions.view', 'questions.answer', 'notifications.view'];
 			case 'orders':
-				return ['dashboard.view', 'products.view', 'orders.view', 'orders.manage', 'customers.view', 'support.view'];
+				return ['dashboard.view', 'products.view', 'orders.view', 'orders.manage', 'customers.view', 'support.view', 'support.manage',
+					'questions.view', 'questions.answer', 'reviews.view', 'reviews.reply', 'notifications.view'];
 			case 'viewer':
-				return ['dashboard.view', 'products.view', 'orders.view', 'support.view'];
+				return ['dashboard.view', 'products.view', 'orders.view', 'support.view', 'questions.view', 'reviews.view', 'notifications.view'];
 		}
 
 		return [];

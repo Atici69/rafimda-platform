@@ -200,6 +200,10 @@ class QuestionModule extends ModuleBase
 		if ($id) {
 			$_SESSION['question_last_submit'] = time();
 			unset($_SESSION['question_form_started']);
+
+			if (class_exists('RvQA', false)) {
+				RvQA::onQuestionCreated((int) $id); // Rafımda: satıcıya bağla ve bildir
+			}
 		}
 
 		return $id
@@ -330,6 +334,10 @@ class QuestionModule extends ModuleBase
 		$row['date_formatted'] = Tools::formatDate3($row['date_add']);
 		$row['answer_formatted'] = !empty($row['date_answer']) ? Tools::formatDate3($row['date_answer']) : '';
 		$row['author_masked'] = Tools::maskName($row['author_name']);
+
+		if (class_exists('RvQA', false)) {
+			$row = RvQA::decorate($row); // Rafımda: kişisel bilgi maskeleme + satıcı yanıtı etiketi
+		}
 
 		return $row;
 	}
