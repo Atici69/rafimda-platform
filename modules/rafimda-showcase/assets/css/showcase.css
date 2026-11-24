@@ -1,0 +1,12 @@
+.rs-showcase{max-width:1200px;margin:24px auto;padding:0 16px}
+.rs-block{margin:0 0 28px}
+.rs-title{color:#0b2545;font-size:22px;margin:0 0 12px;padding-bottom:8px;border-bottom:3px solid #ff7a00;display:inline-block}
+.rs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.rs-card,.rs-banner{display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;text-decoration:none;color:#0b2545;transition:box-shadow .15s,border-color .15s}
+.rs-card:hover,.rs-banner:hover{border-color:#ff7a00;box-shadow:0 4px 14px rgba(11,37,69,.12)}
+.rs-card img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:6px}
+.rs-noimg{display:block;width:100%;aspect-ratio:1/1;background:#f3f6fb;border-radius:6px}
+.rs-name{font-size:14px;line-height:1.3;min-height:36px;overflow:hidden}
+.rs-price{font-weight:700;color:#ff7a00}.rs-price s{color:#6b7280;font-weight:400;font-size:12px}
+.rs-banner{grid-column:span 2}.rs-banner img{width:100%;border-radius:6px;max-height:220px;object-fit:cover}
+@media (max-width:520px){.rs-grid{grid-template-columns:repeat(2,1fr);gap:10px}.rs-banner{grid-column:span 2}}
