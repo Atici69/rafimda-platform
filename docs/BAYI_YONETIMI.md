@@ -3,6 +3,13 @@
 Bu belge, bayi modülünün **kodda gerçekten uygulanan** kurallarını anlatır. Her kuralın karşılığı `modules/rafimda-dealer/tests/` altındaki testlerle doğrulanmıştır
 (SQLite + gerçek Smarty; **gerçek MySQL/FriSay/tarayıcı ile henüz denenmedi** — bkz. "Doğrulama durumu").
 
+> **İLK LANSMANDA BAYİLİK PASİFTİR (2026-11-24 kararı).** Ana anahtar `RAFIMDA_DEALER_ENABLED` (ayar yoksa veya `0` ise pasif). Pasifken:
+> bayi başvurusu, bayi girişi/paneli, referans bağlantısı ve çıkış rotaları **404** döner; ana sayfa, hero, slaytlar, altbilgi, mobil menü ve kayıt sayfasında
+> bayilik bağlantısı/metni **gösterilmez**; sipariş kancaları **komisyon üretmez ve müşteri bağlamaz**; yönetici panelinde yalnızca
+> "Şimdilik Pasif – Gelecekte Etkinleştirilecek" ekranı görünür ve tüm bayi işlemleri sunucu tarafında reddedilir. Tablolar ve kayıtlar **silinmez**.
+> Etkinleştirme yalnızca yönetici panelinde onay ifadesi (`BAYILIGI ETKINLESTIR`) + CSRF ile yapılır ve denetim kaydına yazılır —
+> işletme sahibinin **açık yazılı onayı olmadan yapılmamalıdır**. Doğrulama: `tests/run_passive.php` (24 test). Aşağıdaki kurallar sistem etkinleştirildiğinde geçerlidir.
+
 > **Muhasebe pasiftir.** Modülde ödeme, banka, fatura, muhasebe fişi ve cari hesap **yoktur**; yetki matrisinde de bu alanlara ait hiçbir yetki tanımlı değildir
 > (testle doğrulanır). Abonelik ve komisyon yalnızca **kayıt/hesaplamadır**; para hareketi yapılmaz, tahsilat ve ödeme platform dışında yapılır.
 

@@ -72,7 +72,8 @@ class RafimdaThemeModule extends ModuleBase
 
 	public static function dealerEnabled(): bool
 	{
-		return class_exists('Module') && Module::isEnabled('rafimda-dealer');
+		// Modül etkin olsa bile bayilik ana anahtarı kapalıysa (ilk lansman) hiçbir bayi bağlantısı gösterilmez
+		return class_exists('Module') && Module::isEnabled('rafimda-dealer') && class_exists('RdSwitch') && RdSwitch::enabled();
 	}
 
 	/** Ana sayfa mı? (kancalar her sayfada çizildiği için ağır sorgular yalnızca burada çalışır) */

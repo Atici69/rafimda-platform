@@ -1,4 +1,23 @@
 {if $flash}<div class="alert alert-{$flashType|escape}">{$flash|escape}</div>{/if}
+{if !$rdEnabled}
+<div class="card mb-3 border-warning">
+	<div class="card-body">
+		<h2 class="h5 mb-2"><span class="badge text-bg-warning me-2">PASİF</span>Bayilik sistemi: {$rdPassiveLabel|escape}</h2>
+		<p class="mb-2">İlk lansmanda bayilik ve alt bayilik kapalıdır: bayi başvurusu, bayi hesabı, alt bayi oluşturma, bayi satış ve komisyon kayıtları <strong>çalışmaz</strong>; bayi sayfaları ziyaretçiye 404 döner ve ana sayfada bayilik bağlantısı gösterilmez. Altyapı, tablolar ve mevcut kayıtlar <strong>korunur</strong>.</p>
+		<p class="text-muted small mb-3">Korunan kayıtlar: {$rdCounts.pending|default:0} bekleyen, {$rdCounts.active|default:0} aktif, {$rdCounts.suspended|default:0} askıda, {$rdCounts.rejected|default:0} reddedilmiş bayi kaydı.</p>
+		<form method="post" class="row g-2 align-items-end">
+			<input type="hidden" name="token" value="{$rdToken|escape}"><input type="hidden" name="rdAction" value="system_switch"><input type="hidden" name="to" value="1">
+			<div class="col-md-6"><label class="form-label small" for="rd-confirm">Yalnızca işletme sahibinin açık yazılı onayından sonra etkinleştirin. Onay ifadesi: <code>{$rdConfirmPhrase|escape}</code></label>
+			<input class="form-control" id="rd-confirm" name="confirm_phrase" autocomplete="off"></div>
+			<div class="col-md-3"><button type="submit" class="btn btn-outline-danger">Bayiliği etkinleştir</button></div>
+		</form>
+	</div>
+</div>
+{else}
+<form method="post" class="alert alert-secondary d-flex align-items-center gap-2">
+	<input type="hidden" name="token" value="{$rdToken|escape}"><input type="hidden" name="rdAction" value="system_switch"><input type="hidden" name="to" value="0">
+	<span>Bayilik sistemi <strong>etkin</strong>.</span><button type="submit" class="btn btn-sm btn-outline-dark ms-auto">Pasife al (veriler korunur)</button>
+</form>
 {if $rdPending}
 <form method="post" class="alert alert-warning d-flex align-items-center gap-2">
 	<input type="hidden" name="token" value="{$rdToken|escape}"><input type="hidden" name="rdAction" value="migrate">
@@ -86,4 +105,5 @@
 <div class="admin-panel p-3"><form method="post" class="row g-2"><input type="hidden" name="token" value="{$rdToken|escape}"><input type="hidden" name="rdAction" value="settings">
 <div class="col-md-4"><label class="form-label">Varsayılan komisyon % (bayiye ve pakete özel oran yoksa)</label><input class="form-control" name="default_commission" value="{$rdDefaultRate|escape}"></div>
 <div class="col-12"><button class="btn btn-dark" type="submit">Kaydet</button></div></form></div>
+{/if}
 {/if}

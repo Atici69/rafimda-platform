@@ -24,6 +24,7 @@ $suites = [
 	'rafimda-dealer/run' => 'modules/rafimda-dealer/tests/run.php',
 	'rafimda-dealer/run_flows' => 'modules/rafimda-dealer/tests/run_flows.php',
 	'rafimda-dealer/run_rbac' => 'modules/rafimda-dealer/tests/run_rbac.php',
+	'rafimda-dealer/run_passive' => 'modules/rafimda-dealer/tests/run_passive.php',
 	'rafimda-dealer/load_module' => 'modules/rafimda-dealer/tests/load_module.php',
 	'rafimda-theme/run' => 'modules/rafimda-theme/tests/run.php',
 	'rafimda-theme/run_integration' => 'modules/rafimda-theme/tests/run_integration.php',

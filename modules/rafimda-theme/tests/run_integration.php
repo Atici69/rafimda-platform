@@ -18,6 +18,7 @@ class Module { public static array $en = []; public static function path($n) { r
 class Admin { public static bool $demo = false; public static function isDemoMode() { return self::$demo; } }
 require $root . '/config/config.php';
 require $root . '/core/ModuleBase.php';
+require $root . '/modules/rafimda-dealer/lib/RdSwitch.php';
 require $root . '/libs/Smarty.class.php';
 $fail = 0; $pass = 0;
 function t(bool $c, string $n): void { global $fail, $pass; if ($c) { $pass++; } echo ($c ? '  ✓ ' : '  ✗ ') . $n . "\n"; if (!$c) { $fail++; } }
@@ -95,6 +96,15 @@ t($bn[2]['link'] === '' && $bn[2]['image'] === '', 'banner: //evil.com ve tırna
 $vars = RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtSections' => [], 'rtBanners' => $bn, 'rtShowPromo' => true];
 $vars['rtSections'] = [['key' => 'new', 'title' => 'Yeni Ürünler', 'url' => '', 'products' => [['url' => '/p/1', 'image_url' => '/img/p1.jpg', 'product_name' => 'Ürün <script>', 'has_discount' => true, 'old_price_formatted' => '₺200', 'price_formatted' => '₺150']]]];
 Module::$en = ['rafimda-vendor', 'rafimda-dealer'];
+Settings::set('RAFIMDA_DEALER_ENABLED', '0');
+$pv = RafimdaThemeModule::viewVars();
+$html = $m->renderFrontTemplate('home_bottom', $pv + $vars);
+$hero0 = $m->renderFrontTemplate('hero', $pv + ['rtCategories' => []]);
+$foot0 = (string) $m->renderDisplayHook('footer'); $mob0 = (string) $m->renderDisplayHook('mobile_menu'); $reg0 = (string) $m->renderDisplayHook('auth_register');
+$all0 = $html . $hero0 . $foot0 . $mob0 . $reg0 . json_encode(RafimdaThemeModule::slides('/'), JSON_UNESCAPED_UNICODE);
+t($pv['rtDealer'] === false && stripos($all0, 'bayi') === false, 'BAYİLİK PASİF (ilk lansman): modül kurulu olsa da ana sayfa/hero/slayt/altbilgi/mobil menü/kayıt sayfasında bayi bağlantısı ve metni yok');
+t(str_contains($html, 'SATIŞLARINIZI BÜYÜTMEK') && str_contains($all0, 'satici-kayit'), 'bayilik pasifken satıcı başvurusu bağlantıları AKTİF kalır');
+Settings::set('RAFIMDA_DEALER_ENABLED', '1');
 $html = $m->renderFrontTemplate('home_bottom', RafimdaThemeModule::viewVars() + $vars);
 t(str_contains($html, 'SATIŞLARINIZI BÜYÜTMEK İÇİN YENİ ADRESİNİZ RAFIMDA!') && str_contains($html, 'Satıcımız Olmak İster misiniz?') && str_contains($html, 'satici-kayit'), 'satıcı bandı: tam metin + CTA + /satici-kayit');
 t(str_contains($html, 'RAFIMDA BAYİSİ OLMAK İSTER MİSİNİZ?') && str_contains($html, 'Rafımda ailesine katılın, kendi bayi ağınızı oluşturun ve birlikte büyüyelim.') && str_contains($html, 'BAYİ BAŞVURUSU YAP') && str_contains($html, 'bayi-basvuru') && str_contains($html, 'bayi-giris'), 'bayi bandı: metin + buton + bağlantılar');

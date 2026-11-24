@@ -144,6 +144,10 @@ function rd_install(): void
 		}
 		DB::execute('INSERT OR IGNORE INTO rd_migrations (version) VALUES (?)', [$f]);
 	}
+	// Bu test takımları ETKİN bayilik davranışını doğrular; pasif (ilk lansman) davranışı tests/run_passive.php doğrular.
+	if (!defined('RD_TEST_PASSIVE')) {
+		Settings::set('RAFIMDA_DEALER_ENABLED', '1');
+	}
 	RdPlans::ensureDefault();
 }
 

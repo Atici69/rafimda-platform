@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RdPerm', 'RdMigrator', 'RdAudit', 'RdView', 'RdPlans', 'RdDealer', 'RdContext', 'RdCommission', 'RdReport', 'RdAuthFlow', 'RdPanel'] as $rdClass) {
+foreach (['RdSwitch', 'RdPerm', 'RdMigrator', 'RdAudit', 'RdView', 'RdPlans', 'RdDealer', 'RdContext', 'RdCommission', 'RdReport', 'RdAuthFlow', 'RdPanel'] as $rdClass) {
 	require_once __DIR__ . '/lib/' . $rdClass . '.php';
 }
 
@@ -65,10 +65,19 @@ class RafimdaDealerModule extends ModuleBase
 	{
 		$this->registerAdminMenuLink('Bayiler (Rafımda)', 'sales', 61);
 
+		// Bayilik pasifken (ilk lansman) sipariş kancaları komisyon kaydı ÜRETMEZ.
 		Module::registerHook('order.placed', static function (array $order): void {
+			if (!RdSwitch::enabled()) {
+				return;
+			}
+
 			RdCommission::safeHook(static fn() => RdCommission::onOrderPlaced($order));
 		});
 		Module::registerHook('order.updated', static function (array $order, $oldStatus = 0): void {
+			if (!RdSwitch::enabled()) {
+				return;
+			}
+
 			RdCommission::safeHook(static fn() => RdCommission::onOrderUpdated($order, (int) $oldStatus));
 		});
 	}
@@ -92,6 +101,11 @@ class RafimdaDealerModule extends ModuleBase
 		} elseif ($post && Admin::isDemoMode()) {
 			$flash = 'Demo modunda bu işlem yapılamaz.';
 			$flashType = 'warning';
+		} elseif ($post && (string) Tools::getValue('rdAction') === 'system_switch') {
+			$r = RdSwitch::setEnabled((string) Tools::getValue('to') === '1', (string) Tools::getValue('confirm_phrase'), (int) Admin::getId());
+			[$flash, $flashType] = [$r['message'], $r['success'] ? 'success' : 'danger'];
+		} elseif ($post && !RdSwitch::enabled()) {
+			[$flash, $flashType] = ['Bayilik sistemi pasif: işlem yapılamaz. Kayıtlar yalnızca korunuyor.', 'warning'];
 		} elseif ($post) {
 			[$ok, $flash] = self::handleAdminPost((int) Admin::getId());
 			$flashType = $ok ? 'success' : 'danger';
@@ -118,6 +132,9 @@ class RafimdaDealerModule extends ModuleBase
 			'rdDefaultRate' => RdCommission::defaultRate(),
 			'rdPending' => RdMigrator::pending(),
 			'rdPanelUrl' => RdView::url('bayi-giris'),
+			'rdEnabled' => RdSwitch::enabled(),
+			'rdPassiveLabel' => RdSwitch::PASSIVE_LABEL,
+			'rdConfirmPhrase' => RdSwitch::CONFIRM_PHRASE,
 		]);
 	}
 
