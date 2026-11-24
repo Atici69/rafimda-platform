@@ -15,6 +15,12 @@ class XhRunner
 	public const RETRY_BASE_SECONDS = 60;
 
 	/** @return array{success:bool,message:string,id:int} */
+	/** Cron adresi. q=cron çekirdek sayfa önbelleğini devre dışı bırakır (çekirdek yalnızca q/query içeren istekleri önbelleğe almaz). */
+	public static function cronUrl(string $domain, string $key): string
+	{
+		return rtrim($domain, '/') . '/xml-cron?q=cron&key=' . rawurlencode($key);
+	}
+
 	public static function enqueue(int $idConn, string $kind, ?array $selectedKeys = null, ?int $vendor = null): array
 	{
 		$conn = XhRepo::conn($idConn, $vendor);
@@ -230,7 +236,7 @@ class XhRunner
 		if ($prepare) {
 			if ($conn['source_type'] === 'url') {
 				$path = XhStorage::newPath('snap');
-				$f = XhHttp::fetchToFile((string) $conn['url'], $path);
+				$f = XhHttp::fetchToFile((string) $conn['url'], $path, XhHttp::MAX_BYTES, XhHttp::TIMEOUT, XhRepo::auth((int) $conn['id_connection']));
 
 				if (!$f['ok']) {
 					@unlink($path);

@@ -9,6 +9,7 @@ class XhRepo
 	public const DEFAULT_OPTIONS = [
 		'create_new' => 1, 'update_existing' => 1, 'sync_price' => 1, 'sync_stock' => 1, 'sync_description' => 0, 'sync_images' => 0,
 		'price_markup_percent' => 0, 'price_add' => 0, 'default_category' => 0, 'default_brand' => 0, 'max_images' => 5,
+		'image_mode' => 'if_empty', 'sync_cargo' => 1, 'create_variants' => 1,
 	];
 
 	public static function now(): string
@@ -101,7 +102,7 @@ class XhRepo
 	{
 		$o = [];
 
-		foreach (['create_new', 'update_existing', 'sync_price', 'sync_stock', 'sync_description', 'sync_images'] as $b) {
+		foreach (['create_new', 'update_existing', 'sync_price', 'sync_stock', 'sync_description', 'sync_images', 'sync_cargo', 'create_variants'] as $b) {
 			$o[$b] = array_key_exists($b, $in) ? (!empty($in[$b]) ? 1 : 0) : (int) self::DEFAULT_OPTIONS[$b]; // formlar işaretsiz kutu için gizli "0" gönderir
 		}
 
@@ -110,6 +111,7 @@ class XhRepo
 		$o['default_category'] = max(0, (int) ($in['default_category'] ?? 0));
 		$o['default_brand'] = max(0, (int) ($in['default_brand'] ?? 0));
 		$o['max_images'] = max(0, min(10, (int) ($in['max_images'] ?? 5)));
+		$o['image_mode'] = in_array($in['image_mode'] ?? '', ['if_empty', 'add_new'], true) ? $in['image_mode'] : 'if_empty';
 
 		return $o;
 	}
@@ -174,6 +176,90 @@ class XhRepo
 		DB::update('xh_connections', $fields, 'id_connection = :cid', ['cid' => $id]);
 	}
 
+	/** Tedarikçi marka/kategori adını sitedeki marka/kategoriye eşler (0 = eşlemeyi kaldır). Hedef ID doğrulanır. @return array{success:bool,message:string} */
+	public static function setMapEntry(array $conn, string $kind, string $text, int $target): array
+	{
+		$text = mb_substr(trim($text), 0, 255);
+
+		if (!in_array($kind, ['brand', 'category'], true) || $text === '') {
+			return ['success' => false, 'message' => 'Geçersiz eşleştirme.'];
+		}
+
+		if ($target > 0) {
+			$ok = $kind === 'brand'
+				? DB::execute('SELECT 1 AS x FROM brands WHERE id_brand = ? AND active = 1', [$target])
+				: DB::execute('SELECT 1 AS x FROM categories WHERE id_category = ? AND active = 1', [$target]);
+
+			if (!$ok) {
+				return ['success' => false, 'message' => 'Hedef ' . ($kind === 'brand' ? 'marka' : 'kategori') . ' bulunamadı.'];
+			}
+		}
+
+		$m = self::mapping($conn) + ['fields' => []];
+		$map = is_array($m[$kind . '_map'] ?? null) ? $m[$kind . '_map'] : [];
+
+		if ($target > 0) {
+			$map[$text] = $target;
+		} else {
+			unset($map[$text]);
+		}
+
+		$m[$kind . '_map'] = array_slice($map, 0, 2000, true);
+		self::setConn((int) $conn['id_connection'], ['mapping' => json_encode(XhMapper::sanitizeMapping($m))]);
+
+		return ['success' => true, 'message' => 'Eşleştirme kaydedildi.'];
+	}
+
+	/** Kimlik bilgisi kaydeder (şifreli). Boş kullanıcı adı = kaldır. @return array{success:bool,message:string} */
+	public static function saveAuth(int $idConn, string $user, string $pass): array
+	{
+		if ($user === '') {
+			DB::execute('DELETE FROM xh_credentials WHERE id_connection = ?', [$idConn]);
+
+			return ['success' => true, 'message' => 'Kimlik bilgisi kaldırıldı.'];
+		}
+
+		if (!XhCrypt::available()) {
+			return ['success' => false, 'message' => 'Sunucuda libsodium yok; kimlik bilgisi güvenli saklanamaz.'];
+		}
+
+		$user = mb_substr(trim($user), 0, 120);
+		$pass = mb_substr($pass, 0, 200);
+
+		if (preg_match('/[\x00-\x1f]/', $user . $pass) || strpos($user, ':') !== false) {
+			return ['success' => false, 'message' => 'Kullanıcı adı ":" veya denetim karakteri içeremez.'];
+		}
+
+		$row = ['auth_type' => 'basic', 'username_enc' => XhCrypt::encrypt($user), 'password_enc' => XhCrypt::encrypt($pass), 'date_upd' => self::now()];
+
+		if (DB::getRowSafe('xh_credentials', 'id_connection = ?', [$idConn])) {
+			DB::update('xh_credentials', $row, 'id_connection = :cid', ['cid' => $idConn]);
+		} else {
+			DB::insert('xh_credentials', $row + ['id_connection' => $idConn]);
+		}
+
+		return ['success' => true, 'message' => 'Kimlik bilgisi şifreli olarak kaydedildi.'];
+	}
+
+	public static function hasAuth(int $idConn): bool
+	{
+		return (bool) DB::getRowSafe('xh_credentials', 'id_connection = ?', [$idConn]);
+	}
+
+	/** Yalnızca indirme sırasında çözülür; arayüze/günlüğe asla verilmez. @return array{user:string,pass:string}|null */
+	public static function auth(int $idConn): ?array
+	{
+		$r = DB::getRowSafe('xh_credentials', 'id_connection = ?', [$idConn]);
+
+		if (!$r) {
+			return null;
+		}
+
+		$u = XhCrypt::decrypt((string) $r['username_enc']);
+
+		return $u === '' ? null : ['user' => $u, 'pass' => XhCrypt::decrypt((string) $r['password_enc'])];
+	}
+
 	public static function deleteConnection(int $id, ?int $vendor): bool
 	{
 		$c = self::conn($id, $vendor);
@@ -189,7 +275,7 @@ class XhRepo
 		XhStorage::remove((string) $c['file_path']); // yüklenen dosya veya URL örneği
 
 		// Yalnızca XML Hub kayıtları silinir; ürünlere dokunulmaz.
-		foreach (['xh_errors', 'xh_items', 'xh_runs'] as $t) {
+		foreach (['xh_errors', 'xh_items', 'xh_runs', 'xh_credentials', 'xh_changes'] as $t) {
 			DB::execute('DELETE FROM ' . $t . ' WHERE id_connection = ?', [$id]);
 		}
 

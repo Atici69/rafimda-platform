@@ -23,7 +23,7 @@ function fresh_rows(): array { return DB::execute('SELECT * FROM products ORDER 
 // ---------- 1. Migration ----------
 section('Migration');
 xh_fresh_db();
-ok(XhMigrator::files() === ['001_init'], 'migration dosyası bulundu');
+ok(XhMigrator::files() === ['001_init', '002_source_meta_credentials'], 'migration dosyası bulundu');
 $raw = file_get_contents(dirname(__DIR__) . '/migrations/001_init.sql');
 ok(!preg_match('/\b(DROP|TRUNCATE|DELETE\s+FROM|ALTER)\b/i', $raw) && !preg_match('/^\s*--/m', $raw) && preg_match_all('/CREATE TABLE(?! IF NOT EXISTS)/', $raw) === 0, 'migration yıkıcı değil, IF NOT EXISTS, "--" ifadesi yok');
 foreach (['xh_suppliers', 'xh_connections', 'xh_items', 'xh_runs', 'xh_errors', 'xh_price_history', 'xh_stock_history'] as $t) {
@@ -431,9 +431,9 @@ $runRow = ['id_run' => 1, 'conn_name' => $xss, 'kind' => 'import', 'status' => '
 $prev = ['key' => 'sku:1', 'name' => $xss, 'sku' => $xss, 'price' => 10.0, 'old_price' => 12.0, 'stock' => 3.0, 'variants' => [1], 'images' => [1, 2], 'errors' => [$xss], 'action' => 'create'];
 $views = [
 	'list' => ['conns' => [$conn], 'queue' => 1], 'new' => [], 'suppliers' => ['edit' => ['id_supplier' => 1, 'name' => $xss, 'website' => '', 'notes' => '']], 'runs' => ['runs' => [$runRow]], 'errors' => ['errors' => [['date_add' => 'd', 'conn_name' => $xss, 'item_key' => $xss, 'level' => 'error', 'message' => $xss]]],
-	'conn' => ['conn' => $conn, 'tab' => 'general', 'mapping' => [], 'counts' => ['failed' => 2], 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'sampleOk' => true, 'keys' => [$xss], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => []],
+	'conn' => ['conn' => $conn, 'tab' => 'general', 'mapping' => [], 'counts' => ['failed' => 2], 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'sampleOk' => true, 'keys' => [$xss], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'hasAuth' => true, 'unmapped' => ['brand' => [['text' => $xss, 'enc' => 'x', 'n' => 2]], 'category' => [['text' => $xss, 'enc' => 'y', 'n' => 1]]], 'mapBrand' => [$xss => 1], 'mapCategory' => [$xss => 2], 'opt' => XhRepo::DEFAULT_OPTIONS],
 ];
-foreach (['mapping', 'preview', 'history', 'errors'] as $tab) { $views["conn:$tab"] = $views['conn']; $views["conn:$tab"]['tab'] = $tab; }
+foreach (['mapping', 'maps', 'preview', 'history', 'errors'] as $tab) { $views["conn:$tab"] = $views['conn']; $views["conn:$tab"]['tab'] = $tab; }
 $views['conn:mapping'] += ['suggest' => ['fields' => ['name' => $xss], 'variant_source' => $xss, 'variant_fields' => ['sku' => $xss]], 'recordKeys' => [$xss], 'distinctCats' => [$xss], 'distinctBrands' => [$xss]];
 $views['conn:mapping']['mapping'] = ['fields' => ['name' => $xss], 'category_map' => [$xss => 1]];
 $views['conn:preview']['rows'] = [$prev];

@@ -177,6 +177,25 @@ class XhXml
 			}
 		}
 
+		// Tek ürünlü, varyantlı besleme: tekrar eden öğe aslında ürünün varyantlarıdır (Product/Variants/Variant gibi).
+		// Ata zincirinde TEK kez geçen, en az 2 yaprak alanı olan düğüm ürün kaydıdır.
+		if ($best !== null && preg_match('/(variant|varyant|varyasyon|option|combination|secenek|seçenek|sku|stok)/iu', basename($best))) {
+			$parts = explode('/', $best);
+
+			for ($i = count($parts) - 1; $i >= 1; $i--) {
+				$anc = implode('/', array_slice($parts, 0, $i));
+				$leaves = 0;
+
+				foreach (array_keys($kids[$anc] ?? []) as $k) {
+					$leaves += isset($hasChild[$k]) ? 0 : 1;
+				}
+
+				if (($count[$anc] ?? 0) === 1 && $leaves >= 2) {
+					return $anc;
+				}
+			}
+		}
+
 		if ($best === null) {
 			// tek ürünlü dosya: en az 2 yaprak alanı olan en sığ kayıt düğümü
 			$cand = null;

@@ -82,7 +82,7 @@
 <h2 style="color:#0b2545;margin:0 0 4px">{$conn.name|escape} <span class="pill {if $conn.status == 'active'}ok{elseif $conn.status == 'error'}bad{elseif $conn.status == 'paused'}warn{/if}">{$conn.status|escape}</span></h2>
 <p class="muted">{if $conn.source_type == 'url'}{$conn.url|escape}{else}Yüklenen dosya{/if}{if $conn.item_path} · ürün düğümü: <code>{$conn.item_path|escape}</code>{/if}</p>
 <nav class="xh-tabs">
-	{foreach ['general' => 'Genel', 'mapping' => 'Alan eşleştirme', 'preview' => 'Önizleme ve içe aktarma', 'history' => 'Geçmiş', 'errors' => 'Hatalar'] as $k => $t}<a class="{if $tab == $k}on{/if}" href="{$xhBase|escape}?view=conn&amp;id={$conn.id_connection|escape}&amp;tab={$k|escape}">{$t|escape}</a>{/foreach}
+	{foreach ['general' => 'Genel', 'mapping' => 'Alan eşleştirme', 'maps' => 'Marka/Kategori', 'preview' => 'Önizleme ve içe aktarma', 'history' => 'Geçmiş', 'errors' => 'Hatalar'] as $k => $t}<a class="{if $tab == $k}on{/if}" href="{$xhBase|escape}?view=conn&amp;id={$conn.id_connection|escape}&amp;tab={$k|escape}">{$t|escape}</a>{/foreach}
 </nav>
 {if $conn.last_error}<div class="alert danger">Son hata: {$conn.last_error|escape}</div>{/if}
 
@@ -106,6 +106,11 @@
 		{if $conn.status != 'draft'}<label>Durum</label><select name="status"><option value="active"{if $conn.status != 'paused'} selected{/if}>Aktif</option><option value="paused"{if $conn.status == 'paused'} selected{/if}>Duraklatıldı</option></select>{/if}
 		{include file="file:{$xhTplDir}xh_options.tpl"}
 		<p><button class="btn" type="submit">Kaydet</button></p></form>
+	{if $conn.source_type == 'url'}<h4>Kimlik doğrulama (Basic Auth)</h4>
+	<p class="muted">{if $hasAuth}Kayıtlı kimlik bilgisi var (şifreli saklanır, tekrar gösterilmez). Değiştirmek için yeni değer girin; kaldırmak için kullanıcı adını boş bırakıp kaydedin.{else}Beslemeniz kullanıcı adı/şifre istiyorsa girin. Yalnızca HTTPS adreslerinde kullanılır; başka sunucuya yönlendirmede gönderilmez.{/if}</p>
+	<form method="post" autocomplete="off"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_auth_save"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}">
+		<div class="grid g2"><div><label>Kullanıcı adı</label><input type="text" name="auth_user" maxlength="120" autocomplete="off"></div><div><label>Şifre</label><input type="password" name="auth_pass" maxlength="200" autocomplete="new-password"></div></div>
+		<p><button class="btn ghost sm" type="submit">Kimlik bilgisini kaydet</button></p></form>{/if}
 	<form method="post" onsubmit="return confirm('Bağlantı ve XML Hub kayıtları silinsin mi? Ürünler silinmez.')"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_delete"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><button class="btn danger sm" type="submit">Bağlantıyı sil</button></form>{/if}
 </div></div>
 {/if}
@@ -133,6 +138,20 @@
 	{if $distinctBrands}<h3 style="margin-top:14px">Marka eşleştirme</h3>
 	<table><tbody>{foreach $distinctBrands as $i => $txt}<tr><td>{$txt|escape}<input type="hidden" name="brand_text[{$i|escape}]" value="{$txt|escape}"></td><td><select name="brand_id[{$i|escape}]"><option value="0">—</option>{foreach $brands as $b}<option value="{$b.id_brand|escape}"{if isset($mapping.brand_map[$txt]) && $mapping.brand_map[$txt] == $b.id_brand} selected{/if}>{$b.brand_name|escape}</option>{/foreach}</select></td></tr>{/foreach}</tbody></table>{/if}
 	<p><button class="btn" type="submit">Eşleştirmeyi kaydet</button></p></form>{/if}
+</div>
+{/if}
+
+{if $tab == 'maps'}
+<div class="xh-card"><h3>Marka ve kategori eşleştirme</h3>
+	<p class="muted">Tedarikçideki adı sitenizdeki marka/kategoriye bağlayın. Eşleştirdikten sonra hatalı satırları "Hatalıları yeniden dene" ile ekleyebilirsiniz.</p>
+	{if $unmapped.brand|count == 0 && $unmapped.category|count == 0}<p class="muted">Eşleştirilecek ad yok. (Liste, içe aktarma/önizleme sonrası kayıtlı satırlardan çıkarılır.)</p>{/if}
+	{if $xhCanManage}<form method="post"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_map_save"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}">
+	{if $unmapped.brand|count > 0}<h4>Markalar</h4>{foreach $unmapped.brand as $u}
+		<div class="row"><span style="flex:1">{$u.text|escape} <span class="pill">{$u.n|escape} ürün</span></span><select name="map_brand[{$u.enc|escape}]"><option value="0">—</option>{foreach $brands as $b}<option value="{$b.id_brand|escape}">{$b.brand_name|escape}</option>{/foreach}</select></div>{/foreach}{/if}
+	{if $unmapped.category|count > 0}<h4>Kategoriler</h4>{foreach $unmapped.category as $u}
+		<div class="row"><span style="flex:1">{$u.text|escape} <span class="pill">{$u.n|escape} ürün</span></span><select name="map_category[{$u.enc|escape}]"><option value="0">—</option>{foreach $categories as $c}<option value="{$c.id_category|escape}">{$c.category_name|escape}</option>{/foreach}</select></div>{/foreach}{/if}
+	{if $unmapped.brand|count > 0 || $unmapped.category|count > 0}<p><button class="btn" type="submit">Eşleştirmeleri kaydet</button></p>{/if}</form>{/if}
+	{if $mapBrand|count > 0 || $mapCategory|count > 0}<h4>Kayıtlı eşleştirmeler</h4><p class="muted">{foreach $mapBrand as $k => $v}<span class="pill">Marka: {$k|escape} → #{$v|escape}</span> {/foreach}{foreach $mapCategory as $k => $v}<span class="pill">Kategori: {$k|escape} → #{$v|escape}</span> {/foreach}</p>{/if}
 </div>
 {/if}
 

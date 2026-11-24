@@ -128,10 +128,10 @@ class XhPanel
 			$this->go([], 'danger', 'Bağlantı bulunamadı.');
 		}
 
-		$tab = in_array($_GET['tab'] ?? '', ['general', 'mapping', 'preview', 'history', 'errors'], true) ? (string) $_GET['tab'] : 'general';
+		$tab = in_array($_GET['tab'] ?? '', ['general', 'mapping', 'maps', 'preview', 'history', 'errors'], true) ? (string) $_GET['tab'] : 'general';
 		$mapping = XhRepo::mapping($conn);
 		$opt = XhRepo::options($conn);
-		$vars = $common + ['conn' => $conn, 'tab' => $tab, 'opt' => $opt, 'mapping' => $mapping, 'intervals' => $this->intervals(), 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'categories' => $this->categories(), 'brands' => $this->brands(), 'counts' => XhRepo::itemCounts($id), 'sampleOk' => false, 'keys' => [], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'suppliers' => XhRepo::suppliers((int) $conn['id_vendor'])];
+		$vars = $common + ['conn' => $conn, 'tab' => $tab, 'opt' => $opt, 'mapping' => $mapping, 'intervals' => $this->intervals(), 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'categories' => $this->categories(), 'brands' => $this->brands(), 'counts' => XhRepo::itemCounts($id), 'sampleOk' => false, 'keys' => [], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'suppliers' => XhRepo::suppliers((int) $conn['id_vendor']), 'hasAuth' => XhRepo::hasAuth($id), 'unmapped' => ['brand' => [], 'category' => []], 'mapBrand' => (array) ($mapping['brand_map'] ?? []), 'mapCategory' => (array) ($mapping['category_map'] ?? [])];
 		$sample = $this->sampleFile($conn);
 		$vars['sampleOk'] = $sample !== '';
 
@@ -194,6 +194,18 @@ class XhPanel
 			}
 		} catch (Throwable $e) {
 			$vars['sampleError'] = mb_substr($e->getMessage(), 0, 200);
+		}
+
+		if ($tab === 'maps') {
+			$um = XhImporter::unmapped($conn);
+
+			foreach (['brand', 'category'] as $k) {
+				$vars['unmapped'][$k] = [];
+
+				foreach ($um[$k] as $text => $n) {
+					$vars['unmapped'][$k][] = ['text' => (string) $text, 'enc' => base64_encode((string) $text), 'n' => $n];
+				}
+			}
 		}
 
 		if ($tab === 'history') {
@@ -275,6 +287,45 @@ class XhPanel
 
 				XhRepo::setConn($id, $upd);
 				$this->go(['view' => 'conn', 'id' => $id], 'success', 'Ayarlar kaydedildi.');
+				break;
+
+			case 'conn_auth_save':
+				$c = $this->myConn($id);
+
+				if (!$c || $c['source_type'] !== 'url') {
+					$this->go([], 'danger', 'URL bağlantısı bulunamadı.');
+				}
+
+				$r = XhRepo::saveAuth($id, self::post('auth_user'), (string) ($_POST['auth_pass'] ?? ''));
+				$this->go(['view' => 'conn', 'id' => $id], $r['success'] ? 'success' : 'danger', $r['message']);
+				break;
+
+			case 'conn_map_save':
+				$c = $this->myConn($id);
+
+				if (!$c) {
+					$this->go([], 'danger', 'Bağlantı bulunamadı.');
+				}
+
+				$n = 0;
+				$msg = '';
+
+				foreach (['brand', 'category'] as $kind) {
+					foreach ((array) ($_POST['map_' . $kind] ?? []) as $enc => $target) {
+						$text = (string) base64_decode((string) $enc, true);
+						$target = (int) $target;
+
+						if ($text === '' || $target <= 0) {
+							continue;
+						}
+
+						$r = XhRepo::setMapEntry(XhRepo::conn($id, $this->scope()) ?: $c, $kind, $text, $target);
+						$n += $r['success'] ? 1 : 0;
+						$msg = $r['success'] ? $msg : $r['message'];
+					}
+				}
+
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'maps'], $n > 0 ? 'success' : 'danger', $n > 0 ? $n . ' eşleştirme kaydedildi. Hatalı satırlar için "Hatalıları yeniden dene" kullanabilirsiniz.' : ($msg ?: 'Eşleştirilecek bir seçim yapılmadı.'));
 				break;
 
 			case 'conn_delete':
@@ -385,7 +436,7 @@ class XhPanel
 		if ($conn['source_type'] === 'url') {
 			XhStorage::remove($path);
 			$path = XhStorage::newPath('sample');
-			$f = XhHttp::fetchToFile((string) $conn['url'], $path);
+			$f = XhHttp::fetchToFile((string) $conn['url'], $path, XhHttp::MAX_BYTES, XhHttp::TIMEOUT, XhRepo::auth((int) $conn['id_connection']));
 
 			if (!$f['ok']) {
 				XhRepo::setConn($id, ['last_error' => mb_substr('Test: ' . $f['error'], 0, 255), 'file_path' => '']);

@@ -1,12 +1,12 @@
-# XML Hub (v0.1.0)
+# XML Hub (v0.2.0)
 
 Rafımda için bağımsız XML tedarikçi/ürün besleme modülü. Satıcılar (rafimda-vendor varsa) yalnızca kendi bağlantı ve ürünlerini yönetir; platform yöneticisi `id_vendor=0` bağlantılarla platform ürünlerini besler.
 
 ## Kurulum
 1. Yönetim → Modüller → XML Hub → Kur. `install.sql` + `migrations/*.sql` çalışır (yalnızca `CREATE TABLE IF NOT EXISTS`, yıkıcı komut yok).
-2. Yönetim → XML Hub ekranında gösterilen **Cron adresini** sunucu cron'una ekleyin (dakikada bir):
+2. Yönetim → XML Hub ekranında gösterilen **Cron adresini** (`/xml-cron?q=cron&key=...`) sunucu cron'una ekleyin (dakikada bir):
    `* * * * * curl -s "https://alanadiniz/xml-cron?q=cron&key=ANAHTAR" >/dev/null`
-   `q=cron` parametresi ZORUNLUDUR: çekirdek sayfa önbelleği ziyaretçi GET isteklerini önbelleğe alır, `q` içeren istekleri almaz. Bu olmadan cron çıktısı önbellekten dönüp kuyruğu çalıştırmayabilir.
+   `q=cron` parametresi önerilir/gereklidir: çekirdek sayfa önbelleği `q`/`query` içeren istekleri önbelleğe almaz. (Ölçüm: bu çekirdek sürümünde `Performance::canUsePageCache()` `Tools::getValue()` varsayılanı `false` olduğu için `false !== ''` nedeniyle şu an HER sayfa için `false` döner, yani sayfa önbelleği fiilen çalışmıyor; çekirdek düzeltilirse `q=cron` cron'u korur. Çekirdeğe dokunulmadı.)
 3. Kuyruk, panelden "Kuyruğu şimdi çalıştır" ile de elle işletilebilir.
 
 ## Güvenlik
@@ -16,17 +16,21 @@ Rafımda için bağımsız XML tedarikçi/ürün besleme modülü. Satıcılar (
 - Satıcı izolasyonu sunucu tarafında (`XhRepo` kapsamı + `xml.view`/`xml.manage` izinleri + CSRF).
 
 ## Tablolar
-xh_migrations, xh_suppliers, xh_connections, xh_items, xh_runs, xh_errors, xh_price_history, xh_stock_history.
+xh_migrations, xh_suppliers, xh_connections, xh_items, xh_runs, xh_errors, xh_price_history, xh_stock_history (001); xh_product_meta (ürün kaynağı/tedarikçi, kargo ücreti, içerik parmak izi), xh_credentials (şifreli Basic Auth), xh_changes (açıklama/görsel/kargo/varyant değişiklik kaydı) (002).
 Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destructive.sql.manual` elle çalıştırılmalıdır.
 
 ## Testler
-`php modules/xml-hub/tests/run.php` ve `php modules/xml-hub/tests/load_module.php` (SQLite + stub; MySQL, gerçek curl/DNS ve gerçek Product::save TEST EDİLMEDİ).
+`php modules/xml-hub/tests/run.php`, `tests/run_v2.php` ve `tests/load_module.php` (SQLite + stub; MySQL, gerçek curl/DNS ve gerçek Product::save TEST EDİLMEDİ).
+
+## v0.2.0 ile gelenler
+- Basic Auth (yalnızca HTTPS; libsodium ile şifreli; başka sunucuya yönlendirmede gönderilmez; arayüzde/günlükte gösterilmez). Anahtar `XML_HUB_SECRET` (Settings) — yedeğini alın: kaybolursa kayıtlı kimlik bilgileri çözülemez.
+- Ürün kaynağı/tedarikçi izleme (`XhMeta::source()`), kargo ücreti (`xh_product_meta.cargo_price`; çekirdek `products` tablosunda alan olmadığı için modül tablosunda), açıklama değişikliği algılama (parmak izi), görsel modları (`if_empty`, `add_new`), mevcut ürüne yeni varyant ekleme, tek ürünlü varyantlı besleme algılama, marka/kategori eşleştirme ekranı.
 
 ## Bilinen sınırlar
-- Pazaryeri bağdaştırıcıları (Trendyol, Hepsiburada, N11, Amazon, Pazarama, Ozon) YOK; modül yalnızca `xh_items` + ürünler ile veri kaynağı sağlar.
+- Pazaryeri bağdaştırıcıları için bkz. Aşama B (varsa `modules/marketplace-hub`).
 - Zamanlama harici cron'a bağlıdır.
-- Görsel eşitleme yalnızca ürünün görseli yoksa ekler; açıklama farkı denetlenmez; kargo ücreti ayrıştırılır ama ürüne yazılmaz.
-- Marka/kategori yalnızca birebir ad eşleşmesiyle bulunur, otomatik oluşturulmaz.
-- Mevcut ürüne yeni varyant eklenmez (yalnızca SKU ile eşleşen varyant güncellenir). Tek ürünlü + varyantlı beslemelerde kayıt yolu elle seçilmelidir.
-- Basic-auth'lu beslemeler desteklenmez. Her tick offset'e kadar yeniden akış okur (O(n)).
-- Mobil/görsel arayüz tarayıcıda denenmedi.
+- Görseller silinmez/değiştirilmez (yalnızca eklenir). Kargo ücreti ürün sayfasına/ödemeye yansımaz; yalnızca `xh_product_meta` içinde tutulur ve pazaryeri gönderimlerinde kullanılabilir.
+- Marka/kategori otomatik oluşturulmaz (eşleştirilir).
+- Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
+- Her tick offset'e kadar yeniden akış okur (O(n)).
+- Mobil/görsel arayüz tarayıcıda denenmedi; MySQL, gerçek curl/DNS/TLS ve gerçek `Product::save` ile uçtan uca test edilmedi.

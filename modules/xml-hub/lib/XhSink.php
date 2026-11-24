@@ -165,13 +165,14 @@ class XhSink
 	}
 
 	/** Varyant stok/fiyat eşitleme (SKU ile eşleşenler). Dönüş: güncellenen varyant sayısı. */
-	public static function syncVariants(int $idVendor, int $id, array $variants, bool $price, bool $stock): int
+	public static function syncVariants(int $idVendor, int $id, array $variants, bool $price, bool $stock, bool $create = false, ?int &$created = null): int
 	{
 		if (!XhOwner::owns($idVendor, $id) || !class_exists('ProductVariation', false) || !method_exists('ProductVariation', 'getByProductSku')) {
 			return 0;
 		}
 
 		$n = 0;
+		$created = 0;
 
 		foreach ($variants as $v) {
 			if (($v['sku'] ?? '') === '') {
@@ -181,6 +182,25 @@ class XhSink
 			$ex = ProductVariation::getByProductSku($id, (string) $v['sku']);
 
 			if (!$ex) {
+				if ($create && method_exists('ProductVariation', 'upsertOne')) {
+					$opts = [];
+
+					foreach ([1, 2] as $i) {
+						if (($v['option' . $i . '_name'] ?? '') !== '' && ($v['option' . $i . '_value'] ?? '') !== '') {
+							$opts[(string) $v['option' . $i . '_name']] = (string) $v['option' . $i . '_value'];
+						}
+					}
+
+					if ($opts !== []) {
+						$r = ProductVariation::upsertOne($id, ['sku' => $v['sku'], 'barcode' => $v['barcode'] ?? '', 'price' => $v['price'] ?? '', 'stock' => $v['stock'] ?? 0, 'options' => $opts, 'active' => 1]);
+
+						if (!empty($r['success'])) {
+							$n++;
+							$created = (int) $created + (!empty($r['created']) ? 1 : 0);
+						}
+					}
+				}
+
 				continue;
 			}
 
@@ -212,15 +232,16 @@ class XhSink
 	 * Görselleri güvenli indirip ekler (SSRF korumalı, 5 MB sınır). Başarısız olanlar uyarı olarak döner.
 	 *
 	 * @param list<string> $urls
-	 * @return array{added:int, warnings:list<string>}
+	 * @return array{added:int, warnings:list<string>, done:list<string>}  done = başarıyla eklenen URL'ler
 	 */
 	public static function addImages(int $idVendor, int $id, array $urls, int $max): array
 	{
 		$added = 0;
 		$warn = [];
+		$done = [];
 
 		if (!XhOwner::owns($idVendor, $id)) {
-			return ['added' => 0, 'warnings' => ['Ürün bu hesaba ait değil.']];
+			return ['added' => 0, 'warnings' => ['Ürün bu hesaba ait değil.'], 'done' => []];
 		}
 
 		foreach (array_slice($urls, 0, max(0, $max)) as $u) {
@@ -236,11 +257,12 @@ class XhSink
 
 			if (!empty($res['success'])) {
 				$added++;
+				$done[] = $u;
 			} else {
 				$warn[] = 'Görsel kaydedilemedi (' . mb_substr($u, 0, 80) . '): ' . (string) ($res['message'] ?? '');
 			}
 		}
 
-		return ['added' => $added, 'warnings' => $warn];
+		return ['added' => $added, 'warnings' => $warn, 'done' => $done];
 	}
 }

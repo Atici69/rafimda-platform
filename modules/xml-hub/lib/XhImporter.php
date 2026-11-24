@@ -20,6 +20,50 @@ class XhImporter
 		return $r && isset($r[0]) ? (int) $r[0]['id'] : 0;
 	}
 
+	/**
+	 * Marka/kategori eşleştirme yardımcısı: kayıtlı satırlarda (xh_items.data) ne eşleme tablosunda ne de ada göre bulunabilen
+	 * tedarikçi marka/kategori adlarını sayar. @return array{brand:array<string,int>, category:array<string,int>}
+	 */
+	public static function unmapped(array $conn, int $limit = 5000): array
+	{
+		$mapping = XhRepo::mapping($conn);
+		$fields = is_array($mapping['fields'] ?? null) ? $mapping['fields'] : [];
+		$out = ['brand' => [], 'category' => []];
+		$rows = DB::execute('SELECT data FROM xh_items WHERE id_connection = ? AND data IS NOT NULL AND data <> \'\' LIMIT ' . max(1, min(20000, $limit)), [(int) $conn['id_connection']]) ?: [];
+
+		foreach ($rows as $r) {
+			$raw = json_decode((string) $r['data'], true);
+
+			if (!is_array($raw)) {
+				continue;
+			}
+
+			foreach (['brand', 'category'] as $kind) {
+				$src = (string) ($fields[$kind] ?? '');
+
+				if ($src === '' || $src[0] === '=') {
+					continue;
+				}
+
+				$v = XhMapper::pick($raw, $src);
+				$text = is_array($v) ? '' : trim((string) $v);
+
+				if ($text === '' || isset(($mapping[$kind . '_map'] ?? [])[$text]) || self::lookup($kind, $text) > 0) {
+					continue;
+				}
+
+				$out[$kind][$text] = ($out[$kind][$text] ?? 0) + 1;
+			}
+		}
+
+		foreach ($out as $k => $list) {
+			arsort($list);
+			$out[$k] = array_slice($list, 0, 200, true);
+		}
+
+		return $out;
+	}
+
 	/** Önizleme: yazmadan, ürünün ne olacağını hesaplar. @return array<string,mixed> */
 	public static function preview(array $conn, array $raw): array
 	{
@@ -131,13 +175,23 @@ class XhImporter
 				return $fail($res['message']);
 			}
 
+			$imported = [];
+
 			if ($row['images'] !== []) {
 				$im = XhSink::addImages($idVendor, $res['id'], $row['images'], (int) $opt['max_images']);
+				$imported = $im['done'];
 
 				foreach ($im['warnings'] as $w) {
 					XhRepo::logError($idConn, $idRun, $key, $w, 'warning');
 				}
 			}
+
+			XhMeta::save($res['id'], $idVendor, [
+				'source_type' => 'xml', 'id_connection' => $idConn, 'id_supplier' => (int) $conn['id_supplier'],
+				'cargo_price' => !empty($opt['sync_cargo']) ? $row['cargo_price'] : null,
+				'desc_hash' => XhMeta::fingerprint($row['description'] . '|' . $row['short_description']),
+				'image_urls' => json_encode($imported),
+			]);
 
 			XhRepo::saveItem($idConn, $key, ['id_product' => $res['id'], 'row_hash' => $row['hash'], 'data' => $rawJson, 'state' => 'imported', 'error' => '', 'attempts' => 0, 'last_run_id' => $idRun]);
 
@@ -182,29 +236,79 @@ class XhImporter
 			$changed = true;
 		}
 
-		if ($row['variants'] !== [] && ($opt['sync_price'] || $opt['sync_stock'])) {
-			$changed = XhSink::syncVariants($idVendor, $id, $row['variants'], (bool) $opt['sync_price'], (bool) $opt['sync_stock']) > 0 || $changed;
+		$meta = XhMeta::get($id);
+		$metaPatch = [];
+
+		if ($row['variants'] !== [] && ($opt['sync_price'] || $opt['sync_stock'] || !empty($opt['create_variants']))) {
+			$newVar = 0;
+			$n = XhSink::syncVariants($idVendor, $id, $row['variants'], (bool) $opt['sync_price'], (bool) $opt['sync_stock'], !empty($opt['create_variants']), $newVar);
+			$changed = $n > 0 || $changed;
+
+			if ($newVar > 0) {
+				XhMeta::addChange($id, $idConn, $idRun, 'variant', $newVar . ' yeni varyant eklendi.');
+			}
 		}
 
+		// Açıklama değişikliği: yalnızca içerik parmak izi değiştiyse yazılır
 		if ($opt['sync_description'] && $row['description'] !== '') {
-			$r = XhSink::updateContent($idVendor, $id, (string) $row['description'], (string) $row['short_description']);
+			$fp = XhMeta::fingerprint($row['description'] . '|' . $row['short_description']);
 
-			if (!$r['success']) {
-				return ['changed' => $changed, 'error' => 'Açıklama güncellenemedi: ' . $r['message']];
+			if (!$meta || (string) $meta['desc_hash'] !== $fp) {
+				$r = XhSink::updateContent($idVendor, $id, (string) $row['description'], (string) $row['short_description']);
+
+				if (!$r['success']) {
+					return ['changed' => $changed, 'error' => 'Açıklama güncellenemedi: ' . $r['message']];
+				}
+
+				$metaPatch['desc_hash'] = $fp;
+				XhMeta::addChange($id, $idConn, $idRun, 'description', 'Açıklama tedarikçi verisine göre güncellendi.');
+				$changed = true;
 			}
-
-			$changed = true;
 		}
 
-		// Görsel: yalnızca ürünün hiç görseli yoksa eklenir (mevcut görseller ASLA silinmez/değiştirilmez)
-		if ($opt['sync_images'] && $row['images'] !== [] && !XhSink::hasImages($id)) {
-			$im = XhSink::addImages($idVendor, $id, $row['images'], (int) $opt['max_images']);
+		// Görsel: mevcut görseller ASLA silinmez/değiştirilmez. if_empty = yalnızca hiç görseli yoksa; add_new = daha önce alınmamış yeni adresleri ekler
+		if ($opt['sync_images'] && $row['images'] !== []) {
+			$known = $meta && (string) $meta['image_urls'] !== '' ? (array) json_decode((string) $meta['image_urls'], true) : [];
+			$todo = [];
 
-			foreach ($im['warnings'] as $w) {
-				XhRepo::logError($idConn, $idRun, (string) $row['key'], $w, 'warning');
+			if (($opt['image_mode'] ?? 'if_empty') === 'add_new') {
+				$todo = array_values(array_diff($row['images'], $known));
+			} elseif (!XhSink::hasImages($id)) {
+				$todo = $row['images'];
 			}
 
-			$changed = $im['added'] > 0 || $changed;
+			if ($todo !== []) {
+				$im = XhSink::addImages($idVendor, $id, $todo, (int) $opt['max_images']);
+
+				foreach ($im['warnings'] as $w) {
+					XhRepo::logError($idConn, $idRun, (string) $row['key'], $w, 'warning');
+				}
+
+				if ($im['added'] > 0) {
+					$metaPatch['image_urls'] = json_encode(array_values(array_unique(array_merge($known, $im['done']))));
+					XhMeta::addChange($id, $idConn, $idRun, 'images', $im['added'] . ' görsel eklendi.');
+					$changed = true;
+				}
+			}
+		}
+
+		// Kargo ücreti çekirdek ürün tablosunda alan olmadığı için modülün kendi tablosunda (xh_product_meta) tutulur
+		if (!empty($opt['sync_cargo']) && $row['cargo_price'] !== null) {
+			$old = $meta && $meta['cargo_price'] !== null ? (float) $meta['cargo_price'] : null;
+
+			if ($old === null || abs($old - (float) $row['cargo_price']) > 0.004) {
+				$metaPatch['cargo_price'] = (float) $row['cargo_price'];
+				XhMeta::addChange($id, $idConn, $idRun, 'cargo', ($old === null ? '—' : number_format($old, 2, '.', '')) . ' → ' . number_format((float) $row['cargo_price'], 2, '.', ''));
+				$changed = true;
+			}
+		}
+
+		if (!$meta) {
+			$metaPatch += ['source_type' => 'xml', 'id_connection' => $idConn, 'id_supplier' => (int) $conn['id_supplier']];
+		}
+
+		if ($metaPatch !== []) {
+			XhMeta::save($id, $idVendor, $metaPatch);
 		}
 
 		return ['changed' => $changed, 'error' => ''];

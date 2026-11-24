@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $xhClass) {
+foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $xhClass) {
 	require_once __DIR__ . '/lib/' . $xhClass . '.php';
 }
 
@@ -19,7 +19,7 @@ foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 
  */
 class XmlHubModule extends ModuleBase
 {
-	public const VERSION = '0.1.0';
+	public const VERSION = '0.2.0';
 
 	public string $name = 'xml-hub';
 	public string $title = 'XML Hub';
@@ -44,6 +44,10 @@ class XmlHubModule extends ModuleBase
 			error_log('xml-hub: ' . $res['error']);
 
 			return false;
+		}
+
+		if (!preg_match('/^[0-9a-f]{64}$/', (string) Settings::get('XML_HUB_SECRET'))) {
+			Settings::set('XML_HUB_SECRET', bin2hex(random_bytes(32)));
 		}
 
 		if (Settings::get('XML_HUB_CRON_KEY') === '') {
@@ -107,7 +111,7 @@ class XmlHubModule extends ModuleBase
 			'xhCss' => rtrim((string) $domain, '/') . '/modules/xml-hub/assets/css/xh.css?v=' . self::VERSION,
 			'xhJs' => rtrim((string) $domain, '/') . '/modules/xml-hub/assets/js/xh.js?v=' . self::VERSION,
 			'xhPending' => $pending,
-			'xhCronUrl' => $key !== '' ? rtrim((string) $domain, '/') . '/xml-cron?q=cron&key=' . $key : '',
+			'xhCronUrl' => $key !== '' ? XhRunner::cronUrl((string) $domain, $key) : '',
 			'pageTitle' => $this->title,
 		]);
 	}

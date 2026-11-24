@@ -23,7 +23,7 @@ foreach ($m->routes as $slug => $file) {
 t(method_exists($m, 'install') && method_exists($m, 'uninstall') && method_exists($m, 'adminPage'), 'install/uninstall/adminPage var');
 t(is_file(dirname(__DIR__) . '/assets/templates/admin/admin.tpl'), 'admin şablonu var');
 // runSqlFile her ifadeyi atlamadan çalıştırmalı: '--' ile başlayan ifade ATLANIR, bu yüzden kurulum dosyalarında olmamalı
-foreach (['install.sql', 'uninstall.sql', 'migrations/001_init.sql'] as $f) {
+foreach (['install.sql', 'uninstall.sql', 'migrations/001_init.sql', 'migrations/002_source_meta_credentials.sql'] as $f) {
 	$sql = file_get_contents(dirname(__DIR__) . '/' . $f);
 	$stmts = array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', $sql)));
 	$skipped = array_filter($stmts, fn($s) => strpos($s, '--') === 0);

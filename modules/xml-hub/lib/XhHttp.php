@@ -18,15 +18,29 @@ class XhHttp
 	 * @param callable(string):bool $sink parça alır, false dönerse akış kesilir
 	 * @return array{ok:bool, error:string, status:int, final_url:string}
 	 */
-	private static function run(string $url, int $maxBytes, int $timeout, callable $sink, ?callable $onHop = null): array
+	private static function run(string $url, int $maxBytes, int $timeout, callable $sink, ?callable $onHop = null, ?array $auth = null): array
 	{
 		$current = $url;
+		$origin = null;
 
 		for ($hop = 0; $hop <= self::MAX_REDIRECTS; $hop++) {
 			$g = XhUrlGuard::validate($current);
 
 			if (!$g['ok']) {
 				return ['ok' => false, 'error' => ($hop > 0 ? 'Yönlendirme engellendi: ' : '') . $g['error'], 'status' => 0, 'final_url' => $current];
+			}
+
+			$sameOrigin = false;
+
+			if ($auth !== null) {
+				$o = $g['scheme'] . '://' . $g['host'] . ':' . $g['port'];
+				$origin = $origin ?? $o;
+
+				if ($hop === 0 && $g['scheme'] !== 'https') {
+					return ['ok' => false, 'error' => 'Kimlik doğrulamalı bağlantı yalnızca HTTPS adresiyle kullanılabilir.', 'status' => 0, 'final_url' => $current];
+				}
+
+				$sameOrigin = $o === $origin; // kimlik bilgisi başka sunucuya yönlendirmede ASLA gönderilmez
 			}
 
 			if ($onHop !== null) {
@@ -47,7 +61,7 @@ class XhHttp
 				return $sink($chunk);
 			};
 
-			$req = ['url' => $current, 'host' => $g['host'], 'port' => $g['port'], 'ip' => $g['ip'], 'scheme' => $g['scheme'], 'timeout' => $timeout, 'max_bytes' => $maxBytes, 'sink' => $guardedSink];
+			$req = ['url' => $current, 'host' => $g['host'], 'port' => $g['port'], 'ip' => $g['ip'], 'scheme' => $g['scheme'], 'timeout' => $timeout, 'max_bytes' => $maxBytes, 'sink' => $guardedSink, 'auth' => $sameOrigin ? $auth : null];
 			$r = self::$transport !== null ? (self::$transport)($req) : self::curl($req);
 
 			if ($tooBig) {
@@ -62,6 +76,10 @@ class XhHttp
 				$current = self::absolute($current, $r['location']);
 
 				continue;
+			}
+
+			if ((int) $r['status'] === 401) {
+				return ['ok' => false, 'error' => $auth !== null ? 'Kullanıcı adı/şifre reddedildi (HTTP 401).' : 'Sunucu kimlik doğrulaması istiyor (HTTP 401); bağlantıya kullanıcı adı ve şifre ekleyin.', 'status' => 401, 'final_url' => $current];
 			}
 
 			if ((int) $r['status'] < 200 || (int) $r['status'] >= 300) {
@@ -134,6 +152,11 @@ class XhHttp
 				return ($req['sink'])($d) ? strlen($d) : 0;
 			},
 		]);
+		if (!empty($req['auth'])) {
+			curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($ch, CURLOPT_USERPWD, $req['auth']['user'] . ':' . $req['auth']['pass']);
+		}
+
 		$ok = curl_exec($ch);
 		$status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 		$err = $ok === false ? curl_error($ch) : '';
@@ -143,7 +166,7 @@ class XhHttp
 	}
 
 	/** @return array{ok:bool, error:string, bytes:int, final_url:string} */
-	public static function fetchToFile(string $url, string $dest, int $maxBytes = self::MAX_BYTES, int $timeout = self::TIMEOUT): array
+	public static function fetchToFile(string $url, string $dest, int $maxBytes = self::MAX_BYTES, int $timeout = self::TIMEOUT, ?array $auth = null): array
 	{
 		$fh = @fopen($dest, 'wb');
 
@@ -159,7 +182,7 @@ class XhHttp
 		}, static function () use ($fh): void {
 			ftruncate($fh, 0);
 			fseek($fh, 0);
-		});
+		}, $auth);
 		fclose($fh);
 
 		if (!$r['ok']) {
