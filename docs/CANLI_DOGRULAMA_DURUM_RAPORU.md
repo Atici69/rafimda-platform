@@ -11,7 +11,7 @@ Etiketler: ÇALIŞIYOR (gerçek ortamda doğrulandı) · HATALI · BEKLİYOR (ge
 | Gerçek PHP sürümü | BEKLİYOR | Natro'da bilinmiyor. `php deploy/live/bin/live-preflight.php` (salt okunur) çıktısı veya cPanel "PHP Sürümü". Gereksinim PHP ≥ 7.4; kod 8.3'te lint'li, 7.4'te çalıştırılmadı |
 | FriSay sürümü (`FS_VERSION`) | BEKLİYOR | Depo temeli V3.0.2; canlıdaki değer panelde/`settings` tablosunda. Bize iletilmedi |
 | MySQL/MariaDB uyumu | BEKLİYOR | SQL'ler MySQL biçimli, SQLite çevirisiyle sınandı. `live-preflight` sürüm, `sql_mode`, karakter kümesini okur |
-| Eksik tablo/sütun tespiti | BEKLİYOR | `live-preflight` / `live-verify` (salt okunur) çıktısı gerekir; `products.desi/cargo_day/old_price` varlığı özellikle |
+| Eksik tablo/sütun tespiti | BEKLİYOR | `live-preflight` yalnızca bekleyen migration'ları ve çekirdek tabloların varlığını raporlar; **`products.desi/cargo_day/old_price` kontrolü yoktur** — `SHOW COLUMNS FROM products` salt okunur sorgusu ile (bkz. PREFLIGHT_CPANEL_REHBERI.md §5). Modül tablolarının şema doğrulaması `live-verify` (kurulumdan sonra) ile |
 | Çekirdek sınıf uyumu | BEKLİYOR | Kod okunarak: `Module`, `ModuleBase`, `Settings`, `Product::save`, `Customer::login` imzaları uyuşuyor. Gerçek çekirdek çalıştırılmadı |
 
 ## 2. Modül kurulumu (kur / etkinleştir / devre dışı / yeniden etkinleştir)
@@ -57,7 +57,7 @@ Bayi/alt bayi, gerçek ödeme/banka aktarımı, muhasebe: **EKSİK**.
 1. Natro cPanel: tam yedek (dosyalar + veritabanı dökümü), sunucu dışına indirin. Geri yüklenebildiğini doğrulayın.
 2. Önceki paketlerle ezilmiş olabilecek dosyaları kontrol edin (logo, favicon, kategori görselleri, tema renkleri, `.htaccess`, `robots.txt`).
 3. `rafimda-release-96c73864d7.zip` → `public_html` → Extract (SHA-256 doğrulayın).
-4. Salt okunur kontrol: `RAFIMDA_ENV=live RAFIMDA_LIVE_CONFIRM=EVET-CANLI-DB RAFIMDA_LIVE_DB_NAME=<ad> php deploy/live/bin/live-preflight.php` çıktısını (parola içermez) bana gönderin; PHP/MySQL/eksik sütun sorularını kapatırım.
+4. Salt okunur kontrol: **`docs/PREFLIGHT_CPANEL_REHBERI.md`** adımlarını uygulayın (komut, cPanel Terminal/Cron yöntemi, çıktı yorumlama, hata durumunda bakılacak dosyalar orada). Çıktıyı bana gönderin; ben incelemeden migration/kurulum yapılmaz.
 5. Panelde sırayla: rafimda-theme → rafimda-vendor → rafimda-showcase → xml-hub → marketplace-hub. Her kurulumdan sonra ana sayfa ve `/admin` açılıyor mu bakın.
 6. Test satıcısı oluşturun (gerçek müşteri olmadan), şu kabul listesini uygulayıp sonucu bana yazın:
    - `/satici-kayit` ile kayıt → `/satici-giris` ile giriş → `/satici-panel` açılıyor mu
