@@ -17,8 +17,8 @@ B. TEMA VE GÖRÜNÜM (geliştirme önizlemesi, ÖRNEK/TEST verisiyle)
 [Tamamlandı]  Rafımda logosu, favicon, lacivert/turuncu/beyaz tema gerçek uygulamada görünüyor
 [Tamamlandı]  Ana sayfa: logo, arama, kategoriler, giriş/kayıt, sepet, büyük slider, kampanyalar, öne çıkan ürünler, öne çıkan mağazalar, footer
 [Tamamlandı]  Ürün listeleme, ürün detay, arama, sepet, mağaza sayfası, satıcı başvuru, hukuki sayfalar, çerez tercihleri
-[Tamamlandı]  Müşteri hesap merkezi, satıcı paneli (6 bölüm), yönetici paneli (9 sayfa) açılıyor
-[Tamamlandı]  Masaüstü 1440 / tablet 820 / mobil 390: HTTP 200, yatay taşma 0, JS hatası 0 (81 görünüm)
+[Tamamlandı]  Müşteri hesap merkezi, satıcı paneli (6 bölüm), yönetici paneli (18 sayfa, oturum açılmış) açılıyor
+[Tamamlandı]  Masaüstü 1440 / tablet 820 / mobil 390: HTTP 200, yatay taşma 0, JS hatası 0 (108 görünüm)
 [Tamamlandı]  İç bağlantı taraması: 60 sayfa, kırık bağlantı 0
 [Bekliyor]    Gerçek ürün görselleri ve gerçek ürün/satıcı verisiyle görünüm (canlı veri sizdedir)
 [Bekliyor]    Banner/slider görsellerinin sizin tarafınızdan yüklenmesi (önizlemedeki ikinci slider FriSay demo görselidir)
@@ -75,3 +75,4 @@ J. KAPALI KALACAKLAR (yazılı onayınız olmadan açılmaz)
 
 K. BEKLEMEDE
 [Bekliyor]    FriSay lisans / bağımsızlaşma kararı (ŞİMDİLİK BEKLEMEDE – hiçbir şey silinmedi)
+[Bekliyor]    Yönetici panelindeki "FriSay" adı/bağlantısı (üst başlık, gösterge paneli, alt bilgi) – lisans kararına bağlı, değiştirilmedi

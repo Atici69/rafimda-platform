@@ -139,7 +139,8 @@ SSH yoksa: cPanel Cron'a komutu "... > /home/KULLANICI/cikti.txt 2>&1" ile bir k
 - Zip "unzip -t" testinden geçti; index.php kökte (iç klasör yok); zorunlu dosyalar var; env.php/.env/.git/test/yedek yok.
 - KURULUM PROVASI: paket boş bir klasöre açıldı; FriSay kurulum adımları (şema, ayarlar, başlangıç modülleri) SQLite üzerinde
   çalıştırıldı; 11 modül (Rafımda + xml-hub + marketplace-hub) gerçek Module::install() ile kuruldu (toplam 121 tablo); site tarayıcıda açıldı:
-  60 iç bağlantı taranıp kırık bağlantı bulunmadı; 27 sayfa masaüstü/tablet/mobil (81 görünüm) ekran görüntüsünde HTTP 200,
+  60 iç bağlantı taranıp kırık bağlantı bulunmadı; 36 sayfa (mağaza, satıcı paneli ve yönetici paneli oturum açılmış hâlde)
+  masaüstü/tablet/mobil (108 görünüm) ekran görüntüsünde HTTP 200,
   yatay taşma 0, JS hatası 0; Rafi sohbeti (karşılama, arama, karşılaştırma, sonuçsuz arama) tarayıcıda çalıştı.
 - DENENMEYEN: gerçek MySQL/MariaDB, gerçek install/ sihirbazı arayüzü, Natro ortamı, SSL, cron, e-posta.
 
