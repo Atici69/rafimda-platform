@@ -7,7 +7,7 @@ class RvAudit
 	{
 		$idUser = 0;
 
-		if (class_exists('Customer', false) && Customer::isLoggedIn()) {
+		if (class_exists('Customer') && Customer::isLoggedIn()) {
 			$idUser = Customer::getId();
 		}
 

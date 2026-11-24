@@ -104,7 +104,7 @@ class Product { // TAKLİT
 }
 class RafimdaVendorModule { public const VERSION = 'test'; }
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvLedger', 'RvOrders', 'RvView'] as $c) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 
@@ -115,7 +115,7 @@ function rv_mysql_to_sqlite(string $sql): string
 	$sql = preg_replace('/^\s*UNIQUE KEY\s+`[^`]+`\s*(\([^)]*\)),?\s*$/m', 'UNIQUE $1,', $sql);
 	$sql = preg_replace('/^\s*KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/`(\w+)` (?:int\(11\)|bigint\(20\)) NOT NULL AUTO_INCREMENT,/', '`$1` INTEGER PRIMARY KEY AUTOINCREMENT,', $sql);
-	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import)`\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log)`\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/,(\s*\))/', '$1', $sql);
 	return $sql;
 }
@@ -133,7 +133,7 @@ function rv_fresh_db(): void
 	$db->exec('CREATE TABLE brands (id_brand INTEGER PRIMARY KEY, brand_name TEXT, active INTEGER DEFAULT 1)');
 	$db->exec('CREATE TABLE products (id_product INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, id_category INT, id_brand INT, price REAL, old_price REAL DEFAULT 0, stock REAL, stock_code TEXT, barcode TEXT, active INT)');
 	$db->exec('CREATE TABLE images (id_image INTEGER PRIMARY KEY AUTOINCREMENT, id_product INT, cover INT DEFAULT 0)');
-	$db->exec('CREATE TABLE orders (id_order INTEGER PRIMARY KEY, reference TEXT, status INT, date_add TEXT, customer_name TEXT, customer_phone TEXT, address_city TEXT, address_district TEXT, address_text TEXT)');
+	$db->exec('CREATE TABLE orders (id_order INTEGER PRIMARY KEY, id_user INT DEFAULT 0, reference TEXT, status INT, date_add TEXT, customer_name TEXT, customer_phone TEXT, address_city TEXT, address_district TEXT, address_text TEXT)');
 	$db->exec('CREATE TABLE order_detail (id_order_detail INTEGER PRIMARY KEY AUTOINCREMENT, id_order INT, id_product INT, product_name TEXT, price REAL, total REAL, qty REAL)');
 	$db->exec("INSERT INTO categories VALUES (1,'Giyim',1),(2,'Pasif Kat',0)");
 	$db->exec("INSERT INTO brands VALUES (1,'MarkaA',1)");

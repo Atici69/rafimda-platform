@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPanel'] as $rvClass) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPanel'] as $rvClass) {
 	require_once __DIR__ . '/lib/' . $rvClass . '.php';
 }
 
@@ -16,7 +16,7 @@ foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProduct
  */
 class RafimdaVendorModule extends ModuleBase
 {
-	public const VERSION = '0.2.0';
+	public const VERSION = '0.3.0';
 
 	public string $name = 'rafimda-vendor';
 	public string $title = 'Rafımda Satıcı Sistemi';
@@ -83,7 +83,7 @@ class RafimdaVendorModule extends ModuleBase
 		$adminId = Admin::getId();
 		$tab = (string) Tools::getValue('tab', 'vendors');
 
-		if (!in_array($tab, ['vendors', 'products', 'orders', 'finance', 'settings'], true)) {
+		if (!in_array($tab, ['vendors', 'products', 'orders', 'finance', 'plans', 'settings'], true)) {
 			$tab = 'vendors';
 		}
 
@@ -134,6 +134,16 @@ class RafimdaVendorModule extends ModuleBase
 						RvAudit::log((int) Tools::getValue('id_vendor'), 'vendor.commission', 'vendor', (int) Tools::getValue('id_vendor'), ['rate' => $rate], $adminId);
 					}
 					break;
+				case 'plan_save':
+					$r = RvPlans::save($_POST);
+					$ok = $r['success'];
+					$msg = $r['message'];
+					break;
+				case 'plan_assign':
+					$r = RvPlans::assign((int) Tools::getValue('id_vendor'), (string) Tools::getValue('plan_code'), (string) Tools::getValue('expires'), $adminId, (string) Tools::getValue('note'));
+					$ok = $r['success'];
+					$msg = $r['message'];
+					break;
 				case 'settings':
 					$c = (float) str_replace(',', '.', (string) Tools::getValue('default_commission'));
 					$h = (int) Tools::getValue('hold_days');
@@ -173,6 +183,7 @@ class RafimdaVendorModule extends ModuleBase
 			'rvStatuses' => RvVendor::STATUSES,
 			'rvFilterStatus' => $status,
 			'rvQuery' => $q,
+			'rvPlans' => $tab === 'plans' ? RvPlans::all() : [],
 			'rvPending' => RvMigrator::pending(),
 			'rvModerationQueue' => $tab === 'products' ? RvProducts::moderationQueue((string) Tools::getValue('mod', 'pending')) : [],
 			'rvModState' => (string) Tools::getValue('mod', 'pending'),

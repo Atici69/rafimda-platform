@@ -13,15 +13,15 @@ class RvPanel
 		'suppliers'    => ['Tedarikçiler', '⚙', false, 'XML Merkezi ile birlikte gelecek: tedarikçi kartları ve besleme bağları.'],
 		'orders'       => ['Siparişler', '▤', true, ''],
 		'marketplaces' => ['Pazaryerleri', '⌂', false, 'Aşama 9: Trendyol, Hepsiburada, N11 hesap yönetimi (mevcut core/marketplace kodu satıcı bazlı hale getirilecek).'],
-		'stock'        => ['Stok ve Depo', '▥', false, 'Hızlı stok güncelleme şu an Ürün Yönetimi ekranında; depo/çoklu konum sonraki aşamada.'],
-		'pricing'      => ['Fiyat Yönetimi', '₺', false, 'Hızlı fiyat güncelleme şu an Ürün Yönetimi ekranında; kural tabanlı fiyatlama sonraki aşamada.'],
-		'customers'    => ['Müşteriler', '☺', false, 'Satıcıya özel müşteri görünümü sonraki aşamada.'],
-		'campaigns'    => ['Kampanyalar', '✦', false, 'Satıcı kampanyaları sonraki aşamada.'],
+		'stock'        => ['Stok ve Depo', '▥', true, ''],
+		'pricing'      => ['Fiyat Yönetimi', '₺', true, ''],
+		'customers'    => ['Müşteriler', '☺', true, ''],
+		'campaigns'    => ['Kampanyalar ve Vitrin', '✦', false, 'Vitrin modülü (rafimda-showcase) kurulu değil. Kurulduğunda ana sayfada öne çıkan/kampanyalı ürün yerleşimi talep edebilirsiniz.'],
 		'reports'      => ['Raporlar', '▨', false, 'Satış ve stok raporları sonraki aşamada.'],
 		'finance'      => ['Finans', '₿', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
-		'subscription' => ['Abonelik', '★', false, 'Aşama 10: paket ve abonelik sistemi.'],
+		'subscription' => ['Abonelik', '★', true, ''],
 		'store'        => ['Mağaza Ayarları', '⚑', true, ''],
 		'support'      => ['Destek', '?', false, 'Destek talepleri sonraki aşamada.'],
 	];
@@ -79,6 +79,19 @@ class RvPanel
 			case 'orders':
 				[$tpl, $vars] = self::orders($vendor);
 				break;
+			case 'stock':
+			case 'pricing':
+				[$tpl, $vars] = self::inventory($vendor, $section);
+				break;
+			case 'customers':
+				[$tpl, $vars] = self::customers($vendor);
+				break;
+			case 'subscription':
+				[$tpl, $vars] = self::subscription($vendor);
+				break;
+			case 'campaigns':
+				[$tpl, $vars] = class_exists('RsShowcase', false) ? self::campaigns($vendor) : ['panel_planned', ['planned' => self::MENU[$section]]];
+				break;
 			case 'finance':
 				[$tpl, $vars] = self::finance($vendor);
 				break;
@@ -104,7 +117,7 @@ class RvPanel
 			if (RvContext::can(RvPerm::SECTION_PERMS[$key])) {
 				// XML Hub / Pazaryeri Hub modülleri kuruluysa kendi sayfalarına bağlanır (Pazaryeri Hub'da gerçek API yok; sayfa bunu belirtir)
 				$slug = $key === 'xml' && class_exists('XhPanel', false) ? 'xml-merkezi' : ($key === 'suppliers' && class_exists('XhPanel', false) ? 'xml-merkezi?view=suppliers' : ($key === 'marketplaces' && class_exists('MhPanel', false) ? 'pazaryeri' : ''));
-				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $slug !== '' ? true : $m[2], 'url' => $slug !== '' ? RvView::url($slug) : RvView::panelUrl($key)];
+				$menu[] = ['key' => $key, 'label' => $m[0], 'icon' => $m[1], 'ready' => $slug !== '' ? true : ($key === 'campaigns' && class_exists('RsShowcase', false) ? true : $m[2]), 'url' => $slug !== '' ? RvView::url($slug) : RvView::panelUrl($key)];
 			}
 		}
 
@@ -129,6 +142,98 @@ class RvPanel
 			],
 		]);
 		exit;
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function inventory(array $vendor, string $section): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+		$back = RvView::panelUrl($section);
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('products.edit');
+			$action = RvView::post('action');
+			$rows = is_array($_POST['rows'] ?? null) ? $_POST['rows'] : [];
+			$r = null;
+
+			if ($action === 'stock_save' && $section === 'stock') {
+				$r = RvInventory::bulkSet($idVendor, array_map(static fn($x): array => ['stock' => is_array($x) ? ($x['stock'] ?? '') : ''], $rows));
+			} elseif ($action === 'price_save' && $section === 'pricing') {
+				$r = RvInventory::bulkSet($idVendor, array_map(static fn($x): array => ['price' => is_array($x) ? ($x['price'] ?? '') : ''], $rows));
+			} elseif ($action === 'price_adjust' && $section === 'pricing') {
+				$r = RvInventory::adjustPrices($idVendor, is_array($_POST['ids'] ?? null) ? $_POST['ids'] : [], RvView::post('percent'));
+			}
+
+			if ($r === null) {
+				RvView::flash('danger', 'Geçersiz işlem.');
+			} else {
+				RvView::flash($r['failed'] === 0 && $r['ok'] > 0 ? 'success' : ($r['ok'] > 0 ? 'warning' : 'danger'), $r['ok'] . ' ürün güncellendi' . ($r['failed'] > 0 ? ', ' . $r['failed'] . ' başarısız: ' . implode(' ', array_slice($r['errors'], 0, 3)) : '.') . ($r['ok'] === 0 && $r['failed'] === 0 ? ' (değişiklik yok)' : ''));
+			}
+
+			RvView::redirect($back);
+		}
+
+		$filter = (string) Tools::getValue('f', '');
+		$filter = in_array($filter, ['out', 'low', 'inactive'], true) ? $filter : '';
+		$q = trim((string) Tools::getValue('q', ''));
+		$perPage = 25;
+		$page = max(1, (int) Tools::getValue('page', 1));
+		$list = RvInventory::listProducts($idVendor, $filter, $q, $perPage, ($page - 1) * $perPage);
+
+		return [$section === 'stock' ? 'panel_stock' : 'panel_pricing', [
+			'rows' => $list['rows'], 'total' => $list['total'], 'filter' => $filter, 'q' => $q, 'page' => $page,
+			'pages' => max(1, (int) ceil($list['total'] / $perPage)), 'sum' => RvInventory::summary($idVendor), 'lowLimit' => RvInventory::LOW_STOCK,
+			'sec' => $section,
+		]];
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function campaigns(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('products.edit');
+
+			if (RvView::post('action') === 'showcase_request') {
+				$r = RsShowcase::request($idVendor, ['slot_code' => RvView::post('slot_code'), 'id_product' => RvView::post('id_product'), 'starts_at' => RvView::post('starts_at'), 'ends_at' => RvView::post('ends_at')]);
+			} elseif (RvView::post('action') === 'showcase_withdraw') {
+				$ok = RsShowcase::withdraw($idVendor, (int) RvView::post('id_item'));
+				$r = ['success' => $ok, 'message' => $ok ? 'Talep geri çekildi.' : 'Kayıt bulunamadı.'];
+			} else {
+				$r = ['success' => false, 'message' => 'Geçersiz işlem.'];
+			}
+
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl('campaigns'));
+		}
+
+		$products = DB::execute("SELECT p.id_product, p.product_name FROM products p JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? AND vp.moderation = 'approved' AND p.active = 1 ORDER BY p.product_name ASC LIMIT 300", [$idVendor]) ?: [];
+
+		return ['panel_campaigns', ['slots' => array_values(array_filter(RsShowcase::slots(true), static fn(array $s): bool => $s['kind'] === 'product' && (int) $s['vendor_requestable'] === 1)), 'products' => $products, 'items' => RsShowcase::forVendor($idVendor)]];
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function subscription(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+		$eff = RvPlans::effective($idVendor);
+
+		return ['panel_subscription', ['eff' => $eff, 'usage' => RvPlans::usage($idVendor), 'plans' => RvPlans::all(true)]];
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function customers(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+		$q = trim((string) Tools::getValue('q', ''));
+		$perPage = 25;
+		$page = max(1, (int) Tools::getValue('page', 1));
+		$list = RvCustomers::listFor($idVendor, $q, $perPage, ($page - 1) * $perPage);
+
+		return ['panel_customers', ['rows' => $list['rows'], 'total' => $list['total'], 'q' => $q, 'page' => $page, 'pages' => max(1, (int) ceil($list['total'] / $perPage)), 'sum' => RvCustomers::summary($idVendor)]];
 	}
 
 	private static function deny(string $perm): void

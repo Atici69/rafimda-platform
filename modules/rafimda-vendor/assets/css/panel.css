@@ -68,3 +68,9 @@ body.rv{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-se
  .rv .rv-resp td{display:flex;justify-content:space-between;gap:10px;border:0;padding:5px 6px}.rv .rv-resp td::before{content:attr(data-l);color:var(--rv-muted);font-size:12px}
 }
 @media (max-width:520px){.rv-grid.c4,.rv-grid.c2,.rv-grid.c3{grid-template-columns:1fr}}
+a.rv-stat{display:block;text-decoration:none;color:inherit}a.rv-stat:hover{border-color:var(--rv-orange)}
+/* Mobil üst çubuk: taşmayı önle (satıcı seçici, rol etiketi, mağaza bağlantısı) */
+.rv-top{flex-wrap:wrap}
+.rv-top strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-top select{max-width:46vw}
+@media (max-width:520px){.rv-top>span:not(.grow){display:none}.rv-top .rv-btn{padding:6px 9px}}

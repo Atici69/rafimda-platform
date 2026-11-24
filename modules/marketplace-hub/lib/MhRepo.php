@@ -69,6 +69,14 @@ class MhRepo
 			return ['success' => false, 'message' => 'Sunucuda libsodium yok; API anahtarları güvenli saklanamaz.', 'id' => 0];
 		}
 
+		if ($vendor > 0 && class_exists('RvPlans')) {
+			$q = RvPlans::checkQuota($vendor, 'marketplaces');
+
+			if (!$q['ok']) {
+				return ['success' => false, 'message' => $q['message'], 'id' => 0];
+			}
+		}
+
 		$c = self::cleanCreds($a, $creds);
 
 		if (!$c['ok']) {

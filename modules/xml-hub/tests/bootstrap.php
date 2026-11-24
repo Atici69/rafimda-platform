@@ -87,7 +87,7 @@ class Module { public static array $hooks = []; public static function runHook($
 class Tax { public static function getDefaultRate() { return 20.0; } }
 class Category { public static function getProductSelectOptions() { return DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1') ?: []; } }
 class ProductVariation {
-	public static function getByProduct($id) { return []; }
+	public static function getByProduct($id, $activeOnly = false) { return DB::execute("SELECT * FROM product_variations WHERE id_product = ? ORDER BY id_variation", [$id]) ?: []; }
 	public static function upsertOne($id, array $it) { $r = DB::execute('SELECT * FROM product_variations WHERE id_product = ? AND sku = ?', [$id, $it['sku'] ?? '']); if ($r) { return ['success' => true, 'created' => false, 'id' => (int) $r[0]['id_variation']]; } DB::execute('INSERT INTO product_variations (id_product, sku, price, stock) VALUES (?,?,?,?)', [$id, $it['sku'] ?? '', (float) ($it['price'] ?? 0), (float) ($it['stock'] ?? 0)]); return ['success' => true, 'created' => true, 'id' => 1]; }
 	public static function getByProductSku($id, $sku) { $r = DB::execute('SELECT * FROM product_variations WHERE id_product = ? AND sku = ?', [$id, $sku]); return $r[0] ?? null; }
 	public static function patchPriceStock($idv, $d) { foreach (['price', 'stock'] as $k) { if (isset($d[$k])) { DB::execute("UPDATE product_variations SET $k = ? WHERE id_variation = ?", [(float) $d[$k], $idv]); } } return ['success' => true]; }
@@ -116,10 +116,10 @@ class Product { // TAKLİT
 class RafimdaVendorModule { public const VERSION = 'test'; }
 
 $rv = dirname(__DIR__, 2) . '/rafimda-vendor/lib/';
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts'] as $c) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvPlans'] as $c) {
 	require_once $rv . $c . '.php';
 }
-foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $c) {
+foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 

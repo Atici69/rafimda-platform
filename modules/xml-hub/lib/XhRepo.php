@@ -138,6 +138,14 @@ class XhRepo
 			return ['success' => false, 'message' => 'Bağlantı adı gerekli.', 'id' => 0];
 		}
 
+		if ($vendor > 0 && class_exists('RvPlans')) {
+			$q = RvPlans::checkQuota($vendor, 'xml');
+
+			if (!$q['ok']) {
+				return ['success' => false, 'message' => $q['message'], 'id' => 0];
+			}
+		}
+
 		if ($idSupplier > 0 && !self::supplier($idSupplier, $vendor)) {
 			return ['success' => false, 'message' => 'Tedarikçi bulunamadı.', 'id' => 0];
 		}

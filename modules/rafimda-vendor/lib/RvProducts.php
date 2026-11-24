@@ -214,6 +214,12 @@ class RvProducts
 			return ['success' => false, 'message' => 'Formu kontrol edin.', 'id' => 0, 'errors' => $in['errors']];
 		}
 
+		$quota = RvPlans::checkProductQuota($idVendor, 1);
+
+		if (!$quota['ok']) {
+			return ['success' => false, 'message' => $quota['message'], 'id' => 0, 'errors' => []];
+		}
+
 		$moderate = self::moderationEnabled();
 
 		if ($moderate) {
@@ -322,7 +328,7 @@ class RvProducts
 			return ['success' => false, 'message' => 'Güncellenemedi.'];
 		}
 
-		if (class_exists('Module', false)) {
+		if (class_exists('Module')) {
 			Module::runHook('product.updated', [$idProduct, Product::getByIdAdmin($idProduct) ?: [], false]);
 		}
 
@@ -525,7 +531,7 @@ class RvProducts
 		DB::update('rafimda_vendor_products', ['moderation' => 'approved', 'moderation_note' => '', 'moderated_at' => date('Y-m-d H:i:s')], 'id_product = :pid', ['pid' => $idProduct]);
 		DB::update('products', ['active' => 1], 'id_product = :pid', ['pid' => $idProduct]);
 
-		if (class_exists('Module', false)) {
+		if (class_exists('Module')) {
 			Module::runHook('product.updated', [$idProduct, Product::getByIdAdmin($idProduct) ?: [], false]);
 		}
 
@@ -689,7 +695,7 @@ class RvProducts
 		$res['success'] = true;
 		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.';
 
-		$idUser = class_exists('Customer', false) && Customer::isLoggedIn() ? Customer::getId() : 0;
+		$idUser = class_exists('Customer') && Customer::isLoggedIn() ? Customer::getId() : 0;
 		DB::insert('rafimda_import_log', [
 			'id_vendor' => $idVendor,
 			'id_user' => $idUser,
