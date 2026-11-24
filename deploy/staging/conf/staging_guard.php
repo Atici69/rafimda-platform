@@ -15,7 +15,7 @@ if (PHP_SAPI !== 'cli') {
 
 	$envFile = dirname(__DIR__, 3) . '/config/env.php';
 	$cfg = is_file($envFile) ? require $envFile : null;
-	$verdict = StagingGuard::requestVerdict(is_array($cfg) ? $cfg : ($cfg === null ? null : []));
+	$verdict = StagingGuard::requestVerdict(is_array($cfg) ? $cfg : ($cfg === null ? null : []), (string) ($_SERVER['HTTP_HOST'] ?? ''), (string) (getenv('RAFIMDA_PROD_DB_NAME') ?: ''));
 
 	if (!$verdict['allow']) {
 		http_response_code(503);

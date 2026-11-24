@@ -1,7 +1,10 @@
 <?php
 
 /** Canlı araçlar ortak yükleyicisi. Yalnızca komut satırı; web'den 404. */
-if (PHP_SAPI !== 'cli') {
+require_once dirname(__DIR__) . '/lib/LiveGuard.php';
+
+// Web isteğinde (SAPI cli değil veya HTTP değişkenleri var) hiçbir şey çalışmaz; bağlantı/guard koduna ulaşılmaz.
+if (!LiveGuard::isCli(PHP_SAPI, $_SERVER)) {
 	http_response_code(404);
 	exit;
 }
@@ -11,8 +14,6 @@ $root = dirname(__DIR__, 3);
 foreach (['StagingSql', 'StagingModules', 'StagingMigrator', 'StagingVerifier'] as $c) {
 	require_once $root . '/deploy/staging/lib/' . $c . '.php';
 }
-
-require_once dirname(__DIR__) . '/lib/LiveGuard.php';
 
 function live_out(string $s): void
 {
@@ -34,11 +35,11 @@ function live_read_cfg(string $root): ?array
 }
 
 /** @return array{0:array<string,mixed>,1:PDO} */
-function live_guard_and_connect(bool $apply): array
+function live_guard_and_connect(bool $apply, string $operation = 'migrate'): array
 {
 	$root = dirname(__DIR__, 3);
 	$cfg = live_read_cfg($root);
-	$g = LiveGuard::check(LiveGuard::envFromProcess(), $cfg, $apply);
+	$g = LiveGuard::check(LiveGuard::envFromProcess(), $cfg, $apply, $operation);
 
 	if (!$g['ok']) {
 		live_err('REDDEDİLDİ — canlı güvenlik kontrolü geçmedi, veritabanına bağlanılmadı:');
@@ -52,7 +53,7 @@ function live_guard_and_connect(bool $apply): array
 	}
 
 	try {
-		return [$cfg, LiveGuard::connect($cfg)];
+		return [$cfg, LiveGuard::connect($cfg, LiveGuard::envFromProcess(), $apply, $operation)];
 	} catch (Throwable $e) {
 		live_err('Veritabanı bağlantısı kurulamadı: ' . LiveGuard::scrub($e->getMessage(), $cfg));
 		exit(3);

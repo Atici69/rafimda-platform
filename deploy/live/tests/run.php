@@ -23,7 +23,7 @@ $env = ['RAFIMDA_ENV' => 'live', 'RAFIMDA_LIVE_CONFIRM' => 'EVET-CANLI-DB', 'RAF
 echo "== LiveGuard\n";
 t('dry-run: geçerli ortam kabul (yedek onayı gerekmez)', LiveGuard::check($env, $cfg, false)['ok']);
 t('--apply yedek onayı olmadan RET', !LiveGuard::check($env, $cfg, true)['ok']);
-t('--apply doğru yedek onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI'], $cfg, true)['ok']);
+t('--apply doğru yedek onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION'], $cfg, true)['ok']);
 t('yanlış yedek ifadesi RET', !LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'evet'], $cfg, true)['ok']);
 foreach (['RAFIMDA_ENV', 'RAFIMDA_LIVE_CONFIRM', 'RAFIMDA_LIVE_DB_NAME'] as $k) {
 	$e = $env;
@@ -70,6 +70,62 @@ t('live-migrate: çekirdek tablo yoksa reddeder, çekirdek tablo oluşturmaz', s
 t('live-migrate: seed/test verisi çağırmaz', stripos($mig, 'seed') === false || strpos($mig, 'Seed') === false);
 $com = (string) file_get_contents(dirname(__DIR__) . '/bin/_common.php');
 t('canlı komutlar DB parolasını komut satırından/ortamdan almaz (env.php)', strpos($com, 'DB_PASS') === false && strpos($com, 'config/env.php') !== false);
+
+echo "== LiveGuard sertleştirme (0.2)\n";
+$apply = $env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION'];
+t('apply: yedek + migration onayı ile kabul', LiveGuard::check($apply, $cfg, true)['ok']);
+t('apply: migration onayı olmadan RET', !LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI'], $cfg, true)['ok']);
+t('apply: migration onayı modül kurulumu yerine geçmez', !LiveGuard::check($apply, $cfg, true, 'module-install')['ok']);
+t('apply: modül kurulumu kendi onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MODULE_CONFIRM' => 'EVET-MODUL-KURULUMU'], $cfg, true, 'module-install')['ok']);
+t('apply: bilinmeyen işlem türü RET', !LiveGuard::check($apply, $cfg, true, 'drop-all')['ok']);
+t('yanlış migration onay ifadesi RET', !LiveGuard::check(['RAFIMDA_MIGRATE_CONFIRM' => 'evet'] + $apply, $cfg, true)['ok']);
+t('staging DB adı (rafimda_staging) canlıda RET', !LiveGuard::check(['RAFIMDA_LIVE_DB_NAME' => 'rafimda_staging'] + $env, ['DB_NAME' => 'rafimda_staging'] + $cfg, false)['ok']);
+t('test DB adı canlıda RET', !LiveGuard::check(['RAFIMDA_LIVE_DB_NAME' => 'shop_test'] + $env, ['DB_NAME' => 'shop_test'] + $cfg, false)['ok']);
+t('bildirilen staging DB adıyla aynı DB RET', !LiveGuard::check(['RAFIMDA_STAGING_DB_NAME' => 'rafimda_prod'] + $env, $cfg, false)['ok']);
+t('karışık oturum (RAFIMDA_STAGING_CONFIRM tanımlı) RET', !LiveGuard::check(['RAFIMDA_STAGING_CONFIRM' => 'EVET-STAGING-DB'] + $env, $cfg, false)['ok']);
+t('staging site adresi canlıda RET', !LiveGuard::check(['RAFIMDA_SITE_URL' => 'https://test.rafimda.com.tr/'] + $env, $cfg, false)['ok']);
+t('DB adında özel karakter RET', !LiveGuard::check(['RAFIMDA_LIVE_DB_NAME' => 'a`b'] + $env, ['DB_NAME' => 'a`b'] + $cfg, false)['ok']);
+$bk = sys_get_temp_dir() . '/rf_bk_' . bin2hex(random_bytes(3)) . '.sql';
+t('yedek dosyası yoksa RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
+file_put_contents($bk, '');
+t('boş yedek dosyası RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
+file_put_contents($bk, '-- dump');
+t('taze yedek dosyası kabul', LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
+touch($bk, time() - 3 * 86400);
+t('eski (3 gün) yedek dosyası RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
+t('dry-run yedek dosyası istemez', LiveGuard::check($env, $cfg, false)['ok']);
+unlink($bk);
+t('scrub: parola ve kullanıcı maskelenir', ($m = LiveGuard::scrub("SQLSTATE: Access denied for user 'dbuser01'@'h' (using password: Sup3rSecret)", array_merge($cfg, ['DB_USER' => 'dbuser01']))) && strpos($m, 'Sup3rSecret') === false && strpos($m, 'dbuser01') === false);
+
+echo "== Web/CLI ayrımı ve PDO atlatma\n";
+t('cli SAPI kabul', LiveGuard::isCli('cli', []));
+foreach (['apache2handler', 'fpm-fcgi', 'cgi-fcgi', 'litespeed'] as $sapi) {
+	t("web SAPI ($sapi) RET", !LiveGuard::isCli($sapi, []));
+}
+t('cli ama HTTP isteği değişkenleriyle RET', !LiveGuard::isCli('cli', ['REQUEST_METHOD' => 'GET']) && !LiveGuard::isCli('cli', ['HTTP_HOST' => 'x']) && !LiveGuard::isCli('cli', ['GATEWAY_INTERFACE' => 'CGI/1.1']));
+$threw = static function (callable $f): ?string {
+	try {
+		$f();
+	} catch (Throwable $e) {
+		return $e->getMessage();
+	}
+
+	return null;
+};
+t('connect: web SAPI\'sinde bağlantı açılmaz', ($r = $threw(static fn() => LiveGuard::connect($cfg, $apply, true, 'migrate', 'apache2handler'))) !== null && strpos($r, 'komut satırı') !== false);
+t('connect: guard geçmezse (env boş) bağlantı açılmaz', ($r = $threw(static fn() => LiveGuard::connect($cfg, [], false, 'migrate', 'cli'))) !== null && strpos($r, 'kontrolü geçmedi') !== false);
+t('connect: staging DB ile bağlantı açılmaz', $threw(static fn() => LiveGuard::connect(['DB_NAME' => 'x_staging'] + $cfg, ['RAFIMDA_LIVE_DB_NAME' => 'x_staging'] + $env, false, 'migrate', 'cli')) !== null);
+t('connect: apply onaysız bağlantı açılmaz', $threw(static fn() => LiveGuard::connect($cfg, $env, true, 'migrate', 'cli')) !== null);
+t('LiveGuard\'ta PDO yalnızca private open() içinde', substr_count((string) file_get_contents(dirname(__DIR__) . '/lib/LiveGuard.php'), 'new PDO(') === 1 && strpos((string) file_get_contents(dirname(__DIR__) . '/lib/LiveGuard.php'), 'private static function open') !== false);
+$all = '';
+foreach (glob(dirname(__DIR__) . '/bin/*.php') as $f) {
+	$all .= file_get_contents($f);
+}
+t('canlı komutlar doğrudan new PDO / StagingGuard kullanmaz', strpos($all, 'new PDO') === false && strpos($all, 'StagingGuard') === false);
+t('_common.php LiveGuard::connect(cfg, env, apply, op) çağırır', strpos((string) file_get_contents(dirname(__DIR__) . '/bin/_common.php'), 'LiveGuard::connect($cfg, LiveGuard::envFromProcess(), $apply, $operation)') !== false);
+$out = [];
+exec('env -i PATH=' . escapeshellarg((string) getenv('PATH')) . ' REQUEST_METHOD=GET ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/live-preflight.php') . ' 2>&1', $out, $rc);
+t('HTTP değişkenli oturumda live-preflight 404 ile çıkar (guard\'a ulaşmaz)', $rc === 0 && stripos(implode("\n", $out), 'REDDEDİLDİ') === false);
 
 echo "== Sürüm paketi\n";
 $tmp = sys_get_temp_dir() . '/rel_' . bin2hex(random_bytes(4));

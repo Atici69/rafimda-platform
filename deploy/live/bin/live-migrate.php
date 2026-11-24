@@ -3,14 +3,14 @@
 /**
  * Rafımda modül tablolarını CANLI veritabanına ekler. VARSAYILAN DRY-RUN: --apply olmadan hiçbir şey yazılmaz.
  * Yalnızca CREATE TABLE IF NOT EXISTS ve korumalı ADD COLUMN; DROP/TRUNCATE/DELETE/RENAME reddedilir. FriSay çekirdek tablolarını OLUŞTURMAZ/DEĞİŞTİRMEZ.
- * --apply için: RAFIMDA_BACKUP_CONFIRM=EVET-YEDEK-ALINDI (önce veritabanı yedeği alın).
+ * --apply için: RAFIMDA_BACKUP_CONFIRM=EVET-YEDEK-ALINDI (önce veritabanı yedeği alın) ve RAFIMDA_MIGRATE_CONFIRM=EVET-MIGRATION.
  * Kullanım:  php deploy/live/bin/live-migrate.php            (plan)
  *            php deploy/live/bin/live-migrate.php --apply    (uygular; ilk hatada durur)
  */
 require __DIR__ . '/_common.php';
 
 $apply = in_array('--apply', $argv, true);
-[$cfg, $pdo] = live_guard_and_connect($apply);
+[$cfg, $pdo] = live_guard_and_connect($apply, 'migrate');
 $root = dirname(__DIR__, 3);
 $sum = LiveGuard::summarize(static fn(string $t): ?int => live_count($pdo, $t));
 

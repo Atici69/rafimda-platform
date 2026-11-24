@@ -8,13 +8,19 @@ final class LiveGuard
 {
 	public const CONFIRM_LIVE = 'EVET-CANLI-DB';
 	public const CONFIRM_BACKUP = 'EVET-YEDEK-ALINDI';
+	public const CONFIRM_MIGRATE = 'EVET-MIGRATION';
+	public const CONFIRM_MODULE = 'EVET-MODUL-KURULUMU';
+	/** Değişiklik yapan işlem türleri; her biri ayrı onay ifadesi ister (migration ile modül kurulumu birbirinin yerine geçmez). */
+	public const OPERATIONS = ['migrate' => ['RAFIMDA_MIGRATE_CONFIRM', self::CONFIRM_MIGRATE], 'module-install' => ['RAFIMDA_MODULE_CONFIRM', self::CONFIRM_MODULE]];
+	/** İsteğe bağlı yedek dosyası en fazla bu kadar saniye eski olabilir. */
+	public const BACKUP_MAX_AGE = 86400;
 
 	/**
 	 * @param array<string,string> $env ortam değişkenleri
 	 * @param array<string,mixed>|null $cfg config/env.php içeriği
 	 * @return array{ok:bool,errors:list<string>}
 	 */
-	public static function check(array $env, ?array $cfg, bool $apply): array
+	public static function check(array $env, ?array $cfg, bool $apply, string $operation = 'migrate'): array
 	{
 		$errors = [];
 		$get = static fn(string $k): string => trim((string) ($env[$k] ?? ''));
@@ -44,13 +50,60 @@ final class LiveGuard
 				$errors[] = 'config/env.php APP_DEBUG canlıda kapalı olmalı.';
 			}
 
+			$dbName = strtolower(trim((string) ($cfg['DB_NAME'] ?? '')));
+
+			if ($dbName !== '' && preg_match('/(staging|stg|test)/', $dbName)) {
+				$errors[] = 'DB_NAME staging/test veritabanı gibi görünüyor (' . $dbName . '); canlı araçlar reddetti.';
+			}
+
+			if ($dbName !== '' && preg_match('/[^a-z0-9_]/', $dbName)) {
+				$errors[] = 'DB_NAME yalnızca harf, rakam ve alt çizgi içermeli.';
+			}
+
+			if ($get('RAFIMDA_STAGING_DB_NAME') !== '' && strtolower($get('RAFIMDA_STAGING_DB_NAME')) === $dbName) {
+				$errors[] = 'DB_NAME, bildirilen staging veritabanı adıyla aynı (RAFIMDA_STAGING_DB_NAME).';
+			}
+
 			if ($get('RAFIMDA_LIVE_DB_NAME') === '' || $get('RAFIMDA_LIVE_DB_NAME') !== (string) ($cfg['DB_NAME'] ?? '')) {
 				$errors[] = 'RAFIMDA_LIVE_DB_NAME, config/env.php DB_NAME ile birebir aynı olmalı (yanlış veritabanına karşı elle doğrulama).';
 			}
 		}
 
-		if ($apply && $get('RAFIMDA_BACKUP_CONFIRM') !== self::CONFIRM_BACKUP) {
-			$errors[] = 'Değişiklik için RAFIMDA_BACKUP_CONFIRM=' . self::CONFIRM_BACKUP . ' gerekir (önce veritabanı yedeği alın).';
+		if ($get('RAFIMDA_STAGING_CONFIRM') !== '') {
+			$errors[] = 'RAFIMDA_STAGING_CONFIRM tanımlı: staging ve canlı ortam değişkenleri karıştırılmış olabilir; temiz bir oturum açın.';
+		}
+
+		$site = $get('RAFIMDA_SITE_URL');
+
+		if ($site !== '' && preg_match('/^(test|staging|stg)\./', strtolower((string) parse_url($site, PHP_URL_HOST)))) {
+			$errors[] = 'RAFIMDA_SITE_URL bir staging adresi; canlı araçlar reddetti.';
+		}
+
+		if ($apply) {
+			if ($get('RAFIMDA_BACKUP_CONFIRM') !== self::CONFIRM_BACKUP) {
+				$errors[] = 'Değişiklik için RAFIMDA_BACKUP_CONFIRM=' . self::CONFIRM_BACKUP . ' gerekir (önce veritabanı yedeği alın).';
+			}
+
+			$backupFile = $get('RAFIMDA_BACKUP_FILE');
+			clearstatcache(true, $backupFile);
+
+			if ($backupFile !== '') {
+				if (!is_file($backupFile) || (int) @filesize($backupFile) <= 0) {
+					$errors[] = 'RAFIMDA_BACKUP_FILE bulunamadı veya boş.';
+				} elseif (time() - (int) @filemtime($backupFile) > self::BACKUP_MAX_AGE) {
+					$errors[] = 'RAFIMDA_BACKUP_FILE 24 saatten eski; yeni yedek alın.';
+				}
+			}
+
+			if (!isset(self::OPERATIONS[$operation])) {
+				$errors[] = 'Bilinmeyen işlem türü: ' . $operation . '.';
+			} else {
+				[$var, $phrase] = self::OPERATIONS[$operation];
+
+				if ($get($var) !== $phrase) {
+					$errors[] = $var . '=' . $phrase . ' gerekir (' . $operation . ' için ayrı onay).';
+				}
+			}
 		}
 
 		return ['ok' => $errors === [], 'errors' => $errors];
@@ -61,7 +114,7 @@ final class LiveGuard
 	{
 		$out = [];
 
-		foreach (['RAFIMDA_ENV', 'RAFIMDA_LIVE_CONFIRM', 'RAFIMDA_LIVE_DB_NAME', 'RAFIMDA_BACKUP_CONFIRM'] as $k) {
+		foreach (['RAFIMDA_ENV', 'RAFIMDA_LIVE_CONFIRM', 'RAFIMDA_LIVE_DB_NAME', 'RAFIMDA_BACKUP_CONFIRM', 'RAFIMDA_BACKUP_FILE', 'RAFIMDA_MIGRATE_CONFIRM', 'RAFIMDA_MODULE_CONFIRM', 'RAFIMDA_STAGING_CONFIRM', 'RAFIMDA_STAGING_DB_NAME', 'RAFIMDA_SITE_URL'] as $k) {
 			$v = getenv($k);
 			$out[$k] = $v === false ? '' : (string) $v;
 		}
@@ -69,8 +122,35 @@ final class LiveGuard
 		return $out;
 	}
 
+	/** Komut satırı mı? Web (cgi/fpm/apache) SAPI'lerinde veya HTTP istek değişkenleri varsa false. @param array<string,mixed> $server */
+	public static function isCli(string $sapi, array $server = []): bool
+	{
+		return in_array($sapi, ['cli', 'phpdbg'], true) && !isset($server['REQUEST_METHOD']) && !isset($server['HTTP_HOST']) && !isset($server['GATEWAY_INTERFACE']);
+	}
+
+	/**
+	 * Güvenlik kontrolü TEKRAR çalıştırılmadan bağlantı açılmaz (check atlanarak PDO açılamaz).
+	 *
+	 * @param array<string,mixed> $cfg
+	 * @param array<string,string> $env
+	 */
+	public static function connect(array $cfg, array $env, bool $apply = false, string $operation = 'migrate', string $sapi = PHP_SAPI): PDO
+	{
+		if (!self::isCli($sapi, $sapi === PHP_SAPI ? $_SERVER : [])) {
+			throw new RuntimeException('Canlı araçlar yalnızca komut satırından çalışır.');
+		}
+
+		$g = self::check($env, $cfg, $apply, $operation);
+
+		if (!$g['ok']) {
+			throw new RuntimeException('Canlı güvenlik kontrolü geçmedi: ' . implode(' ', $g['errors']));
+		}
+
+		return self::open($cfg);
+	}
+
 	/** @param array<string,mixed> $cfg */
-	public static function connect(array $cfg): PDO
+	private static function open(array $cfg): PDO
 	{
 		return new PDO('mysql:host=' . $cfg['DB_HOST'] . ';dbname=' . $cfg['DB_NAME'] . ';charset=utf8mb4', (string) $cfg['DB_USER'], (string) ($cfg['DB_PASS'] ?? ''), [
 			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -83,7 +163,19 @@ final class LiveGuard
 	{
 		$pass = (string) ($cfg['DB_PASS'] ?? '');
 
-		return $pass !== '' ? str_replace($pass, '***', $message) : $message;
+		if ($pass !== '') {
+			$message = str_replace($pass, '***', $message);
+		}
+
+		foreach (['DB_USER', 'DB_HOST'] as $k) {
+			$v = (string) ($cfg[$k] ?? '');
+
+			if (strlen($v) >= 4 && $v !== 'localhost') {
+				$message = str_replace($v, '***', $message);
+			}
+		}
+
+		return $message;
 	}
 
 	/**

@@ -76,13 +76,23 @@ final class StagingGuard
 
 	/**
 	 * Web isteği için son savunma kararı (conf/staging_guard.php kullanır).
-	 * env.php yoksa (kurulum sihirbazı henüz çalışmadı) izin verilir; DB adı staging gibi değilse engellenir.
+	 * - env.php yoksa (kurulum sihirbazı henüz çalışmadı) yalnızca istek adresi canlı alan adı DEĞİLSE izin verilir.
+	 * - env.php varsa DB_NAME staging gibi olmalı, geçerli karakterlerden oluşmalı, canlı DB adıyla aynı olmamalı;
+	 *   canlı DB sunucusu bilindiği halde DB_NAME canlıyla aynıysa reddedilir.
 	 *
 	 * @param array<string,mixed>|null $cfg config/env.php içeriği, dosya yoksa null
+	 * @param string $requestHost istek HTTP_HOST'u (boşsa kontrol edilmez)
+	 * @param string $prodDbName bilinen canlı veritabanı adı (RAFIMDA_PROD_DB_NAME), boş olabilir
 	 * @return array{allow:bool,reason:string}
 	 */
-	public static function requestVerdict(?array $cfg): array
+	public static function requestVerdict(?array $cfg, string $requestHost = '', string $prodDbName = ''): array
 	{
+		$host = strtolower(preg_replace('/:\d+$/', '', trim($requestHost)) ?? '');
+
+		if ($host !== '' && preg_match('/(^|\.)rafimda\.com\.tr$/', $host) && !preg_match('/^(test|staging|stg)\./', $host)) {
+			return ['allow' => false, 'reason' => 'istek adresi canlı alan adı (' . $host . ')'];
+		}
+
 		if ($cfg === null) {
 			return ['allow' => true, 'reason' => 'env.php yok (kurulum aşaması)'];
 		}
@@ -93,7 +103,21 @@ final class StagingGuard
 			return ['allow' => false, 'reason' => 'DB_NAME staging gibi görünmüyor'];
 		}
 
+		if (preg_match('/[^a-z0-9_]/', $name)) {
+			return ['allow' => false, 'reason' => 'DB_NAME geçersiz karakter içeriyor'];
+		}
+
+		if ($prodDbName !== '' && $name === strtolower(trim($prodDbName))) {
+			return ['allow' => false, 'reason' => 'DB_NAME canlı veritabanı adıyla aynı'];
+		}
+
 		return ['allow' => true, 'reason' => ''];
+	}
+
+	/** Komut satırı mı? Web SAPI'sinde veya HTTP değişkenleri varsa false (CLI ve web ayrı değerlendirilir). @param array<string,mixed> $server */
+	public static function isCli(string $sapi, array $server = []): bool
+	{
+		return in_array($sapi, ['cli', 'phpdbg'], true) && !isset($server['REQUEST_METHOD']) && !isset($server['GATEWAY_INTERFACE']);
 	}
 
 	/** Ortam değişkenlerini toplar (yalnızca getenv; dosyadan okumaz). @return array<string,string> */
@@ -114,12 +138,28 @@ final class StagingGuard
 	{
 		$pass = (string) ($env['DB_PASS'] ?? '');
 
-		return $pass !== '' ? str_replace($pass, '***', $message) : $message;
+		if ($pass !== '') {
+			$message = str_replace($pass, '***', $message);
+		}
+
+		$user = (string) ($env['DB_USER'] ?? '');
+
+		return strlen($user) >= 4 ? str_replace($user, '***', $message) : $message;
 	}
 
-	/** Güvenlik kontrolünden sonra PDO bağlantısı açar. */
-	public static function connect(array $env): PDO
+	/** Güvenlik kontrolü TEKRAR çalıştırılır; geçmezse bağlantı açılmaz (check atlanarak PDO açılamaz). @param array<string,string> $env */
+	public static function connect(array $env, string $sapi = PHP_SAPI): PDO
 	{
+		if (!self::isCli($sapi, $sapi === PHP_SAPI ? $_SERVER : [])) {
+			throw new RuntimeException('Staging araçları yalnızca komut satırından çalışır.');
+		}
+
+		$g = self::check($env);
+
+		if (!$g['ok']) {
+			throw new RuntimeException('Staging güvenlik kontrolü geçmedi: ' . implode(' ', $g['errors']));
+		}
+
 		$port = (int) ($env['DB_PORT'] ?? 0) ?: 3306;
 		$dsn = 'mysql:host=' . $env['DB_HOST'] . ';port=' . $port . ';dbname=' . $env['DB_NAME'] . ';charset=utf8mb4';
 

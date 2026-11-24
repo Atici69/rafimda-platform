@@ -51,8 +51,11 @@ Ne ekleneceğini listeler, **hiçbir şey yazmaz**.
 **6. Uygulama (yedekten sonra):**
 ```bash
 export RAFIMDA_BACKUP_CONFIRM=EVET-YEDEK-ALINDI
+export RAFIMDA_MIGRATE_CONFIRM=EVET-MIGRATION      # migration için ayrı onay (modül kurulumu için RAFIMDA_MODULE_CONFIRM=EVET-MODUL-KURULUMU ayrıdır)
+export RAFIMDA_BACKUP_FILE=/home/KULLANICI/yedek.sql   # İSTEĞE BAĞLI: verilirse var, boş değil ve 24 saatten yeni olmalı
 php deploy/live/bin/live-migrate.php --apply
 ```
+Canlı araçlar şunları da reddeder: `staging/stg/test` içeren veritabanı adı, `RAFIMDA_STAGING_CONFIRM` tanımlı (karışık oturum), staging site adresi, web (HTTP) üzerinden çalıştırma. Hata mesajlarında DB parolası ve kullanıcı adı `***` ile maskelenir.
 Yalnızca `CREATE TABLE IF NOT EXISTS` ve korumalı `ADD COLUMN`; `DROP/TRUNCATE/DELETE/RENAME` reddedilir; FriSay çekirdek tablolarına **dokunmaz**; ilk hatada durur.
 **7. Doğrulama (salt-okunur):** `php deploy/live/bin/live-verify.php --out=logs/live-verify.md` → 0 FAIL beklenir (gerçek MySQL'de ilk çalıştırma; bir FAIL çıkarsa çıktıyı iletin).
 **8. Modülleri etkinleştirin:** Yönetici paneli → Modüller → `rafimda-vendor`, `xml-hub`, `marketplace-hub`, `rafimda-showcase` (modül kaydı ve ayar tohumlama — ör. ana komisyon, cron anahtarı, varsayılan paketler — yalnızca panelden kurulumda yapılır).

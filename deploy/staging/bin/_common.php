@@ -1,7 +1,9 @@
 <?php
 
 /** Ortak yükleyici. Yalnızca komut satırından çalışır; veritabanı bağlantısı StagingGuard geçmeden açılmaz. */
-if (PHP_SAPI !== 'cli') {
+require_once dirname(__DIR__) . '/lib/StagingGuard.php';
+
+if (!StagingGuard::isCli(PHP_SAPI, $_SERVER)) {
 	http_response_code(404);
 	exit;
 }

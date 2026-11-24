@@ -294,6 +294,65 @@ if ($tracked !== '') {
 	t('git\'te izlenen döküm/anahtar/env dosyası yok', !preg_match('/(\.sql\.gz|\.dump|\.sqlite|\.key|(^|\/)env\.php|(^|\/)\.env)$/m', $tracked));
 }
 
+echo "== StagingGuard sertleştirme (0.2)\n";
+$thr = static function (callable $f): ?string {
+	try {
+		$f();
+	} catch (Throwable $e) {
+		return $e->getMessage();
+	}
+
+	return null;
+};
+t('staging: canlı DB adı (RAFIMDA_PROD_DB_NAME) reddedilir', !StagingGuard::check(['DB_NAME' => 'rafimda_live_staging', 'RAFIMDA_PROD_DB_NAME' => 'rafimda_live_staging'] + $good)['ok']);
+t('web kararı: canlı alan adı (www.rafimda.com.tr) env.php olmasa da RET', !StagingGuard::requestVerdict(null, 'www.rafimda.com.tr')['allow'] && !StagingGuard::requestVerdict(null, 'rafimda.com.tr:443')['allow']);
+t('web kararı: test.rafimda.com.tr kurulum sihirbazına izin', StagingGuard::requestVerdict(null, 'test.rafimda.com.tr')['allow']);
+t('web kararı: canlı alan adı + staging DB adı yine RET', !StagingGuard::requestVerdict(['DB_NAME' => 'rafimda_staging'], 'www.rafimda.com.tr')['allow']);
+t('web kararı: DB_NAME bilinen canlı adla aynıysa RET', !StagingGuard::requestVerdict(['DB_NAME' => 'rafimda_test'], 'test.rafimda.com.tr', 'rafimda_test')['allow']);
+t('web kararı: geçersiz karakterli DB_NAME RET', !StagingGuard::requestVerdict(['DB_NAME' => 'test`x'], 'test.rafimda.com.tr')['allow']);
+t('CLI/web ayrımı: cli kabul, web SAPI ve HTTP değişkenleri RET', StagingGuard::isCli('cli', []) && !StagingGuard::isCli('fpm-fcgi', []) && !StagingGuard::isCli('cli', ['REQUEST_METHOD' => 'GET']));
+t('connect: web SAPI\'sinde açılmaz', ($r = $thr(static fn() => StagingGuard::connect($good, 'apache2handler'))) !== null && strpos($r, 'komut satırı') !== false);
+t('connect: guard geçmezse (canlı DB adı) açılmaz', ($r = $thr(static fn() => StagingGuard::connect(['DB_NAME' => 'rafimda_live', 'RAFIMDA_PROD_DB_NAME' => 'rafimda_live'] + $good, 'cli'))) !== null && strpos($r, 'kontrolü geçmedi') !== false);
+t('connect: env eksikse açılmaz', $thr(static fn() => StagingGuard::connect([], 'cli')) !== null);
+t('connect: yanlış onay ifadesiyle açılmaz', $thr(static fn() => StagingGuard::connect(['RAFIMDA_STAGING_CONFIRM' => 'evet'] + $good, 'cli')) !== null);
+t('StagingGuard\'ta tek new PDO ve connect içinde check() çağrısı var', substr_count((string) file_get_contents(dirname(__DIR__) . '/lib/StagingGuard.php'), 'new PDO(') === 1 && strpos((string) file_get_contents(dirname(__DIR__) . '/lib/StagingGuard.php'), 'self::check($env)') !== false);
+t('scrub kullanıcı adını da maskeler', strpos(StagingGuard::scrub("denied for 'stguser1'", ['DB_USER' => 'stguser1']), 'stguser1') === false);
+$guardPhp = (string) file_get_contents(dirname(__DIR__) . '/conf/staging_guard.php');
+t('staging_guard.php istek adresini ve canlı DB adını bekçiye iletir', strpos($guardPhp, "HTTP_HOST") !== false && strpos($guardPhp, 'RAFIMDA_PROD_DB_NAME') !== false);
+
+echo "== Mevcut veri korunur (izole SQLite; gerçek MySQL değil)\n";
+$dp = new SqliteMysqlPDO();
+$dp->exec('CREATE TABLE users (id_user INTEGER PRIMARY KEY, email TEXT)');
+$dp->exec('CREATE TABLE products (id_product INTEGER PRIMARY KEY, product_name TEXT)');
+$dp->exec('CREATE TABLE orders (id_order INTEGER PRIMARY KEY, total REAL)');
+$dp->exec("INSERT INTO users VALUES (1,'a@x.test'),(2,'b@x.test')");
+$dp->exec("INSERT INTO products VALUES (1,'Ürün A'),(2,'Ürün B'),(3,'Ürün C')");
+$dp->exec('INSERT INTO orders VALUES (1, 100.5), (2, 20)');
+$snap = static fn(): string => md5(json_encode([$dp->query('SELECT * FROM users ORDER BY 1')->fetchAll(), $dp->query('SELECT * FROM products ORDER BY 1')->fetchAll(), $dp->query('SELECT * FROM orders ORDER BY 1')->fetchAll()]));
+$before = $snap();
+$dcol = static function (string $t, string $c) use ($dp): bool {
+	foreach ($dp->query('PRAGMA table_info(`' . $t . '`)')->fetchAll() as $r) {
+		if ($r['name'] === $c) {
+			return true;
+		}
+	}
+
+	return false;
+};
+$dm = new StagingMigrator($dp, $dcol);
+$okAll = true;
+foreach (StagingModules::all() as $m) {
+	$okAll = $dm->runModule($m, true)['success'] && $okAll;
+}
+t('dry-run: tüm modüller planlanır, veri değişmez', $okAll && $snap() === $before);
+foreach (StagingModules::all() as $m) {
+	$okAll = $dm->runModule($m)['success'] && $okAll;
+}
+t('apply: modül tabloları eklenir, kullanıcı/ürün/sipariş verisi birebir aynı', $okAll && $snap() === $before && (int) $dp->query('SELECT COUNT(*) FROM users')->fetchColumn() === 2 && (int) $dp->query('SELECT COUNT(*) FROM products')->fetchColumn() === 3);
+foreach (['DROP TABLE users', 'TRUNCATE TABLE orders', 'DELETE FROM products', 'RENAME TABLE users TO u2', 'ALTER TABLE products DROP COLUMN product_name'] as $bad) {
+	t('yıkıcı ifade reddedilir: ' . $bad, StagingMigrator::isDestructive($bad));
+}
+
 echo "== Güvenlik / depo hijyeni\n";
 $bad = [];
 foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__), FilesystemIterator::SKIP_DOTS)) as $f) {
@@ -307,7 +366,7 @@ foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__
 t('pakette gömülü parola/anahtar yok', $bad === [], implode(',', $bad));
 $ign = (string) file_get_contents($root . '/.gitignore');
 t('config/env.php .gitignore\'da', strpos($ign, 'config/env.php') !== false);
-t('bin/ betikleri CLI dışında çalışmaz (_common.php kontrolü)', strpos((string) file_get_contents(dirname(__DIR__) . '/bin/_common.php'), "PHP_SAPI !== 'cli'") !== false);
+t('bin/ betikleri CLI dışında çalışmaz (_common.php kontrolü)', strpos((string) file_get_contents(dirname(__DIR__) . '/bin/_common.php'), 'StagingGuard::isCli(PHP_SAPI, $_SERVER)') !== false);
 
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 exit($fail ? 1 : 0);
