@@ -1,1 +1,1 @@
-<p class="rt-authhint">Ürün mü satmak istiyorsunuz? <a href="{$rtRegisterUrl|escape}">Satıcı olarak başvurun</a></p>
+<p class="rt-authhint">{if $rtVendor}Ürün mü satmak istiyorsunuz? <a href="{$rtRegisterUrl|escape}">Satıcı olarak başvurun</a>{/if}{if $rtVendor && $rtDealer} · {/if}{if $rtDealer}<a href="{$rtDealerApplyUrl|escape}">Bayi olun</a>{/if}</p>

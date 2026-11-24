@@ -1,6 +1,6 @@
 <?php
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
-/** Kurulum sırası bağımsızlığı: 4 SQL'li modülün 24 olası sırası, her biri boş SQLite'ta; şema aynı olmalı. MySQL'de ÇALIŞTIRILMAMIŞTIR. */
+/** Kurulum sırası bağımsızlığı: SQL takip tablolu tüm modüllerin olası kurulum sıraları, her biri boş SQLite'ta; şema aynı olmalı. MySQL'de ÇALIŞTIRILMAMIŞTIR. */
 error_reporting(E_ALL);
 require_once dirname(__DIR__) . '/lib/StagingGuard.php';
 require_once dirname(__DIR__) . '/lib/StagingSql.php';
@@ -20,6 +20,6 @@ foreach (perms($mods) as $order) {
 	$sig = []; foreach ($rows as $t) { $c = []; foreach ($pdo->query('PRAGMA table_info(`' . $t . '`)')->fetchAll() as $x) { $c[] = $x['name']; } sort($c); $sig[$t] = $c; }
 	$sigs[md5(json_encode($sig))] = count($rows); $n++;
 }
-t("$n farklı kurulum sırası hatasız tamamlandı", $allOk && $n === 24);
+t("$n  farklı kurulum sırası hatasız tamamlandı", $allOk && $n === array_product(range(1, count($mods))));
 t('tüm sıralarda sonuç şema aynı (' . array_values($sigs)[0] . ' tablo)', count($sigs) === 1);
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n"; exit($fail ? 1 : 0);

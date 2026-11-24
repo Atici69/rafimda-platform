@@ -74,5 +74,46 @@ $h3 = (string) $m->renderDisplayHook('home_slider');
 t($h3 !== '' && strpos($h3, 'satici-') === false, 'vendor kapalıyken hero var ama satıcı bağlantısı yok');
 // Aynı çıktı iki çağrıda aynı (kullanıcıya göre değişmez → sayfa önbelleği güvenli)
 t($m->renderDisplayHook('home_slider') === $m->renderDisplayHook('home_slider'), 'çıktı deterministik');
+
+// ---- 0.2.0: ana sayfa bölümleri ----
+echo "\n== Ana sayfa bölümleri (0.2.0) ==\n";
+class Tools { public static string $c = ''; public static function getValue($k, $d = '') { return $k === 'container' ? self::$c : $d; } }
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_POST = ['token' => 'tok123', 'hero' => '1', 'footer' => '1', 'sections' => '1', 'banner' => [
+	0 => ['title' => 'Kış <b>İndirimi</b>', 'text' => 'Fırsatlar', 'link' => '/search?q=kazak', 'image' => 'javascript:alert(1)', 'cta' => 'İncele'],
+	1 => ['title' => '', 'text' => 'başlıksız', 'link' => '/x'],
+	2 => ['title' => 'Dış', 'link' => 'https://example.com/k', 'image' => '/img/b.jpg'],
+	3 => ['title' => 'Kötü', 'link' => '//evil.com', 'image' => "/a\"onerror=x"],
+]];
+$_SERVER['REQUEST_METHOD'] = 'POST'; $m->adminPage(); $_SERVER['REQUEST_METHOD'] = 'GET';
+$bn = RafimdaThemeModule::banners();
+t(count($bn) === 3, 'başlıksız banner atlanır');
+t($bn[0]['title'] === 'Kış İndirimi' && $bn[0]['image'] === '' && $bn[0]['link'] === '/search?q=kazak', 'banner: etiket temizlenir, javascript: görsel reddedilir');
+t($bn[1]['link'] === 'https://example.com/k' && $bn[1]['image'] === '/img/b.jpg', 'banner: https ve yerel yol kabul');
+t($bn[2]['link'] === '' && $bn[2]['image'] === '', 'banner: //evil.com ve tırnaklı görsel reddedilir');
+
+$vars = RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtSections' => [], 'rtBanners' => $bn, 'rtShowPromo' => true];
+$vars['rtSections'] = [['key' => 'new', 'title' => 'Yeni Ürünler', 'url' => '', 'products' => [['url' => '/p/1', 'image_url' => '/img/p1.jpg', 'product_name' => 'Ürün <script>', 'has_discount' => true, 'old_price_formatted' => '₺200', 'price_formatted' => '₺150']]]];
+Module::$en = ['rafimda-vendor', 'rafimda-dealer'];
+$html = $m->renderFrontTemplate('home_bottom', RafimdaThemeModule::viewVars() + $vars);
+t(str_contains($html, 'SATIŞLARINIZI BÜYÜTMEK İÇİN YENİ ADRESİNİZ RAFIMDA!') && str_contains($html, 'Satıcımız Olmak İster misiniz?') && str_contains($html, 'satici-kayit'), 'satıcı bandı: tam metin + CTA + /satici-kayit');
+t(str_contains($html, 'RAFIMDA BAYİSİ OLMAK İSTER MİSİNİZ?') && str_contains($html, 'Rafımda ailesine katılın, kendi bayi ağınızı oluşturun ve birlikte büyüyelim.') && str_contains($html, 'BAYİ BAŞVURUSU YAP') && str_contains($html, 'bayi-basvuru') && str_contains($html, 'bayi-giris'), 'bayi bandı: metin + buton + bağlantılar');
+t(str_contains($html, '₺150') && str_contains($html, '/p/1') && str_contains($html, 'id="rt-urunler"'), 'ürün kartı gerçek veriyle çizilir');
+t(!str_contains($html, '<script>') && str_contains($html, 'Ürün &lt;script&gt;'), 'ürün adı kaçışlanır');
+Module::$en = [];
+$html = $m->renderFrontTemplate('home_bottom', RafimdaThemeModule::viewVars() + $vars);
+t(!str_contains($html, 'SATIŞLARINIZI') && !str_contains($html, 'BAYİSİ'), 'modüller kapalıyken satıcı/bayi bandı yok');
+$vars['rtSections'] = []; $vars['rtBanners'] = [];
+$html = trim($m->renderFrontTemplate('home_bottom', RafimdaThemeModule::viewVars() + $vars));
+t($html === '', 'ürün/banner/modül yoksa hiçbir şey çizilmez (sahte içerik yok)');
+
+Tools::$c = 'product';
+t($m->renderDisplayHook('home_bottom') === null && $m->renderDisplayHook('home_slider') === null, 'ana sayfa dışında hook çıktısı yok');
+Tools::$c = '';
+$hero = $m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [['name' => 'Giyim', 'url' => '/c/giyim', 'image' => '', 'initial' => 'G']]]);
+t(str_contains($hero, 'rt-cat__ph') && str_contains($hero, '/c/giyim'), 'kategori şeridi: görselsiz kategori harf yer tutucu ile');
+Module::$en = ['rafimda-dealer'];
+$f = $m->renderDisplayHook('footer');
+t($f !== null && str_contains($f, 'bayi-giris') && !str_contains($f, 'satici-giris'), 'altbilgi: yalnızca bayi etkinken bayi bağlantıları');
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 exit($fail ? 1 : 0);

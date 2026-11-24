@@ -24,6 +24,7 @@ final class StagingModules
 			['xml-hub', 'xh_migrations'],
 			['marketplace-hub', 'mh_migrations'],
 			['rafimda-showcase', null],
+			['rafimda-dealer', 'rd_migrations'],
 		];
 		$out = [];
 

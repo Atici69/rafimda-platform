@@ -1,0 +1,9 @@
+-- DİKKAT: Bu dosya otomatik çalışmaz. Önce veritabanı yedeği alın.
+-- Bayi kayıtları ve komisyon kayıtları silinir; FriSay kullanıcıları ve siparişleri silinmez.
+DROP TABLE IF EXISTS `rd_audit_log`;
+DROP TABLE IF EXISTS `rd_commissions`;
+DROP TABLE IF EXISTS `rd_customers`;
+DROP TABLE IF EXISTS `rd_subscriptions`;
+DROP TABLE IF EXISTS `rd_plans`;
+DROP TABLE IF EXISTS `rd_dealers`;
+DROP TABLE IF EXISTS `rd_migrations`;
