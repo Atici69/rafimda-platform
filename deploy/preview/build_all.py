@@ -12,6 +12,17 @@ def php(*a):
 php('modules/xml-hub/tests/preview.php', pv)
 php('modules/rafimda-vendor/tests/preview.php', pv)
 php('modules/rafimda-theme/tests/preview.php', pv)
+php('modules/rafimda-campaign/tests/preview.php', pv)
+# Satıcı paneli: GERÇEK denetleyici + gerçek menü + SQLite örnek verisiyle (drive.php)
+vdrive = os.path.join(root, 'modules/rafimda-vendor/tests/drive.php')
+VS = ['dashboard', 'products', 'orders', 'stock', 'pricing', 'finance', 'store', 'customers', 'staff', 'subscription', 'campaigns', 'reports', 'settings']
+def vend(name, cfg):
+    o = subprocess.run(['php', vdrive, json.dumps(cfg)], cwd=os.path.dirname(vdrive), capture_output=True, text=True).stdout
+    o = re.split(r'\n(?:REDIRECT|FLASH|PROBE\d+):', o)[0]
+    if '<main class="rv-content">' in o: open(os.path.join(pv, 'vendor-' + name + '.html'), 'w', encoding='utf-8').write(o)
+    else: print('UYARI: satıcı ekranı üretilemedi', name)
+for sct in VS: vend(sct, {'get': {'s': sct}, 'campaign': 1, 'fee': 1})
+vend('product-new', {'get': {'s': 'products', 'a': 'new'}}); vend('product-edit', {'get': {'s': 'products', 'a': 'edit', 'id': 1}}); vend('order-detail', {'get': {'s': 'orders', 'a': 'view', 'id': 1}})
 php('deploy/preview/templates_preview.php', pv)
 dealer = os.path.join(root, 'modules/rafimda-dealer/tests/drive.php')
 def drive(name, *args, trim=True):
@@ -34,11 +45,13 @@ add('showcase-admin', 'rafimda-showcase', 'Rafımda Vitrin', [])
 add('vendor-admin-vendors', 'rafimda-vendor', 'Satıcılar (Rafımda)', ['https://test.local/modules/rafimda-vendor/assets/css/panel.css'])
 add('vendor-admin-plans', 'rafimda-vendor', 'Satıcı paketleri', ['https://test.local/modules/rafimda-vendor/assets/css/panel.css'])
 add('theme-admin', 'rafimda-theme', 'Rafımda Tema', [])
+for t in ['campaigns', 'campaigns-edit', 'enrollments', 'charges', 'simulator']:
+    add('campaign-admin-' + t, 'rafimda-campaign', 'Kampanyalar (Rafımda)', [])
 for t in ['applications', 'dealers', 'plans', 'subscriptions', 'commissions', 'reports', 'settings']:
     add('dealer-admin-' + t + '.frag', 'rafimda-dealer', 'Bayiler (Rafımda)', [])
 mp = os.path.join(out, 'manifest.json'); json.dump(man, open(mp, 'w'))
 print(php('deploy/preview/admin_shell.php', mp).strip().count('ok'), 'yönetici sayfası')
-files = sorted(os.path.join(pv, f) for f in os.listdir(pv) if f.startswith('A-') or f in ('home.html', 'home-empty.html') or f.startswith('vendor-') and 'admin' not in f or f.startswith('dealer-') and 'admin' not in f)
+files = sorted(os.path.join(pv, f) for f in os.listdir(pv) if f.startswith('A-') or f in ('home.html', 'home-empty.html', 'home-theme4.html', 'home-theme4-empty.html') or f.startswith('vendor-') and 'admin' not in f or f.startswith('dealer-') and 'admin' not in f)
 r = subprocess.run(['python3', os.path.join(root, 'deploy/preview/shoot.py'), root, shots, 'ÖRNEK VERİ — önizleme (canlı veri değil)', *files], capture_output=True, text=True)
 open(os.path.join(out, 'shoot-report.json'), 'w').write(r.stdout); print(r.stderr[-500:])
 rep = json.loads(r.stdout); print(len(rep), 'görüntü; yatay taşma >0:', [x['page'] + '/' + x['view'] for x in rep if x['h_overflow_px'] > 0], '; JS hatası:', [x['page'] for x in rep if x['js_errors']])
