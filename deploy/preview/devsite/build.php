@@ -66,9 +66,14 @@ for ($d = ($rel !== '' && is_dir($root . '/' . $rel)) ? rtrim($rel, '/') : dirna
 	$h = $root . '/' . $d . '/.htaccess';
 	if (is_file($h) && preg_match('/Require\s+all\s+denied|Deny\s+from\s+all/i', (string) file_get_contents($h))) {
 		$body = (string) file_get_contents($h);
+		// <FilesMatch "DESEN"> … Require all denied … </FilesMatch> blokları: yalnızca desene uyan dosyalar kapalı
+		if (preg_match_all('/<FilesMatch\s+"([^"]+)">(.*?)<\/FilesMatch>/is', $body, $fms, PREG_SET_ORDER)) {
+			foreach ($fms as $fm) {
+				if (preg_match('/Require\s+all\s+denied|Deny\s+from\s+all/i', $fm[2]) && @preg_match('#' . str_replace('#', '\\#', $fm[1]) . '#i', basename($rel))) { http_response_code(403); echo 'Forbidden'; exit; }
+			}
+		}
 		$outside = (string) preg_replace('/<FilesMatch.*?<\/FilesMatch>/is', '', $body);
-		$denyAll = (bool) preg_match('/Require\s+all\s+denied|Deny\s+from\s+all/i', $outside);
-		if ($denyAll || str_ends_with($rel, '.php')) { http_response_code(403); echo 'Forbidden'; exit; }
+		if (preg_match('/Require\s+all\s+denied|Deny\s+from\s+all/i', $outside)) { http_response_code(403); echo 'Forbidden'; exit; }
 	}
 }
 static $rules = null;
@@ -82,7 +87,8 @@ foreach ($rules as [$pat, $target, $flags]) {
 	$re = '#' . str_replace('#', '\\#', $pat) . '#' . (str_contains($flags, 'NC') ? 'i' : '');
 	if (!@preg_match($re, $rel, $mm)) { continue; }
 	if ($target === '-') {
-		if (str_contains($flags, 'F')) { http_response_code(403); exit; }
+		if (preg_match('/(^|,)F(,|$)/', $flags)) { http_response_code(403); exit; }
+		if (str_contains($flags, 'E=')) { continue; } // yalnızca ortam değişkeni ataması (RewriteCond'lu); geçiş kuralı DEĞİL
 		if ($pat === '^' && (is_file($root . '/' . $rel) || ($rel !== '' && is_dir($root . '/' . $rel)))) {
 			if (is_file($root . '/' . $rel) && !str_ends_with($rel, '.php')) { return false; }
 			if (is_file($root . '/' . $rel)) { $_SERVER['SCRIPT_NAME'] = '/' . $rel; chdir(dirname($root . '/' . $rel)); require $root . '/' . $rel; return true; }
