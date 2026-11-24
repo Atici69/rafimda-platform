@@ -32,3 +32,11 @@ mh_migrations, mh_accounts, mh_category_map, mh_listings, mh_errors. Kaldırma v
 - Hiçbir pazaryerinde gerçek API, uzak kategori listesi çekme, stok/fiyat/sipariş geri senkronizasyonu yok.
 - Gönderim yalnızca ürün oluşturma/güncelleme isteği modelidir; pazaryerinden dönen onay durumu sorgulaması yok.
 - Arayüz tarayıcıda denenmedi.
+
+## v0.2.0 — Çekirdek istemci sarmalayıcıları (Trendyol, Hepsiburada, N11)
+- `lib/MhCoreAdapter.php`: `core/marketplace/{Trendyol,Hepsiburada,N11}Api.php` (ad alanlı sınıflar: `Trendyol\TrendyolApi` vb.) SATICI kimlikleriyle örneklenir; çekirdeğin `Settings` tabanlı tek mağaza ayarlarına dokunulmaz.
+- Yetenekler: **bağlantı testi** (salt-okunur çağrı) ve **listeli ürünlerin stok/fiyat güncellemesi** (`MhDispatcher::pushStockPrice`, panelde "Seçilenlerin stok/fiyatını gönder").
+- **Yapılmadı:** yeni ürün oluşturma (`submit`). Marka, kategori özellikleri, kargo firması, adres gibi zorunlu alanlar canlı hesap olmadan doğrulanamaz; `implemented()` bu yüzden `false`.
+- HB/N11 bağlantı testi, var olmayan bir SKU sorgular: 401/403 = kimlik reddedildi; 404 = "kimlik reddedilmedi" (dürüst uyarıyla). Bu çıkarım canlı hesapla doğrulanmalıdır.
+- Testler: `tests/run_v2.php` (sahte istemciler + gerçek sınıf imza/ad alanı denetimi; ağ çağrısı yok).
+- Amazon, Pazarama, Ozon: yalnızca kimlik alanı; API belgesi ve erişim bekleniyor.

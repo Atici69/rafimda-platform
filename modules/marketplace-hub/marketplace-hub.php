@@ -6,23 +6,25 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhRegistry', 'MhRepo', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $mhClass) {
+foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhCoreAdapter', 'MhRegistry', 'MhRepo', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $mhClass) {
 	require_once __DIR__ . '/lib/' . $mhClass . '.php';
 }
 
 /**
  * Pazaryeri Hub — bağımsız pazaryeri bağdaştırıcı mimarisi (Trendyol, Hepsiburada, N11, Amazon, Pazarama, Ozon).
- * ÖNEMLİ: Bu sürümde HİÇBİR pazaryeri için gerçek API entegrasyonu yoktur; bağdaştırıcılar yalnızca kimlik alanlarını tanımlar
- * ve gönderim istekleri "blocked" olarak kaydedilir. Sahte başarı üretilmez. Çekirdek dosyalara dokunmaz.
+ * ÖNEMLİ: Yeni ÜRÜN OLUŞTURMA (submit) hiçbir pazaryerinde yapılmadı; istekler "blocked" kaydedilir, sahte başarı üretilmez.
+ * Trendyol / Hepsiburada / N11 için FriSay çekirdek istemcileri (core/marketplace/*Api.php) satıcı kimlikleriyle sarıldı:
+ * bağlantı testi ve LİSTELİ ürünlerin stok/fiyat güncellemesi (MhCoreAdapter). Canlı hesapla DOĞRULANMADI.
+ * Amazon / Pazarama / Ozon: yalnızca kimlik alanları. Çekirdek dosyalara dokunmaz.
  */
 class MarketplaceHubModule extends ModuleBase
 {
-	public const VERSION = '0.1.0';
+	public const VERSION = '0.2.0';
 
 	public string $name = 'marketplace-hub';
 	public string $title = 'Pazaryeri Hub';
 	public string $version = self::VERSION;
-	public string $description = 'Pazaryeri bağdaştırıcı mimarisi: şifreli API kimlikleri, kategori eşleme, gönderim kuyruğu, hata günlüğü (gerçek API entegrasyonu yok)';
+	public string $description = 'Pazaryeri bağdaştırıcıları: şifreli API kimlikleri, kategori eşleme, kuyruk, hata günlüğü; Trendyol/HB/N11 için bağlantı testi + stok/fiyat güncelleme (ürün oluşturma yok, canlı doğrulanmadı)';
 	public string $author = 'Rafımda';
 
 	public array $routes = [

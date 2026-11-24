@@ -157,6 +157,67 @@ class MhDispatcher
 		return 'failed';
 	}
 
+	/**
+	 * Pazaryerinde ZATEN LİSTELİ ürünlerin fiyat/stok değerini gönderir (barkod/SKU eşleşmesi pazaryeri tarafındadır).
+	 * Yalnızca stok/fiyat yeteneği olan bağdaştırıcılar çalışır; ürün sahipliği sunucu tarafında doğrulanır. Sonuçlar hata günlüğüne yazılır.
+	 *
+	 * @param list<int> $productIds
+	 * @return array{ok:bool, message:string, done:int, failed:int, rejected:int}
+	 */
+	public static function pushStockPrice(int $idAccount, ?int $vendor, array $productIds): array
+	{
+		$out = ['ok' => false, 'message' => '', 'done' => 0, 'failed' => 0, 'rejected' => 0];
+		$acc = MhRepo::account($idAccount, $vendor);
+		$a = $acc ? MhRegistry::get((string) $acc['marketplace']) : null;
+
+		if (!$acc || !$a) {
+			$out['message'] = 'Hesap bulunamadı.';
+
+			return $out;
+		}
+
+		if (!($a instanceof MhCoreAdapter) || !$a->supportsStockPrice()) {
+			$out['message'] = $a->title() . ' için stok/fiyat gönderimi henüz yapılmadı.';
+
+			return $out;
+		}
+
+		$items = [];
+		$byProduct = [];
+
+		foreach (array_slice(array_unique(array_map('intval', $productIds)), 0, 200) as $pid) {
+			if (!MhOwner::owns((int) $acc['id_vendor'], $pid)) {
+				$out['rejected']++;
+
+				continue;
+			}
+
+			foreach (MhPayload::stockPriceItems($pid) as $it) {
+				$items[] = $it;
+				$byProduct[count($items) - 1] = $pid;
+			}
+		}
+
+		if ($items === []) {
+			$out['message'] = 'Gönderilecek ürün yok.' . ($out['rejected'] > 0 ? ' (' . $out['rejected'] . ' ürün size ait değil.)' : '');
+
+			return $out;
+		}
+
+		$res = $a->updateStockPrice(MhRepo::credentials($idAccount), $items);
+		$out['done'] = $res['done'];
+		$out['failed'] = $res['failed'];
+
+		foreach ($res['errors'] as $e) {
+			MhRepo::logError($idAccount, 0, 'stock_price', mb_substr($e, 0, 255));
+		}
+
+		$out['ok'] = $res['success'];
+		$out['message'] = 'Gönderilen: ' . $res['done'] . ', başarısız: ' . $res['failed'] . ($out['rejected'] > 0 ? ', reddedilen (size ait değil): ' . $out['rejected'] : '') . ($res['failed'] > 0 ? '. Ayrıntı Hatalar sekmesinde.' : '.');
+
+		return $out;
+	}
+
 	/** Başarısız kayıtları yeniden kuyruğa alır. @return int sayı */
 	public static function retryFailed(int $idAccount, ?int $vendor): int
 	{

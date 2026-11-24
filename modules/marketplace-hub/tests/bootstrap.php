@@ -3,7 +3,7 @@
 error_reporting(E_ALL & ~E_DEPRECATED);
 define('MH_TEST', 1);
 require dirname(__DIR__, 2) . '/xml-hub/tests/bootstrap.php';
-foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhRegistry', 'MhRepo', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $c) {
+foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhCoreAdapter', 'MhRegistry', 'MhRepo', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 

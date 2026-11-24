@@ -7,7 +7,7 @@
 	<div class="row" style="border-bottom:1px solid #e5e7eb;padding:8px 0">
 		<a href="{$mhBase|escape}?view=account&amp;id={$a.id_account|escape}" style="flex:1"><b>{$a.label|escape}</b> <span class="pill">{$a.marketplace|escape}</span></a>
 		<span class="pill">{if $a.has_credentials}kimlik kayıtlı{else}kimlik yok{/if}</span>
-		{if isset($marketplaces[$a.marketplace]) && !$marketplaces[$a.marketplace].implemented}<span class="pill">API uygulanmadı</span>{/if}
+		{if isset($marketplaces[$a.marketplace]) && !$marketplaces[$a.marketplace].implemented}<span class="pill">{if !empty($marketplaces[$a.marketplace].stock_price)}Yalnızca stok/fiyat{else}API uygulanmadı{/if}</span>{/if}
 	</div>
 	{foreachelse}<p class="muted">Henüz pazaryeri hesabı yok.</p>{/foreach}
 	<p><a href="{$mhBase|escape}?view=listings">Gönderimler</a> · <a href="{$mhBase|escape}?view=errors">Hata geçmişi</a></p>
@@ -15,7 +15,7 @@
 {if $mhCanManage}
 <div class="xh-card"><h3>Yeni pazaryeri hesabı</h3>
 	{foreach $marketplaces as $m}
-	<details><summary><b>{$m.title|escape}</b>{if !$m.implemented} <span class="pill">API uygulanmadı</span>{/if}</summary>
+	<details><summary><b>{$m.title|escape}</b>{if !$m.implemented} <span class="pill">{if !empty($m.stock_price)}Yalnızca stok/fiyat{else}API uygulanmadı{/if}</span>{/if}</summary>
 	<form method="post" autocomplete="off"><input type="hidden" name="token" value="{$mhToken|escape}"><input type="hidden" name="mhAction" value="account_create"><input type="hidden" name="marketplace" value="{$m.key|escape}">
 		<label>Hesap adı</label><input type="text" name="label" maxlength="120" required>
 		{foreach $m.fields as $fk => $f}<label>{$f.label|escape}{if !$f.required} (isteğe bağlı){/if}</label><input type="{if $f.secret}password{else}text{/if}" name="cred[{$fk|escape}]" maxlength="{$f.max|escape}" autocomplete="new-password">{/foreach}
@@ -28,7 +28,7 @@
 {if $view == 'account'}
 <p><a href="{$mhBase|escape}">← Hesaplar</a></p>
 <h2>{$acc.label|escape} <span class="pill">{$acc.marketplace|escape}</span></h2>
-{if !$adapter.implemented}<div class="alert info">{$adapter.title|escape} için gerçek API entegrasyonu henüz yapılmadı: bağlantı test edilemez, ürün gönderilemez.</div>{/if}
+{if !$adapter.implemented}<div class="alert info">{if !empty($adapter.stock_price)}{$adapter.title|escape}: bağlantı testi ve stok/fiyat güncelleme çekirdek istemci üzerinden hazırdır (canlı hesapla doğrulanmadı). Yeni ürün oluşturma henüz yapılmadı.{else}{$adapter.title|escape} için gerçek API entegrasyonu henüz yapılmadı: bağlantı test edilemez, ürün gönderilemez.{/if}</div>{/if}
 <nav class="xh-tabs">{foreach ['general' => 'Genel', 'categories' => 'Kategori eşleme', 'products' => 'Ürünler', 'listings' => 'Gönderimler', 'errors' => 'Hatalar'] as $k => $t}<a class="{if $tab == $k}on{/if}" href="{$mhBase|escape}?view=account&amp;id={$acc.id_account|escape}&amp;tab={$k|escape}">{$t|escape}</a>{/foreach}</nav>
 
 {if $tab == 'general'}
@@ -56,7 +56,7 @@
 <div class="xh-card"><h3>Ürünler</h3>
 	{if $mhCanManage}<form method="post"><input type="hidden" name="token" value="{$mhToken|escape}"><input type="hidden" name="mhAction" value="queue_products"><input type="hidden" name="id_account" value="{$acc.id_account|escape}">
 	{foreach $products as $p}<label class="chk"><input type="checkbox" name="ids[]" value="{$p.id_product|escape}"> {$p.product_name|escape} <span class="muted">{$p.stock_code|escape}</span>{if !isset($catMap[$p.id_category])} <span class="pill">kategori eşlenmemiş</span>{/if}</label>{foreachelse}<p class="muted">Gönderilecek ürün yok.</p>{/foreach}
-	<p><button class="btn" type="submit">Seçilenleri gönderim kuyruğuna al</button></p></form>{/if}
+	<p><button class="btn" type="submit">Seçilenleri gönderim kuyruğuna al</button>{if !empty($adapter.stock_price)} <button class="btn ghost" type="submit" name="mhAction" value="push_stock_price">Seçilenlerin stok/fiyatını gönder</button>{/if}</p></form>{/if}
 </div>
 {/if}
 

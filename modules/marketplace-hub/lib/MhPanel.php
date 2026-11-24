@@ -65,7 +65,7 @@ class MhPanel
 		$out = [];
 
 		foreach (MhRegistry::all() as $k => $a) {
-			$out[$k] = ['key' => $k, 'title' => $a->title(), 'implemented' => $a->implemented(), 'fields' => $a->credentialFields()];
+			$out[$k] = ['key' => $k, 'title' => $a->title(), 'implemented' => $a->implemented(), 'stock_price' => $a instanceof MhCoreAdapter, 'fields' => $a->credentialFields()];
 		}
 
 		return $out;
@@ -90,7 +90,7 @@ class MhPanel
 
 			$tab = in_array($_GET['tab'] ?? '', ['general', 'categories', 'products', 'listings', 'errors'], true) ? (string) $_GET['tab'] : 'general';
 			$a = MhRegistry::get((string) $acc['marketplace']);
-			$vars = ['acc' => $acc, 'tab' => $tab, 'adapter' => ['title' => $a ? $a->title() : '', 'implemented' => $a ? $a->implemented() : false, 'fields' => $a ? $a->credentialFields() : []], 'credStatus' => MhRepo::credentialStatus($id), 'counts' => MhRepo::listingCounts($id), 'catMap' => [], 'categories' => [], 'products' => [], 'listings' => [], 'errors' => []];
+			$vars = ['acc' => $acc, 'tab' => $tab, 'adapter' => ['title' => $a ? $a->title() : '', 'implemented' => $a ? $a->implemented() : false, 'stock_price' => $a instanceof MhCoreAdapter, 'fields' => $a ? $a->credentialFields() : []], 'credStatus' => MhRepo::credentialStatus($id), 'counts' => MhRepo::listingCounts($id), 'catMap' => [], 'categories' => [], 'products' => [], 'listings' => [], 'errors' => []];
 
 			if ($tab === 'categories') {
 				$vars['categories'] = DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name ASC LIMIT 500') ?: [];
@@ -191,6 +191,15 @@ class MhPanel
 				$ids = array_map('intval', (array) ($_POST['ids'] ?? []));
 				$r = MhDispatcher::queue($id, $this->scope(), $ids);
 				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'listings'], $r['queued'] > 0 ? 'success' : 'warning', 'Kuyruğa alınan: ' . $r['queued'] . ', engellenen: ' . $r['blocked'] . ', reddedilen (size ait değil): ' . $r['rejected'] . '. Engellenenlerin nedeni Gönderimler sekmesindedir.');
+				break;
+
+			case 'push_stock_price':
+				if (!$acc) {
+					$this->go([], 'danger', 'Hesap bulunamadı.');
+				}
+
+				$r = MhDispatcher::pushStockPrice($id, $this->scope(), array_map('intval', (array) ($_POST['ids'] ?? [])));
+				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'listings'], $r['ok'] ? 'success' : 'warning', $r['message']);
 				break;
 
 			case 'retry_failed':

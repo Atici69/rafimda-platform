@@ -31,12 +31,12 @@ class MhPayload
 		$images = [];
 
 		foreach (DB::execute('SELECT id_image FROM images WHERE id_product = ? ORDER BY cover DESC, id_image ASC', [$idProduct]) ?: [] as $im) {
-			$images[] = class_exists('Product', false) && method_exists('Product', 'getImageUrl') ? (string) Product::getImageUrl((int) $im['id_image']) : '/img/products/' . (int) $im['id_image'] . '.jpg';
+			$images[] = class_exists('Product') && method_exists('Product', 'getImageUrl') ? (string) Product::getImageUrl((int) $im['id_image']) : '/img/products/' . (int) $im['id_image'] . '.jpg';
 		}
 
 		$variants = [];
 
-		if (class_exists('ProductVariation', false) && method_exists('ProductVariation', 'getByProduct')) {
+		if (class_exists('ProductVariation') && method_exists('ProductVariation', 'getByProduct')) {
 			foreach ((array) ProductVariation::getByProduct($idProduct, true) as $v) {
 				$variants[] = ['sku' => (string) ($v['sku'] ?? ''), 'barcode' => (string) ($v['barcode'] ?? ''), 'price' => $v['price'] ?? null, 'stock' => (float) ($v['stock'] ?? 0), 'options' => $v['options'] ?? []];
 			}
@@ -62,6 +62,36 @@ class MhPayload
 		];
 
 		return ['ok' => true, 'error' => '', 'payload' => $payload];
+	}
+
+	/**
+	 * Yalnızca fiyat/stok güncellemesi için hafif veri (kategori eşlemesi GEREKMEZ). Varyantlı üründe her varyant ayrı satır olur.
+	 *
+	 * @return list<array{sku:string,barcode:string,price:float,list_price:float,stock:int}>
+	 */
+	public static function stockPriceItems(int $idProduct): array
+	{
+		$r = DB::execute('SELECT * FROM products WHERE id_product = ?', [$idProduct]);
+
+		if (!$r || !isset($r[0])) {
+			return [];
+		}
+
+		$p = $r[0];
+		$list = max((float) $p['price'], (float) ($p['old_price'] ?? 0));
+		$items = [];
+		$vars = class_exists('ProductVariation') && method_exists('ProductVariation', 'getByProduct') ? (array) ProductVariation::getByProduct($idProduct, true) : [];
+
+		foreach ($vars as $v) {
+			$price = isset($v['price']) && $v['price'] !== null && (float) $v['price'] > 0 ? (float) $v['price'] : (float) $p['price'];
+			$items[] = ['sku' => (string) ($v['sku'] ?? ''), 'barcode' => (string) ($v['barcode'] ?? ''), 'price' => $price, 'list_price' => max($price, $list), 'stock' => max(0, (int) ($v['stock'] ?? 0))];
+		}
+
+		if ($items === []) {
+			$items[] = ['sku' => (string) ($p['stock_code'] ?? ''), 'barcode' => (string) ($p['barcode'] ?? ''), 'price' => (float) $p['price'], 'list_price' => $list, 'stock' => max(0, (int) $p['stock'])];
+		}
+
+		return $items;
 	}
 
 	/** @param array<string,mixed> $payload */
