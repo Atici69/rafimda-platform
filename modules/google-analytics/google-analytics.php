@@ -77,6 +77,11 @@ class GoogleAnalyticsModule extends ModuleBase
 			return null;
 		}
 
+		// Rafımda KVKK: hukuki modül kuruluysa analitik çerez izni olmadan GA yüklenmez (modül yoksa davranış değişmez)
+		if (class_exists('RlLegal', false) && !RlLegal::cookieAllowed('analytics')) {
+			return null;
+		}
+
 		$trackingId = Settings::get('GA_TRACKING_ID');
 
 		// Tracking ID boşsa hiçbir şey render etme

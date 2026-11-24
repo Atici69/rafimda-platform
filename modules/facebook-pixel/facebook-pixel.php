@@ -76,6 +76,11 @@ class FacebookPixelModule extends ModuleBase
 			return null;
 		}
 
+		// Rafımda KVKK: hukuki modül kuruluysa pazarlama çerezi izni olmadan Pixel yüklenmez (modül yoksa davranış değişmez)
+		if (class_exists('RlLegal', false) && !RlLegal::cookieAllowed('marketing')) {
+			return null;
+		}
+
 		if ($hook === 'head.top') {
 			$html = $this->renderFrontTemplate('head-top', [
 				'pixelId' => FacebookPixelService::getPixelId(),

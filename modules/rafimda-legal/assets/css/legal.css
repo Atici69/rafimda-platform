@@ -1,0 +1,21 @@
+.rl-page{max-width:880px;margin:24px auto 48px;padding:0 16px;color:#1b2430}
+.rl-page h1{color:#0b2545;font-size:1.8rem;margin-bottom:.4rem}
+.rl-doc .rl-meta{color:#6b7686;font-size:.9rem;margin-bottom:1.2rem}
+.rl-body h2{color:#0b2545;font-size:1.25rem;margin:1.4rem 0 .5rem}.rl-body h3{font-size:1.05rem;margin:1rem 0 .4rem}
+.rl-body p,.rl-body li{line-height:1.65}
+.rl-missing{background:#fff3cd;color:#8a5300;padding:0 4px;border-radius:4px;font-weight:600}
+.rl-group{margin:18px 0}.rl-group h2{font-size:1.1rem;color:#0b2545;border-bottom:2px solid #ff7a00;display:inline-block;padding-bottom:2px}
+.rl-group ul{padding-left:18px}.rl-group small{color:#6b7686}
+.rl-btn{display:inline-block;border:0;border-radius:999px;background:#ff7a00;color:#fff;font-weight:600;padding:9px 18px;cursor:pointer;text-decoration:none}
+.rl-btn--ghost{background:transparent;color:#0b2545;border:1.5px solid #0b2545}
+.rl-cookie-form{margin-top:18px;display:grid;gap:12px}.rl-switch{display:flex;gap:10px;align-items:flex-start;border:1px solid #e2e7ef;border-radius:10px;padding:12px}
+.rl-switch.is-locked{background:#f4f7fb}.rl-actions{display:flex;flex-wrap:wrap;gap:8px}.rl-small{font-size:.85rem}
+.rl-ok{background:#dcfce7;color:#166534;padding:10px 14px;border-radius:8px}.rl-err{background:#fde8e8;color:#b91c1c;padding:10px 14px;border-radius:8px}
+.rl-footlinks{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;padding:14px 16px;font-size:.85rem;border-top:1px solid #e2e7ef}
+.rl-footlinks a{color:#13315c;text-decoration:none}.rl-footlinks a:hover{text-decoration:underline}
+.rl-banner{position:fixed;left:12px;right:12px;bottom:12px;z-index:1050;background:#0b2545;color:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.rl-banner__in{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 16px;max-width:1200px;margin:0 auto}
+.rl-banner p{margin:0;flex:1 1 320px;font-size:.92rem}.rl-banner a{color:#ffd2a8}
+.rl-banner .rl-btn--ghost{color:#fff;border-color:#fff}
+@media (max-width:600px){.rl-banner__in .rl-btn{flex:1 1 auto;text-align:center}}
+.rl-reg a{color:#13315c}

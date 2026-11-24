@@ -74,6 +74,7 @@ class App { public static function sendNoStoreHeaders(): void {} }
 class Security {
 	public static function getCsrfToken($s = 'front') { return $_SESSION['csrf_token'] ??= bin2hex(random_bytes(8)); }
 	public static function requireCsrf($s = 'front') {}
+	public static function validateCsrf($s = 'front') { return isset($_POST['token']) && hash_equals(self::getCsrfToken($s), (string) $_POST['token']); }
 }
 class Customer {
 	public static function isLoggedIn(): bool { return !empty($_SESSION['id_user']); }
@@ -81,7 +82,7 @@ class Customer {
 	public static function as(int $id): void { $_SESSION['id_user'] = $id; }
 	public static function logout(): void { unset($_SESSION['id_user']); }
 }
-class Module { public static array $hooks = []; public static function runHook($n, $a = []) { self::$hooks[] = $n; } }
+class Module { public static array $hooks = []; public static array $listeners = []; public static function runHook($n, $a = []) { self::$hooks[] = $n; foreach (self::$listeners[$n] ?? [] as $fn) { $fn(...$a); } return []; } public static function registerHook($n, $fn) { self::$listeners[$n][] = $fn; } public static function isEnabled($n) { return true; } }
 class Tax { public static function getDefaultRate() { return 20.0; } }
 class Category { public static function getProductSelectOptions() { return DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1') ?: []; } }
 class ProductVariation { public static function getByProduct($id) { return []; } }
@@ -115,7 +116,7 @@ function rv_mysql_to_sqlite(string $sql): string
 	$sql = preg_replace('/^\s*UNIQUE KEY\s+`[^`]+`\s*(\([^)]*\)),?\s*$/m', 'UNIQUE $1,', $sql);
 	$sql = preg_replace('/^\s*KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/`(\w+)` (?:int\(11\)|bigint\(20\)) NOT NULL AUTO_INCREMENT,/', '`$1` INTEGER PRIMARY KEY AUTOINCREMENT,', $sql);
-	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge|id_application|id_doc|id_app_log|id_notification)`\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge|id_application|id_doc|id_app_log|id_notification|id_document|id_version|id_acceptance|id_consent)`\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/,(\s*\))/', '$1', $sql);
 	return $sql;
 }

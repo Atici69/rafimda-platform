@@ -123,6 +123,13 @@ class RvAuthFlow
 				} else {
 					$sub = RvApplication::submit($idUser, (int) $res['id_vendor'], $app['clean'], true);
 
+					// Hukuki modül kuruluysa: hangi sözleşme SÜRÜMÜNÜN kabul edildiği başvuru numarasıyla kaydedilir
+					if (class_exists('RlLegal', false) && !empty($sub['success'])) {
+						RlLegal::accept('satici-sozlesmesi', $idUser, 'vendor_apply', (string) $sub['app_no']);
+						RlLegal::accept('pazaryeri-aracilik-sozlesmesi', $idUser, 'vendor_apply', (string) $sub['app_no']);
+						RlLegal::accept('kvkk-aydinlatma', $idUser, 'vendor_apply', (string) $sub['app_no']);
+					}
+
 					if ($auto && !empty($sub['success'])) {
 						RvApplication::autoApprove((int) $sub['id_application']);
 					}
@@ -150,7 +157,7 @@ class RvAuthFlow
 			'loginUrl' => RvView::url('satici-giris'),
 			'personTypes' => RvApplication::PERSON_TYPES,
 			'categoryOptions' => RvApplication::categoryOptions(),
-			'legalLinks' => class_exists('RlLegal') ? RlLegal::linksFor(['vendor-agreement', 'kvkk']) : [],
+			'legalLinks' => class_exists('RlLegal') ? RlLegal::linksFor(['satici-sozlesmesi', 'kvkk-aydinlatma']) : [],
 		]);
 		exit;
 	}

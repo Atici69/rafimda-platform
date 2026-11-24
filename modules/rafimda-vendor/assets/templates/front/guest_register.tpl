@@ -61,9 +61,9 @@
 		{if $errors.categories|default:''}<div class="err">{$errors.categories}</div>{/if}
 		<p class="rv-note">Vergi levhası, imza sirküleri gibi belgeleri başvurudan sonra satıcı panelindeki <strong>Başvuru durumu</strong> sayfasından yükleyebilirsiniz (PDF/JPG/PNG, en fazla 5 MB).</p>
 		<h3 style="margin-top:18px">Sözleşme ve bilgilendirme</h3>
-		<label style="font-weight:400"><input type="checkbox" name="kvkk_ack" value="1"{if $form.kvkk_ack|default:''} checked{/if}> {if $legalLinks.kvkk|default:''}<a href="{$legalLinks.kvkk}" target="_blank" rel="noopener">KVKK Aydınlatma Metni</a>{else}KVKK Aydınlatma Metni{/if}'ni okudum. *</label>
+		<label style="font-weight:400"><input type="checkbox" name="kvkk_ack" value="1"{if $form.kvkk_ack|default:''} checked{/if}> {if $legalLinks['kvkk-aydinlatma']|default:''}<a href="{$legalLinks['kvkk-aydinlatma']}" target="_blank" rel="noopener">KVKK Aydınlatma Metni</a>{else}KVKK Aydınlatma Metni{/if}'ni okudum. *</label>
 		{if $errors.kvkk_ack|default:''}<div class="err">{$errors.kvkk_ack}</div>{/if}
-		<label style="font-weight:400"><input type="checkbox" name="accept_terms" value="1"{if $form.accept_terms|default:''} checked{/if}> {if $legalLinks['vendor-agreement']|default:''}<a href="{$legalLinks['vendor-agreement']}" target="_blank" rel="noopener">Satıcı Sözleşmesi</a>{else}Satıcı Sözleşmesi{/if}'ni okudum ve kabul ediyorum. *</label>
+		<label style="font-weight:400"><input type="checkbox" name="accept_terms" value="1"{if $form.accept_terms|default:''} checked{/if}> {if $legalLinks['satici-sozlesmesi']|default:''}<a href="{$legalLinks['satici-sozlesmesi']}" target="_blank" rel="noopener">Satıcı Sözleşmesi</a>{else}Satıcı Sözleşmesi{/if}'ni okudum ve kabul ediyorum. *</label>
 		{if $errors.accept_terms|default:''}<div class="err">{$errors.accept_terms}</div>{/if}
 		<p><button class="rv-btn" type="submit">Başvuruyu Gönder</button> <a href="{$loginUrl}">Zaten satıcıyım</a></p>
 	</form>

@@ -1,0 +1,5 @@
+-- ELLE ve YEDEK SONRASI çalıştırın. Kabul ve izin kayıtları yasal ispat belgesidir; silmeden önce saklama sürelerini hukukçunuzla doğrulayın.
+DROP TABLE IF EXISTS `rl_consents`;
+DROP TABLE IF EXISTS `rl_acceptances`;
+DROP TABLE IF EXISTS `rl_versions`;
+DROP TABLE IF EXISTS `rl_documents`;
