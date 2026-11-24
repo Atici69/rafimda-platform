@@ -47,7 +47,7 @@ class RafimdaThemeModule extends ModuleBase
 
 	public function boot(): void
 	{
-		$this->registerAdminMenuLink('Rafımda Tema', 'design', 43);
+		$this->registerAdminMenuLink('Rafımda Tema', 'system', 43);
 	}
 
 	public static function setting(string $key, string $default = ''): string
