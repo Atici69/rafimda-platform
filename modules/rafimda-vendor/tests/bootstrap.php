@@ -80,6 +80,10 @@ class Customer {
 	public static function isLoggedIn(): bool { return !empty($_SESSION['id_user']); }
 	public static function getId(): int { return (int) ($_SESSION['id_user'] ?? 0); }
 	public static function as(int $id): void { $_SESSION['id_user'] = $id; }
+	// Misafir başvuru akışı için FriSay Customer davranışının küçük taklidi (gerçek doğrulama kuralları core/Customer.php'de)
+	public static function emailIsRegistered(string $e): bool { return (bool) DB::getValue('SELECT id_user FROM users WHERE email = ?', [strtolower(trim($e))]); }
+	public static function login(string $e, string $p, bool $r = true): array { $id = (int) DB::getValue('SELECT id_user FROM users WHERE email = ?', [strtolower(trim($e))]); if ($id && $p === 'DogruSifre1!') { $_SESSION['id_user'] = $id; return ['success' => true]; } return ['success' => false, 'message' => 'E-posta veya şifre hatalı.']; }
+	public static function register(string $n, string $ph, string $p, string $e = ''): array { if (trim($n) === '') { return ['success' => false, 'message' => 'Geçerli bir ad soyad girin']; } if (strlen($p) < 8) { return ['success' => false, 'message' => 'Şifre en az 8 karakter olmalı']; } $id = (int) DB::insert('users', ['user_full_name' => $n, 'email' => strtolower($e)]); if (!empty($GLOBALS['RV_TEST_ACTIVATE'])) { $_SESSION['id_user'] = $id; } return ['success' => true, 'id_user' => $id]; }
 	public static function logout(): void { unset($_SESSION['id_user']); }
 }
 class Module { public static array $hooks = []; public static array $listeners = []; public static function runHook($n, $a = []) { self::$hooks[] = $n; foreach (self::$listeners[$n] ?? [] as $fn) { $fn(...$a); } return []; } public static function registerHook($n, $fn) { self::$listeners[$n][] = $fn; } public static function isEnabled($n) { return true; } }

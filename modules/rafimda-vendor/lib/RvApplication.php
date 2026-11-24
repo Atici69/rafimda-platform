@@ -158,9 +158,15 @@ final class RvApplication
 	/** @return array<int,array{id:int,name:string}> */
 	public static function categoryOptions(): array
 	{
-		$rows = DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name LIMIT 300') ?: [];
+		// Alt kategoriler "Ana › Alt" olarak gösterilir (aynı adlı alt kategoriler karışmasın); id_parent sütunu yoksa düz liste
+		$rows = DB::execute('SELECT c.id_category, c.category_name, p.category_name AS parent_name FROM categories c LEFT JOIN categories p ON p.id_category = c.id_parent AND c.id_parent > 0
+			WHERE c.active = 1 ORDER BY COALESCE(p.category_name, c.category_name), c.id_parent, c.category_name LIMIT 300');
 
-		return array_map(static fn($r) => ['id' => (int) $r['id_category'], 'name' => (string) $r['category_name']], $rows);
+		if ($rows === false) {
+			$rows = DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name LIMIT 300') ?: [];
+		}
+
+		return array_map(static fn($r) => ['id' => (int) $r['id_category'], 'name' => (!empty($r['parent_name']) ? $r['parent_name'] . ' › ' : '') . (string) $r['category_name']], $rows ?: []);
 	}
 
 	/** Başvuru kaydı (mağaza kaydı RvVendor::create ile pending açılmış olmalıdır). */
@@ -205,7 +211,7 @@ final class RvApplication
 			"Başvuru numaranız: $no\nDurum: Yeni. İnceleme sonucu size bildirilecektir.", RvView::url('satici-panel'));
 		RvNotify::send(['audience' => 'admin'], 'application', 'Yeni satıcı başvurusu: ' . $no, (string) ($app['store_name'] ?? ''), '');
 
-		return ['success' => true, 'message' => 'Başvurunuz alındı. Başvuru numaranız: ' . $no, 'id_application' => $id, 'app_no' => $no];
+		return ['success' => true, 'message' => 'Başvurunuz alındı. Başvuru numaranız: ' . $no . '.', 'id_application' => $id, 'app_no' => $no];
 	}
 
 	public static function get(int $id): ?array

@@ -60,6 +60,7 @@ if (!empty($cfg['pending_app'])) {
 	$ap = RvApplication::submit(1, $vA, ['person_type' => 'company', 'contact_name' => 'Kişi 1', 'address' => 'Moda Cad. No:1', 'district' => 'Kadıköy', 'categories' => [1 => 'Giyim']], true);
 	RvApplication::transition($ap['id_application'], 'docs_required', 1, 'Vergi levhası eksik');
 }
+if (!empty($cfg['activate'])) { $GLOBALS['RV_TEST_ACTIVATE'] = true; }
 Customer::as((int) ($cfg['user'] ?? 1));
 $_SERVER['REQUEST_METHOD'] = $cfg['method'] ?? 'GET'; $_GET = $cfg['get'] ?? []; $_POST = ($cfg['post'] ?? []) + (($cfg['method'] ?? 'GET') === 'POST' ? ['token' => 'csrf-test'] : []);
 RvView::$onRedirect = static function (string $url): void { echo "\nREDIRECT:" . $url . "\n"; exit(0); };

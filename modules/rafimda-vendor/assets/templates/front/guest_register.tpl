@@ -22,6 +22,7 @@
 				{if $errors.password|default:''}<div class="err">{$errors.password}</div>{/if}
 			</div>
 		</div>
+		<p class="rv-note" style="margin-top:0">Yeni hesap açıyorsanız ad soyad, telefon ve şifre tekrarı zorunludur. Kayıtlı e-postayla geliyorsanız yalnızca mevcut şifrenizi girin.</p>
 		<div class="rv-row3">
 			<div>{call fld key='full_name' label='Ad soyad (yeni hesap)'}</div>
 			<div>{call fld key='account_phone' label='Telefon (yeni hesap)'}</div>

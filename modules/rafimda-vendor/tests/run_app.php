@@ -100,6 +100,24 @@ ok(str_contains($o, 'REDIRECT:https://test.local/satici-panel') && preg_match('/
 $o = drive(['user' => 5, 'register' => 1, 'method' => 'POST', 'post' => ['store_name' => '"><script>alert(1)</script>', 'address' => '<img src=x onerror=alert(2)>'] + $post]);
 ok(str_contains($o, 'KVKK aydınlatma') && !str_contains($o, '<script>alert(1)</script>') && !str_contains($o, '<img src=x') && str_contains($o, '&lt;script&gt;'), 'hatalı formun yeniden çiziminde XSS kaçışlanır');
 
+section('Misafir (giriş yapmamış) başvuru akışları');
+$gbase = ['person_type' => 'individual', 'contact_name' => 'Ayşe Yılmaz', 'address' => 'Atatürk Bulvarı No:5', 'district' => 'Çankaya', 'categories' => ['1'], 'store_name' => 'Ayşe El İşi', 'tax_office' => 'Çankaya', 'tax_number' => '10000000146', 'phone' => '05321234567', 'email' => 'ayse@x.com', 'city' => 'Ankara', 'description' => 'El yapımı ev tekstili ürünleri satıyoruz.', 'accept_terms' => '1', 'kvkk_ack' => '1'];
+$gp = ["SELECT group_concat(v.owner_user_id || ':' || v.status || ':' || COALESCE(a.app_no,'-'), ',') FROM rafimda_vendors v LEFT JOIN rafimda_vendor_applications a ON a.id_vendor = v.id_vendor WHERE v.store_name = 'Ayşe El İşi'"];
+$o = drive(['user' => 0, 'register' => 1]);
+ok(str_contains($o, 'name="account_email"') && str_contains($o, 'name="password2"') && str_contains($o, 'yeni hesap açıyorsanız') === false && str_contains($o, 'Yeni hesap açıyorsanız'), 'misafir formu: hesap alanları ve açıklama');
+$o = drive(['user' => 0, 'register' => 1, 'method' => 'POST', 'post' => $gbase + ['account_email' => 'yeni@x.com', 'password' => 'Sifre12345!', 'password2' => 'Sifre12345!', 'full_name' => 'Ayşe Yılmaz', 'account_phone' => '05321234567'], 'probes' => $gp]);
+ok(preg_match('/PROBE0:"5:pending:SB\d{4}-\d{6}"/', $o) === 1 && str_contains($o, 'Başvuru numaranız') && str_contains($o, 'Üyelik hesabınız da yönetici onayı bekliyor'), 'yeni hesap (üyelik onayı bekleyen): hesap + başvuru oluşur, açık bilgilendirme');
+$o = drive(['user' => 0, 'register' => 1, 'activate' => 1, 'method' => 'POST', 'post' => $gbase + ['account_email' => 'yeni@x.com', 'password' => 'Sifre12345!', 'password2' => 'Sifre12345!', 'full_name' => 'Ayşe Yılmaz', 'account_phone' => '05321234567'], 'probes' => $gp]);
+ok(str_contains($o, 'REDIRECT:https://test.local/satici-panel') && preg_match('/PROBE0:"5:pending:SB/', $o) === 1, 'yeni hesap (hemen aktif): başvuru + panele (başvuru durumu) yönlendirme');
+$o = drive(['user' => 0, 'register' => 1, 'method' => 'POST', 'post' => $gbase + ['account_email' => 'yeni@x.com', 'password' => 'Sifre12345!', 'password2' => 'farkli', 'full_name' => 'A B'], 'probes' => $gp]);
+ok(str_contains($o, 'Şifreler eşleşmiyor') && str_contains($o, 'PROBE0:null'), 'şifre tekrarı uyuşmazsa kayıt yok');
+$o = drive(['user' => 0, 'register' => 1, 'method' => 'POST', 'post' => $gbase + ['account_email' => 'musteri@x.com', 'password' => 'yanlis'], 'probes' => $gp]);
+ok(str_contains($o, 'Bu e-posta zaten kayıtlı') && str_contains($o, 'PROBE0:null'), 'kayıtlı e-posta + yanlış şifre: başvuru devralınamaz');
+$o = drive(['user' => 0, 'register' => 1, 'method' => 'POST', 'post' => $gbase + ['account_email' => 'musteri@x.com', 'password' => 'DogruSifre1!'], 'probes' => $gp]);
+ok(preg_match('/PROBE0:"3:pending:SB/', $o) === 1, 'kayıtlı e-posta + doğru şifre: başvuru o hesaba bağlanır');
+$o = drive(['user' => 0, 'register' => 1, 'method' => 'POST', 'post' => ['person_type' => 'company'] + $gbase + ['account_email' => 'musteri@x.com', 'password' => 'DogruSifre1!'], 'probes' => $gp]);
+ok(str_contains($o, '10 haneli vergi kimlik') && str_contains($o, 'Şirket unvanını') && str_contains($o, 'PROBE0:null'), 'tüzel kişi seçilip TCKN girilirse anlaşılır hata, kayıt yok');
+
 $o = drive(['user' => 1, 'get' => ['s' => 'dashboard'], 'pending_app' => 1]);
 ok(str_contains($o, 'Başvuru numarası') && str_contains($o, 'enctype="multipart/form-data"') && str_contains($o, 'Belge Bekleniyor') && str_contains($o, 'Eksik belge bildirimi') && str_contains($o, 'Vergi levhası eksik'), 'onay bekleyen satıcı: başvuru no, durum adımları, eksik belge bildirimi, yükleme formu');
 $o = drive(['user' => 2, 'get' => ['s' => 'dashboard'], 'pending_app' => 1]);

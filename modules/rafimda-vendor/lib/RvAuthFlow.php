@@ -142,7 +142,9 @@ class RvAuthFlow
 						RvView::redirect(RvView::panelUrl());
 					}
 
-					$notice = (string) ($sub['message'] ?? 'Başvurunuz alındı.') . ' Başvurunuz onaylandıktan sonra satıcı girişi yapabilirsiniz.';
+					$notice = (string) ($sub['message'] ?? 'Başvurunuz alındı.') . ($accountPending
+						? ' Üyelik hesabınız da yönetici onayı bekliyor; hesabınız açıldığında satıcı girişi yaparak başvuru durumunuzu izleyebilir ve belge yükleyebilirsiniz.'
+						: ' Satıcı girişi yaparak başvuru durumunuzu izleyebilir ve belge yükleyebilirsiniz.');
 				}
 			}
 		}
