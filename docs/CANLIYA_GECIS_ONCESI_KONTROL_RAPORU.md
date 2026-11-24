@@ -23,8 +23,9 @@ Kapsam: depo kodu + sürüm paketi. **Canlı sunucuya bağlanılmadı, veritaban
 Sıra teknik olarak zorunlu değil (24 olası sıra test edildi, hepsinde aynı 31 tablo çıktı). **Önerilen** sıra:
 1. Yedek (dosya + DB dökümü)
 2. `rafimda-theme` — DB şeması değişmez
-3. `rafimda-vendor` — satıcı tabloları
+3. `rafimda-vendor` — satıcı tabloları (+ 005_prefs: `rafimda_vendor_prefs`)
 4. `rafimda-showcase`
+4b. `rafimda-campaign` — `rc_*` (3 tablo; vendor+showcase sonrası; kapalıyken tüm entegrasyonlar eski davranışa döner)
 5. `xml-hub`
 6. `marketplace-hub`
 

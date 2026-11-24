@@ -58,7 +58,7 @@ php deploy/live/bin/live-migrate.php --apply
 Canlı araçlar şunları da reddeder: `staging/stg/test` içeren veritabanı adı, `RAFIMDA_STAGING_CONFIRM` tanımlı (karışık oturum), staging site adresi, web (HTTP) üzerinden çalıştırma. Hata mesajlarında DB parolası ve kullanıcı adı `***` ile maskelenir.
 Yalnızca `CREATE TABLE IF NOT EXISTS` ve korumalı `ADD COLUMN`; `DROP/TRUNCATE/DELETE/RENAME` reddedilir; FriSay çekirdek tablolarına **dokunmaz**; ilk hatada durur.
 **7. Doğrulama (salt-okunur):** `php deploy/live/bin/live-verify.php --out=logs/live-verify.md` → 0 FAIL beklenir (gerçek MySQL'de ilk çalıştırma; bir FAIL çıkarsa çıktıyı iletin).
-**8. Modülleri etkinleştirin:** Yönetici paneli → Modüller → `rafimda-vendor`, `xml-hub`, `marketplace-hub`, `rafimda-showcase` (modül kaydı ve ayar tohumlama — ör. ana komisyon, cron anahtarı, varsayılan paketler — yalnızca panelden kurulumda yapılır).
+**8. Modülleri etkinleştirin:** Yönetici paneli → Modüller → `rafimda-vendor`, `xml-hub`, `marketplace-hub`, `rafimda-showcase`, `rafimda-campaign`, `rafimda-dealer` (kampanya modülü satıcı ve vitrin modüllerinden SONRA kurulur; vitrin ücreti `RAFIMDA_SHOWCASE_FEE` ayarı varsayılan 0'dır ve yalnızca borç kaydıdır, ödeme alınmaz) (modül kaydı ve ayar tohumlama — ör. ana komisyon, cron anahtarı, varsayılan paketler — yalnızca panelden kurulumda yapılır).
 **9. Sertleştirme:** `install/` klasörünü **sizin onayınızla** yeniden adlandırın/silin (sihirbaz env.php varken kendini kapatsa da gereksiz); `SECURITY_HSTS` kararını verin (§1); yönetici URI'sini (`ADMIN_URI`) varsayılan `admin`dan değiştirin; `config/env.php` izni 600; cron (§5) ekleyin.
 
 ## 5. Cron (yalnızca siz eklersiniz; eklenmedi)
@@ -80,6 +80,8 @@ Ana sayfa · yönetici girişi · satıcı kaydı (kendi test hesabınızla) ve 
   - xml-hub: `xh_migrations, xh_suppliers, xh_connections, xh_items, xh_runs, xh_errors, xh_price_history, xh_stock_history, xh_product_meta, xh_credentials, xh_changes, xh_export_feeds`
   - marketplace-hub: `mh_migrations, mh_accounts, mh_category_map, mh_listings, mh_errors`
   - rafimda-showcase: `rs_slots, rs_items`
+  - rafimda-campaign: `rc_campaigns, rc_enrollments, rc_charges` (yalnızca CREATE TABLE IF NOT EXISTS; uninstall veri silmez)
+  - rafimda-dealer: `rd_migrations, rd_dealers, rd_plans, rd_subscriptions, rd_customers, rd_commissions, rd_audit_log`
   - `rafimda_vendors`'a eklenen sütun: `plan_expires_at`; `rafimda_vendor_products`'a: `moderation, moderation_note, moderated_at`.
   - Panel kurulumu ayrıca `settings` tablosuna ayar satırları ve `modules`/`module_display_hooks` kayıtları ekler.
 - Tabloları **silmek** yıkıcıdır; yalnızca sizin açık onayınızla, yedek alındıktan sonra yapılır (araçlar bunu yapmaz). Çoğu durumda modülü panelden devre dışı bırakmak yeterlidir (veri korunur).
