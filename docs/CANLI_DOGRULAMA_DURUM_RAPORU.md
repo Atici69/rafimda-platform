@@ -59,7 +59,13 @@ Bayi/alt bayi, gerçek ödeme/banka aktarımı, muhasebe: **EKSİK**.
 3. `rafimda-release-96c73864d7.zip` → `public_html` → Extract (SHA-256 doğrulayın).
 4. Salt okunur kontrol: `RAFIMDA_ENV=live RAFIMDA_LIVE_CONFIRM=EVET-CANLI-DB RAFIMDA_LIVE_DB_NAME=<ad> php deploy/live/bin/live-preflight.php` çıktısını (parola içermez) bana gönderin; PHP/MySQL/eksik sütun sorularını kapatırım.
 5. Panelde sırayla: rafimda-theme → rafimda-vendor → rafimda-showcase → xml-hub → marketplace-hub. Her kurulumdan sonra ana sayfa ve `/admin` açılıyor mu bakın.
-6. Test satıcısı oluşturun (gerçek müşteri olmadan), `docs/` içindeki kabul listesini (satıcı akışı) uygulayın, sonuçları bana yazın.
+6. Test satıcısı oluşturun (gerçek müşteri olmadan), şu kabul listesini uygulayıp sonucu bana yazın:
+   - `/satici-kayit` ile kayıt → `/satici-giris` ile giriş → `/satici-panel` açılıyor mu
+   - Satıcı A ile ürün ekle/düzenle; stok ve fiyat değiştir
+   - Satıcı B ile giriş yap: A'nın ürününü/siparişini görmemeli, adresini elle yazınca da erişememeli
+   - Normal bir müşteri hesabıyla `/satici-panel` açılmamalı
+   - XML Hub'da küçük bir test XML'i ile içe aktarma; aynı XML'i ikinci kez çalıştır (çift ürün oluşmamalı); hata kaydı sayfasını aç
+   - Telefonda ana sayfa, mobil menü, satıcı giriş/kayıt sayfaları
 7. cron'ları ancak adım 6 sonrası ekleyin.
 
 ## Riskler
