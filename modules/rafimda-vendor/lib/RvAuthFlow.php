@@ -60,15 +60,24 @@ class RvAuthFlow
 			Security::requireCsrf('front');
 			$form = [];
 
-			foreach (['store_name', 'legal_name', 'tax_office', 'tax_number', 'phone', 'email', 'city', 'description', 'full_name', 'account_email', 'account_phone'] as $k) {
+			foreach (['store_name', 'legal_name', 'tax_office', 'tax_number', 'phone', 'email', 'city', 'description', 'full_name', 'account_email', 'account_phone', 'person_type', 'contact_name', 'address', 'district'] as $k) {
 				$form[$k] = RvView::post($k);
 			}
 
+			$form['categories'] = array_map('intval', (array) ($_POST['categories'] ?? []));
+			$form['kvkk_ack'] = empty($_POST['kvkk_ack']) ? '' : '1';
+			$form['accept_terms'] = empty($_POST['accept_terms']) ? '' : '1';
 			$v = RvVendor::validateStore($form);
-			$errors = $v['errors'];
+			$app = RvApplication::validate($form, $v['clean']);
+			$errors = $v['errors'] + $app['errors'];
 
 			if (empty($_POST['accept_terms'])) {
 				$errors['accept_terms'] = 'Satıcı sözleşmesini onaylamalısınız.';
+			}
+
+			// KVKK aydınlatma metninin okunduğu beyanı (açık rıza DEĞİLDİR; ayrı tutulur)
+			if (empty($_POST['kvkk_ack'])) {
+				$errors['kvkk_ack'] = 'KVKK aydınlatma metnini okuduğunuzu onaylayın.';
 			}
 
 			$idUser = $loggedIn ? Customer::getId() : 0;
@@ -112,15 +121,21 @@ class RvAuthFlow
 				if (empty($res['success'])) {
 					$errors['store_name'] = (string) $res['message'];
 				} else {
+					$sub = RvApplication::submit($idUser, (int) $res['id_vendor'], $app['clean'], true);
+
+					if ($auto && !empty($sub['success'])) {
+						RvApplication::autoApprove((int) $sub['id_application']);
+					}
+
 					RvContext::reset();
 					$done = true;
 
 					if (!$accountPending && Customer::isLoggedIn()) {
-						RvView::flash('success', $auto ? 'Mağazanız oluşturuldu.' : 'Başvurunuz alındı. Onaydan sonra paneli kullanabilirsiniz.');
+						RvView::flash('success', $auto ? 'Mağazanız oluşturuldu.' : (string) ($sub['message'] ?? 'Başvurunuz alındı.') . ' Onaydan sonra paneli kullanabilirsiniz.');
 						RvView::redirect(RvView::panelUrl());
 					}
 
-					$notice = 'Başvurunuz alındı. Hesabınız onaylandıktan sonra satıcı girişi yapabilirsiniz.';
+					$notice = (string) ($sub['message'] ?? 'Başvurunuz alındı.') . ' Başvurunuz onaylandıktan sonra satıcı girişi yapabilirsiniz.';
 				}
 			}
 		}
@@ -133,6 +148,9 @@ class RvAuthFlow
 			'done' => $done,
 			'notice' => $notice,
 			'loginUrl' => RvView::url('satici-giris'),
+			'personTypes' => RvApplication::PERSON_TYPES,
+			'categoryOptions' => RvApplication::categoryOptions(),
+			'legalLinks' => class_exists('RlLegal') ? RlLegal::linksFor(['vendor-agreement', 'kvkk']) : [],
 		]);
 		exit;
 	}

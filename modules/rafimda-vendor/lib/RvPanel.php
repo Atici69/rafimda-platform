@@ -27,6 +27,54 @@ class RvPanel
 		'support'      => ['Destek', '?', false, 'Destek talepleri sonraki aşamada.'],
 	];
 
+	/** Onaylanmamış mağaza: başvuru durumu, eksik belge bildirimi, belge yükleme ve geçmiş. Yalnızca mağaza SAHİBİ belge yükleyebilir. */
+	private static function applicationStatus(array $vendor): void
+	{
+		$app = RvApplication::forVendor((int) $vendor['id_vendor']);
+		$uid = (int) Customer::getId();
+		$isApplicant = $app && (int) $app['id_user'] === $uid;
+
+		if ($app && Tools::getValue('a') === 'doc') {
+			$doc = RvApplication::documentPath((int) Tools::getValue('id'), $uid, false);
+
+			if (!$doc) {
+				http_response_code(404);
+				exit;
+			}
+
+			header('Content-Type: ' . $doc['mime']);
+			header('Content-Disposition: attachment; filename="' . rawurlencode($doc['name']) . '"');
+			header('X-Content-Type-Options: nosniff');
+			readfile($doc['path']);
+			exit;
+		}
+
+		if ($app && RvView::isPost() && RvView::post('action') === 'upload_doc') {
+			Security::requireCsrf('front');
+			$r = $isApplicant ? RvApplication::addDocument((int) $app['id_application'], $uid, (array) ($_FILES['document'] ?? []), RvView::post('doc_type'))
+				: ['success' => false, 'message' => 'Belgeyi yalnızca başvuru sahibi yükleyebilir.'];
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl());
+		}
+
+		RvView::display('panel_status', [
+			'rvTitle' => 'Başvuru Durumu',
+			'vendor' => $vendor,
+			'statusLabel' => RvVendor::STATUSES[$vendor['status']] ?? (string) $vendor['status'],
+			'logoutUrl' => RvView::url('satici-cikis'),
+			'app' => $app,
+			'appStatusLabel' => $app ? (RvApplication::STATUSES[$app['status']] ?? $app['status']) : '',
+			'appDocs' => $app ? RvApplication::docs((int) $app['id_application']) : [],
+			'appHistory' => $app ? RvApplication::history((int) $app['id_application']) : [],
+			'appStatuses' => RvApplication::STATUSES,
+			'docTypes' => RvApplication::DOC_TYPES,
+			'canUpload' => $isApplicant && $app['status'] !== 'approved',
+			'flash' => RvView::takeFlash(),
+			'panelUrl' => RvView::panelUrl(),
+		]);
+		exit;
+	}
+
 	public static function handle(): void
 	{
 		App::sendNoStoreHeaders();
@@ -50,13 +98,7 @@ class RvPanel
 		$vendor = $ctx['vendor'];
 
 		if (($vendor['status'] ?? '') !== RvVendor::STATUS_ACTIVE) {
-			RvView::display('panel_status', [
-				'rvTitle' => 'Mağaza Durumu',
-				'vendor' => $vendor,
-				'statusLabel' => RvVendor::STATUSES[$vendor['status']] ?? (string) $vendor['status'],
-				'logoutUrl' => RvView::url('satici-cikis'),
-			]);
-			exit;
+			self::applicationStatus($vendor);
 		}
 
 		$section = (string) Tools::getValue('s', 'dashboard');

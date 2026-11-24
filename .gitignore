@@ -70,3 +70,6 @@ backups/*
 *.key
 /staging.env
 *.staging.env
+
+# Rafımda çalışma zamanı yüklemeleri (satıcı başvuru belgeleri vb.) — repoya/ZIP'e girmez
+storage/rafimda/

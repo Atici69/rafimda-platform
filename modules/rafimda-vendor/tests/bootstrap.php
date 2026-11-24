@@ -104,7 +104,7 @@ class Product { // TAKLİT
 }
 class RafimdaVendorModule { public const VERSION = 'test'; }
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvPrefs', 'RvReports'] as $c) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 
@@ -115,7 +115,7 @@ function rv_mysql_to_sqlite(string $sql): string
 	$sql = preg_replace('/^\s*UNIQUE KEY\s+`[^`]+`\s*(\([^)]*\)),?\s*$/m', 'UNIQUE $1,', $sql);
 	$sql = preg_replace('/^\s*KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/`(\w+)` (?:int\(11\)|bigint\(20\)) NOT NULL AUTO_INCREMENT,/', '`$1` INTEGER PRIMARY KEY AUTOINCREMENT,', $sql);
-	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge)`\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import|id_plan|id_plan_log|id_campaign|id_enrollment|id_charge|id_application|id_doc|id_app_log|id_notification)`\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/,(\s*\))/', '$1', $sql);
 	return $sql;
 }

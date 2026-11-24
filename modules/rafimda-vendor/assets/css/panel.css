@@ -74,3 +74,10 @@ a.rv-stat{display:block;text-decoration:none;color:inherit}a.rv-stat:hover{borde
 .rv-top strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rv-top select{max-width:46vw}
 @media (max-width:520px){.rv-top>span:not(.grow){display:none}.rv-top .rv-btn{padding:6px 9px}}
+.rv-choice{display:flex;flex-wrap:wrap;gap:8px}.rv-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rv-line,#d8dee8);border-radius:999px;padding:6px 12px;font-weight:400;margin:0 6px 6px 0;cursor:pointer}
+.rv-chip input{width:auto;margin:0}.rv-cats{border:1px solid var(--rv-line,#d8dee8);border-radius:10px;padding:10px 12px;margin-top:12px}.rv-cats legend{font-weight:600;padding:0 6px}
+.rv-note{background:#f4f7fb;border-left:3px solid var(--rv-orange,#f97316);padding:8px 12px;border-radius:6px;font-size:14px}
+.rv-appbox{background:#f4f7fb;border-radius:10px;padding:10px 14px;margin:10px 0}.rv-steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:8px 0 0}
+.rv-steps li{padding:4px 10px;border-radius:999px;background:#e8edf5;color:var(--rv-muted);font-size:13px}.rv-steps li.is-cur{background:var(--rv-navy);color:#fff}
+.rv-history{list-style:none;padding:0}.rv-history li{border-bottom:1px solid var(--rv-line);padding:6px 0;font-size:14px}.rv-history span{color:var(--rv-muted);margin-right:6px}
+.pill.bad{background:#fde8e8;color:var(--rv-bad)}

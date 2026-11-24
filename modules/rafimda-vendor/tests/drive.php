@@ -6,6 +6,7 @@
  */
 require __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/lib/RvPanel.php';
+require_once dirname(__DIR__) . '/lib/RvAuthFlow.php';
 require_once dirname(__DIR__, 2) . '/rafimda-showcase/lib/RsShowcase.php';
 require_once dirname(__DIR__, 2) . '/rafimda-campaign/lib/RcCampaign.php';
 require_once dirname(__DIR__, 3) . '/libs/Smarty.class.php';
@@ -29,6 +30,11 @@ foreach ([[$p1, 2, 1], [$p2, 1, 1]] as [$pid, $qty, $uid]) { $o = (int) DB::inse
 $oB = (int) DB::insert('orders', ['id_user' => 3, 'reference' => 'RB', 'status' => 1, 'date_add' => date('Y-m-d H:i:s'), 'customer_name' => 'Gizli Müşteri']); DB::insert('order_detail', ['id_order' => $oB, 'id_product' => $pB, 'product_name' => 'Başkasının Ürünü', 'qty' => 1, 'price' => 55, 'total' => 55]); RvOrders::splitOrder(['id_order' => $oB]);
 if (!empty($cfg['campaign'])) { RcCampaign::save(['code' => 'dusuk', 'title' => 'Düşük komisyon kampanyası', 'type' => 'commission_discount', 'active' => 1, 'benefit_days' => 30, 'calc_mode' => 'fixed_rate', 'value' => '5', 'vendor_can_join' => 1, 'description' => 'İlk 30 gün %5']); }
 if (!empty($cfg['fee'])) { RcCampaign::setShowcaseFee(250); RcCampaign::save(['code' => 'ilk-ay', 'title' => 'İlk ay ücretsiz vitrin', 'type' => 'free_showcase', 'active' => 1, 'benefit_days' => 30, 'new_vendor_days' => 30, 'auto_enroll' => 1]); }
+if (!empty($cfg['pending_app'])) {
+	DB::execute("UPDATE rafimda_vendors SET status = 'pending' WHERE id_vendor = ?", [$vA]);
+	$ap = RvApplication::submit(1, $vA, ['person_type' => 'company', 'contact_name' => 'Kişi 1', 'address' => 'Moda Cad. No:1', 'district' => 'Kadıköy', 'categories' => [1 => 'Giyim']], true);
+	RvApplication::transition($ap['id_application'], 'docs_required', 1, 'Vergi levhası eksik');
+}
 Customer::as((int) ($cfg['user'] ?? 1));
 $_SERVER['REQUEST_METHOD'] = $cfg['method'] ?? 'GET'; $_GET = $cfg['get'] ?? []; $_POST = ($cfg['post'] ?? []) + (($cfg['method'] ?? 'GET') === 'POST' ? ['token' => 'csrf-test'] : []);
 RvView::$onRedirect = static function (string $url): void { echo "\nREDIRECT:" . $url . "\n"; exit(0); };
@@ -36,4 +42,8 @@ register_shutdown_function(static function () use ($cfg) {
 	echo "\nFLASH:" . json_encode($_SESSION['rv_flash'] ?? null, JSON_UNESCAPED_UNICODE) . "\n";
 	foreach (($cfg['probes'] ?? []) as $i => $sql) { echo 'PROBE' . $i . ':' . json_encode(DB::getValue($sql), JSON_UNESCAPED_UNICODE) . "\n"; }
 });
-RvPanel::handle();
+if (!empty($cfg['register'])) { RvAuthFlow::register(); } elseif (!empty($cfg['admin'])) {
+	// Not: bootstrap gerçek modül sınıfını taklit ettiği için yönetici sekmesi, adminPage'in kullandığı AYNI RvApplication::adminVars ile çizilir.
+	$smarty->setEscapeHtml(false); $smarty->assign(RvApplication::adminVars(true, $_GET) + ['adminToken' => 'admintok', 'flash' => '', 'flashType' => 'info', 'rvTab' => 'applications', 'rvPending' => [], 'rvQuery' => (string) ($_GET['q'] ?? '')]);
+	echo $smarty->fetch('file:' . dirname(__DIR__) . '/assets/templates/admin/admin.tpl');
+} else { RvPanel::handle(); }

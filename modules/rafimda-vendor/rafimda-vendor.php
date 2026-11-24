@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvPanel'] as $rvClass) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication', 'RvPanel'] as $rvClass) {
 	require_once __DIR__ . '/lib/' . $rvClass . '.php';
 }
 
@@ -81,10 +81,30 @@ class RafimdaVendorModule extends ModuleBase
 		$tokenOk = $post && hash_equals((string) $adminToken, (string) Tools::getValue('token'));
 		$demo = Admin::isDemoMode();
 		$adminId = Admin::getId();
-		$tab = (string) Tools::getValue('tab', 'vendors');
+		$tab = (string) Tools::getValue('tab', 'applications');
 
-		if (!in_array($tab, ['vendors', 'products', 'orders', 'finance', 'plans', 'settings'], true)) {
-			$tab = 'vendors';
+		if (!in_array($tab, ['applications', 'vendors', 'products', 'orders', 'finance', 'plans', 'settings'], true)) {
+			$tab = 'applications';
+		}
+
+		// Başvuru belgesi indirme: yalnızca yönetici oturumunda (adminPage zaten yönetici doğrulamasından sonra çağrılır)
+		if ($tab === 'applications' && (int) Tools::getValue('doc') > 0) {
+			$doc = RvApplication::documentPath((int) Tools::getValue('doc'), 0, true);
+
+			if (!$doc) {
+				http_response_code(404);
+				exit;
+			}
+
+			while (ob_get_level() > 0) {
+				ob_end_clean();
+			}
+
+			header('Content-Type: ' . $doc['mime']);
+			header('Content-Disposition: attachment; filename="' . rawurlencode($doc['name']) . '"');
+			header('X-Content-Type-Options: nosniff');
+			readfile($doc['path']);
+			exit;
 		}
 
 		if ($post && !$tokenOk) {
@@ -107,6 +127,14 @@ class RafimdaVendorModule extends ModuleBase
 				case 'vendor_status':
 					$ok = RvVendor::setStatus((int) Tools::getValue('id_vendor'), (string) Tools::getValue('to_status'), $adminId, (string) Tools::getValue('reason'));
 					$msg = $ok ? 'Satıcı durumu güncellendi.' : 'Durum güncellenemedi.';
+					if ($ok) {
+						RvApplication::syncFromVendor((int) Tools::getValue('id_vendor'), (string) Tools::getValue('to_status'), $adminId, (string) Tools::getValue('reason'));
+					}
+					break;
+				case 'app_transition':
+					$r = RvApplication::transition((int) Tools::getValue('id_application'), (string) Tools::getValue('to'), $adminId, (string) Tools::getValue('note'));
+					$ok = $r['success'];
+					$msg = $r['message'];
 					break;
 				case 'product_approve':
 					$ok = RvProducts::approve((int) Tools::getValue('id_product'), $adminId);
@@ -173,6 +201,7 @@ class RafimdaVendorModule extends ModuleBase
 			}
 		}
 
+		$smarty->assign(RvApplication::adminVars($tab === 'applications', $_GET));
 		$smarty->assign([
 			'pageTitle' => $this->title,
 			'flash' => $flash,

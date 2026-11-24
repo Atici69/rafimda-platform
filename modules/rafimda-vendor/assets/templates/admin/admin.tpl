@@ -3,16 +3,67 @@
 {if $rvPending}
 <form method="post" class="alert alert-warning d-flex align-items-center gap-2">
 	<input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="migrate">
-	<span>Bekleyen migration: <strong>{implode(', ', $rvPending)|escape}</strong>. Satıcı paneli çalışmadan önce çalıştırın (yedek alın).</span>
+	<span>Bekleyen migration: <strong>{join($rvPending, ', ')|escape}</strong>. Satıcı paneli çalışmadan önce çalıştırın (yedek alın).</span>
 	<button type="submit" class="btn btn-sm btn-dark ms-auto">Çalıştır</button>
 </form>
 {/if}
 
 <ul class="nav nav-tabs mb-3">
-	{foreach ['vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'settings' => 'Ayarlar'] as $k => $l}
-	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}</a></li>
+	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'settings' => 'Ayarlar'] as $k => $l}
+	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}{if $k == 'applications' && $rvAppOpen|default:0 > 0} <span class="badge text-bg-warning">{$rvAppOpen}</span>{/if}</a></li>
 	{/foreach}
 </ul>
+
+{if $rvTab == 'applications'}
+{if $rvApp}
+<p><a href="?tab=applications">← Başvurular</a></p>
+<div class="row g-3">
+	<div class="col-lg-7"><div class="card"><div class="card-body">
+		<h2 class="h5">{$rvApp.app_no|escape} · {$rvApp.store_name|escape} <span class="badge text-bg-{if $rvApp.status == 'approved'}success{elseif $rvApp.status == 'rejected'}danger{elseif $rvApp.status == 'docs_required'}warning{else}info{/if}">{$rvAppStatuses[$rvApp.status]|escape}</span></h2>
+		<table class="table table-sm"><tbody>
+			<tr><th>Tür</th><td>{$rvPersonTypes[$rvApp.person_type]|default:$rvApp.person_type|escape}</td></tr>
+			<tr><th>Unvan</th><td>{$rvApp.legal_name|escape}</td></tr>
+			<tr><th>Yetkili</th><td>{$rvApp.contact_name|escape}</td></tr>
+			<tr><th>İletişim</th><td>{$rvApp.phone|escape} · {$rvApp.email|escape}</td></tr>
+			<tr><th>Vergi</th><td>{$rvApp.tax_office|escape} / {$rvApp.tax_number|escape}</td></tr>
+			<tr><th>Adres</th><td>{$rvApp.address|escape} {$rvApp.district|escape} / {$rvApp.city|escape}</td></tr>
+			<tr><th>Kategoriler</th><td>{foreach $rvApp.category_list as $c}<span class="badge text-bg-light me-1">{$c|escape}</span>{/foreach}</td></tr>
+			<tr><th>Açıklama</th><td>{$rvApp.description|escape}</td></tr>
+			<tr><th>Sözleşme / KVKK</th><td>Sürüm {$rvApp.terms_version|escape} · KVKK okundu: {$rvApp.kvkk_ack_at|default:'—'|escape}</td></tr>
+			<tr><th>Başvuru</th><td>{$rvApp.date_add|escape}</td></tr>
+		</tbody></table>
+		<h3 class="h6">Belgeler</h3>
+		{if $rvAppDocs}<ul>{foreach $rvAppDocs as $d}<li><a href="?tab=applications&doc={$d.id_doc}">{$rvDocTypes[$d.doc_type]|default:$d.doc_type|escape}: {$d.original_name|escape}</a> <small class="text-muted">({$d.mime|escape}, {($d.size/1024)|string_format:'%.0f'} KB)</small></li>{/foreach}</ul>{else}<p class="text-muted">Belge yüklenmedi.</p>{/if}
+	</div></div></div>
+	<div class="col-lg-5"><div class="card"><div class="card-body">
+		<h3 class="h6">İnceleme</h3>
+		{if $rvAppTransitions[$rvApp.status]}
+		<form method="post">
+			<input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="app_transition"><input type="hidden" name="id_application" value="{$rvApp.id_application}">
+			<label class="form-label" for="app-to">Yeni durum</label>
+			<select class="form-select mb-2" id="app-to" name="to">{foreach $rvAppTransitions[$rvApp.status] as $t}<option value="{$t}">{$rvAppStatuses[$t]|escape}</option>{/foreach}</select>
+			<label class="form-label" for="app-note">Not (belge istemek ve reddetmek için zorunlu; başvuru sahibine iletilir)</label>
+			<textarea class="form-control mb-2" id="app-note" name="note" rows="3"></textarea>
+			<button class="btn btn-primary" type="submit">Kaydet ve bildir</button>
+		</form>
+		<p class="small text-muted mt-2">Onay, mağazayı etkinleştirir (satıcı paneli ve vitrin açılır).</p>
+		{else}<p class="text-muted">Bu başvuru kapandı.</p>{/if}
+		<h3 class="h6 mt-3">Geçmiş</h3>
+		<ul class="small">{foreach $rvAppHistory as $h}<li>{$h.date_add|escape} · {$rvAppStatuses[$h.to_status]|default:$h.to_status|escape} · {$h.actor|escape}{if $h.note} — {$h.note|escape}{/if}</li>{/foreach}</ul>
+	</div></div></div>
+</div>
+{else}
+<div class="d-flex flex-wrap gap-2 mb-3">
+	{foreach $rvAppStatuses as $k => $l}<a class="badge text-bg-{if $k == 'approved'}success{elseif $k == 'rejected'}danger{elseif $k == 'docs_required'}warning{else}info{/if} text-decoration-none p-2" href="?tab=applications&astatus={$k}">{$l|escape}: {$rvAppCounts[$k]|default:0}</a>{/foreach}
+	<a class="badge text-bg-light text-decoration-none p-2" href="?tab=applications">Tümü</a>
+</div>
+<form method="get" class="row g-2 mb-3"><input type="hidden" name="tab" value="applications"><input type="hidden" name="astatus" value="{$rvAppFilter|escape}">
+	<div class="col-md-4"><input class="form-control" name="q" value="{$rvQuery|escape}" placeholder="Başvuru no, mağaza, yetkili"></div><div class="col-auto"><button class="btn btn-outline-dark">Ara</button></div></form>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>No</th><th>Mağaza</th><th>Tür</th><th>Yetkili</th><th>İl</th><th>Belge</th><th>Durum</th><th>Tarih</th><th></th></tr></thead><tbody>
+{foreach $rvApps as $a}<tr><td>{$a.app_no|escape}</td><td>{$a.store_name|escape}</td><td>{$rvPersonTypes[$a.person_type]|default:''|escape}</td><td>{$a.contact_name|escape}</td><td>{$a.city|escape}</td><td>{$a.doc_count}</td><td>{$rvAppStatuses[$a.status]|escape}</td><td>{$a.date_add|escape}</td><td><a class="btn btn-sm btn-outline-primary" href="?tab=applications&app={$a.id_application}">İncele</a></td></tr>{foreachelse}<tr><td colspan="9" class="text-muted">Başvuru yok.</td></tr>{/foreach}
+</tbody></table></div></div>
+{/if}
+{/if}
 
 {if $rvTab == 'vendors'}
 <div class="admin-panel p-3 mb-3">

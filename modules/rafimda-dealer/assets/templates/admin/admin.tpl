@@ -21,7 +21,7 @@
 {if $rdPending}
 <form method="post" class="alert alert-warning d-flex align-items-center gap-2">
 	<input type="hidden" name="token" value="{$rdToken|escape}"><input type="hidden" name="rdAction" value="migrate">
-	<span>Bekleyen migration: <strong>{implode(', ', $rdPending)|escape}</strong>. Bayi sistemi çalışmadan önce çalıştırın (yedek alın).</span>
+	<span>Bekleyen migration: <strong>{join($rdPending, ', ')|escape}</strong>. Bayi sistemi çalışmadan önce çalıştırın (yedek alın).</span>
 	<button type="submit" class="btn btn-sm btn-dark ms-auto">Çalıştır</button>
 </form>
 {/if}
