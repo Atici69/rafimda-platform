@@ -115,7 +115,14 @@ class RsShowcase
 			return ['success' => false, 'message' => 'Bu ürün için bu alanda zaten bir talep/yerleşim var.', 'id' => 0];
 		}
 
-		return self::insert(['slot_code' => $slot['code'], 'id_product' => $idProduct, 'starts_at' => $d['starts_at'] ?? '', 'ends_at' => $d['ends_at'] ?? ''], $idVendor, 'pending');
+		$res = self::insert(['slot_code' => $slot['code'], 'id_product' => $idProduct, 'starts_at' => $d['starts_at'] ?? '', 'ends_at' => $d['ends_at'] ?? ''], $idVendor, 'pending');
+
+		// Ticari kampanya modülü (varsa): ücretsiz dönem muafiyeti veya ücret borcu kaydı
+		if ($res['success'] && class_exists('RcCampaign', false)) {
+			RcCampaign::onShowcaseRequest($idVendor, (int) $res['id']);
+		}
+
+		return $res;
 	}
 
 	/** @param array<string,mixed> $d @return array{success:bool, message:string, id:int} */
@@ -167,13 +174,29 @@ class RsShowcase
 			return false;
 		}
 
+		if (class_exists('RcCampaign', false)) {
+			if ($to === 'approved' && !RcCampaign::canApprove($idItem)) {
+				return false; // vitrin ücreti ödenmeden onaylanamaz
+			}
+
+			if ($to !== 'approved') {
+				RcCampaign::voidForItem($idItem);
+			}
+		}
+
 		return DB::update('rs_items', ['status' => $to, 'note' => mb_substr(trim(strip_tags($note)), 0, 255)], 'id_item = :i', ['i' => $idItem]) !== false;
 	}
 
 	/** Satıcı kendi bekleyen talebini geri çeker. */
 	public static function withdraw(int $idVendor, int $idItem): bool
 	{
-		return $idVendor > 0 && (bool) DB::update('rs_items', ['status' => 'removed'], "id_item = :i AND id_vendor = :v AND status IN ('pending','approved')", ['i' => $idItem, 'v' => $idVendor]);
+		$ok = $idVendor > 0 && (bool) DB::update('rs_items', ['status' => 'removed'], "id_item = :i AND id_vendor = :v AND status IN ('pending','approved')", ['i' => $idItem, 'v' => $idVendor]);
+
+		if ($ok && class_exists('RcCampaign', false)) {
+			RcCampaign::voidForItem($idItem);
+		}
+
+		return $ok;
 	}
 
 	/** @return list<array<string,mixed>> */

@@ -1,6 +1,9 @@
 <div class="rv-card">
 	<h2>Vitrin ve öne çıkarma</h2>
-	<div class="rv-alert info">Ürününüzü ana sayfa vitrininde (öne çıkan / kampanyalı) göstermek için talep açın. Talepler yönetici onayından sonra, seçtiğiniz tarih aralığında yayınlanır. Bu sürümde reklam ücreti/ödeme yoktur.</div>
+	<div class="rv-alert info">Ürününüzü ana sayfa vitrininde (öne çıkan / kampanyalı) göstermek için talep açın. Talepler yönetici onayından sonra, seçtiğiniz tarih aralığında yayınlanır.</div>
+	{if $terms}{if $terms.fee > 0}<div class="rv-alert warning">Vitrin ücreti: <strong>{$terms.fee|string_format:"%.2f"} ₺</strong> / talep. Ücretsiz dönemiz yok veya sona erdi; talebiniz için bir borç kaydı oluşur, ödemeniz yönetici tarafından teyit edilince talep onaylanır. Ödeme bu panelden alınmaz.</div>
+	{elseif $terms.id_campaign}<div class="rv-alert success">İlk ay ücretsiz vitrin: <strong>{$terms.reason}</strong> kampanyası etkin{if $terms.expires_at}; <strong>{$terms.expires_at}</strong> tarihine kadar vitrin talepleriniz ücretsizdir{/if}.</div>
+	{else}<div class="rv-alert success">Vitrin talepleri şu an ücretsizdir.</div>{/if}{/if}
 	{if $can.edit}<form method="post" class="rv-toolbar" style="flex-wrap:wrap"><input type="hidden" name="token" value="{$rvToken}"><input type="hidden" name="action" value="showcase_request">
 		<select name="slot_code" required style="width:auto">{foreach $slots as $s}<option value="{$s.code}">{$s.title}</option>{/foreach}</select>
 		<select name="id_product" required style="max-width:280px"><option value="">Ürün seçin</option>{foreach $products as $p}<option value="{$p.id_product}">{$p.product_name}</option>{/foreach}</select>

@@ -212,16 +212,31 @@ class RvPanel
 
 		$products = DB::execute("SELECT p.id_product, p.product_name FROM products p JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? AND vp.moderation = 'approved' AND p.active = 1 ORDER BY p.product_name ASC LIMIT 300", [$idVendor]) ?: [];
 
-		return ['panel_campaigns', ['slots' => array_values(array_filter(RsShowcase::slots(true), static fn(array $s): bool => $s['kind'] === 'product' && (int) $s['vendor_requestable'] === 1)), 'products' => $products, 'items' => RsShowcase::forVendor($idVendor)]];
+		return ['panel_campaigns', ['terms' => class_exists('RcCampaign', false) ? RcCampaign::showcaseTerms($idVendor) : null, 'slots' => array_values(array_filter(RsShowcase::slots(true), static fn(array $s): bool => $s['kind'] === 'product' && (int) $s['vendor_requestable'] === 1)), 'products' => $products, 'items' => RsShowcase::forVendor($idVendor)]];
 	}
 
 	/** @return array{0:string,1:array<string,mixed>} */
 	private static function subscription(array $vendor): array
 	{
 		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost() && class_exists('RcCampaign', false)) {
+			Security::requireCsrf('front');
+			self::deny('store.manage');
+
+			if (RvView::post('action') === 'campaign_join') {
+				$r = RcCampaign::enroll((int) RvView::post('id_campaign'), $idVendor, 'vendor');
+			} else {
+				$r = ['success' => false, 'message' => 'Geçersiz işlem.'];
+			}
+
+			RvView::flash($r['success'] ? 'success' : 'danger', $r['message']);
+			RvView::redirect(RvView::panelUrl('subscription'));
+		}
+
 		$eff = RvPlans::effective($idVendor);
 
-		return ['panel_subscription', ['eff' => $eff, 'usage' => RvPlans::usage($idVendor), 'plans' => RvPlans::all(true)]];
+		return ['panel_subscription', ['eff' => $eff, 'usage' => RvPlans::usage($idVendor), 'plans' => RvPlans::all(true), 'camp' => class_exists('RcCampaign', false) ? RcCampaign::forVendor($idVendor) : null]];
 	}
 
 	/** @return array{0:string,1:array<string,mixed>} */

@@ -33,11 +33,23 @@ class RvOrders
 		return $v === '' ? 7 : max(0, min(90, (int) $v));
 	}
 
-	public static function commissionRateFor(array $vendor): float
+	/** Kampanyasız taban oran: satıcıya özel oran varsa o, yoksa platform varsayılanı. */
+	public static function baseCommissionFor(array $vendor): float
 	{
 		$r = (float) ($vendor['commission_rate'] ?? 0);
 
 		return $r > 0 ? min(100.0, $r) : self::defaultCommission();
+	}
+
+	/**
+	 * Sipariş komisyon oranı. rafimda-campaign etkinse kampanya (örn. düşük komisyon) uygulanır; hata/yoksa taban oran.
+	 * $forOrder=false: yalnızca gösterim (otomatik katılım yapmaz, sayaç artırmaz).
+	 */
+	public static function commissionRateFor(array $vendor, bool $forOrder = false): float
+	{
+		$base = self::baseCommissionFor($vendor);
+
+		return class_exists('RcCampaign', false) ? RcCampaign::rateFor($vendor, $base, $forOrder) : $base;
 	}
 
 	/** Hook dinleyicilerini sarar: satıcı kodu hata verirse sipariş akışı etkilenmez. */
@@ -91,7 +103,7 @@ class RvOrders
 			}
 
 			$subtotal = RvLedger::money(array_sum(array_map(static fn(array $l): float => (float) $l['total'], $vLines)));
-			$rate = self::commissionRateFor($vendor);
+			$rate = self::commissionRateFor($vendor, true);
 			$commission = RvLedger::money($subtotal * $rate / 100);
 			$earning = RvLedger::money($subtotal - $commission);
 
@@ -122,8 +134,16 @@ class RvOrders
 					RvAudit::log($idVendor, 'order.split', 'vendor_order', (int) $idVo, ['id_order' => $idOrder, 'earning' => $earning]);
 				});
 				$created++;
+
+				if (class_exists('RcCampaign', false)) {
+					RcCampaign::commitUse($idVendor);
+				}
 			} catch (Throwable $e) {
 				error_log('rafimda splitOrder: ' . $e->getMessage());
+
+				if (class_exists('RcCampaign', false)) {
+					RcCampaign::discardUse($idVendor);
+				}
 			}
 		}
 
