@@ -1,0 +1,34 @@
+RAFIMDA – YAZILIM SAHİPLİK VE LİSANS RAPORU (ÖN SÜRÜM, 2026-11-24)
+Durum: ÖLÇÜLEN gerçekler. Hukuki görüş DEĞİLDİR; lisans yorumu avukat/lisans sahibi teyidi gerektirir.
+
+1) ÖZGÜN RAFIMDA KODU (git geçmişinde yazar "Claude", 2026-11-24 sonrası; yaklaşık satır sayısı)
+   modules/rafimda-vendor 5459 | rafimda-dealer 2636 | rafimda-campaign 1119 | rafimda-theme 1106 | rafimda-showcase 616
+   modules/xml-hub 5529 | modules/marketplace-hub 2318 | deploy/ (staging, live, preview araçları) | docs/ | testler
+   Toplam özgün: yaklaşık 19 bin satır (modüller), araçlar ve testler hariç.
+   Bunlar FriSay'in ModuleBase/DB/Settings/Smarty API'lerine BAĞIMLIDIR (FriSay üzerinde çalışan eklentilerdir).
+
+2) FriSAY'DEN GELEN KOD ("FriSay V3.0.2 temel sürüm", commit e1ccf0a, Bera Ramazan, 2026-10-27; 1815 dosya)
+   core 59.902 satır | templates 43.743 | src 30.098 | container 7.506 | api 2.173 | install 2.551 | libs (kendi sarmalayıcıları) 2.466
+   + ~55 hazır modül (ödeme: iyzico, paytr, paypal, parampos...; kargo, pazaryeri, e-fatura: bifatura, bizimhesap; tema: theme4 vb.)
+   Toplam FriSay kaynaklı: yaklaşık 145 bin satır ≈ kod tabanının %88'i.
+
+3) LİSANS DURUMU — KRİTİK BULGU
+   - Depoda LICENSE/COPYING dosyası YOK. README yalnızca "Open source — see the repository for license terms" der; atıf yaptığı koşullar depoda bulunmuyor.
+   - Lisans dosyası olmayan kod, varsayılan olarak tüm hakları saklıdır: kullanma/değiştirme/yeniden dağıtma/ticari kullanım hakkı AÇIK DEĞİLDİR.
+   - Rafımda'nın bağımsız ve ticari olarak işletilebilmesi için FriSay hak sahibinden YAZILI lisans/izin gerekir (veya kod tabanının özgün yeniden yazımı).
+   - Kodda FriSay'e çağrılar: core/NewsFeed.php (frisay.com/rss.xml), core/AdminMenuFavorites.php ve container/admin/modules.php (Module Store bağlantısı), admin şablonları/dil dosyaları (marka). Lisans anahtarı doğrulama kodu BULUNMADI (yalnızca sanal ürün lisans anahtarları).
+
+4) ÜÇÜNCÜ TARAF BİLEŞENLER (libs/)
+   Smarty 5 (LGPL-3.0; libs/Smarty.class.php — lisans metni/atıf paketlenmeli), SimpleXLSX (MIT), SimpleGEN. Sürüm/lisans doğrulaması YAPILACAK.
+   Ödeme/kargo/pazaryeri modülleri üçüncü taraf API şartlarına tabidir; hak sahibi/SDK lisansları TEK TEK incelenmedi.
+
+5) TİCARİ LİSANSLI BİLEŞEN: tespit edilmedi (tam doğrulama yapılmadı).
+
+6) YENİDEN GELİŞTİRİLEN BİLEŞENLER: Çekirdek düzeyinde HİÇBİRİ henüz yok (yalnızca modüller özgün).
+
+7) KALAN BAĞIMLILIKLAR VE ÇÖZÜM PLANI
+   a) Lisans teyidi (ilk adım, kod yazmadan önce): FriSay hak sahibiyle yazılı izin VEYA özgün çekirdek kararı.
+   b) Özgün çekirdek: router, oturum/yetki, DB katmanı, migration, modül sistemi, tema sistemi, installer/updater, loglama, güvenlik (15 bileşen).
+      Gerçekçi kapsam: ~60 bin satır çekirdek + 44 bin satır şablon eşdeğeri; aşamalı, ay mertebesinde iş. Tek oturumda güvenli biçimde bitirilemez.
+   c) Önerilen yol: "strangler" yaklaşımı — arayüz sözleşmeleri (DB, Settings, Router, ModuleBase) arkasına soyutla; modülleri bu sözleşmeye taşı; çekirdek parçalarını tek tek özgün olanla değiştir; her adımda mevcut testler (1639) yeşil kalsın.
+   d) Anlık risk azaltma: frisay.com çağrılarını kapat, marka/atıf metinlerini lisansa uygun düzenle (lisans netleşince).
