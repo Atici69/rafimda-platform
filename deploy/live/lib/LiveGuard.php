@@ -12,8 +12,9 @@ final class LiveGuard
 	public const CONFIRM_MODULE = 'EVET-MODUL-KURULUMU';
 	/** Değişiklik yapan işlem türleri; her biri ayrı onay ifadesi ister (migration ile modül kurulumu birbirinin yerine geçmez). */
 	public const OPERATIONS = ['migrate' => ['RAFIMDA_MIGRATE_CONFIRM', self::CONFIRM_MIGRATE], 'module-install' => ['RAFIMDA_MODULE_CONFIRM', self::CONFIRM_MODULE]];
-	/** İsteğe bağlı yedek dosyası en fazla bu kadar saniye eski olabilir. */
+	/** Yedek dosyası en fazla bu kadar saniye eski olabilir. */
 	public const BACKUP_MAX_AGE = 86400;
+	public const BACKUP_MIN_BYTES = 1024;
 
 	/**
 	 * @param array<string,string> $env ortam değişkenleri
@@ -84,15 +85,16 @@ final class LiveGuard
 				$errors[] = 'Değişiklik için RAFIMDA_BACKUP_CONFIRM=' . self::CONFIRM_BACKUP . ' gerekir (önce veritabanı yedeği alın).';
 			}
 
+			// Yedek dosyası ZORUNLU: yalnızca ifade yazmak yetmez; dosya var, anlamlı boyutta (>= 1 KB) ve en fazla 24 saat eski olmalı.
 			$backupFile = $get('RAFIMDA_BACKUP_FILE');
 			clearstatcache(true, $backupFile);
 
-			if ($backupFile !== '') {
-				if (!is_file($backupFile) || (int) @filesize($backupFile) <= 0) {
-					$errors[] = 'RAFIMDA_BACKUP_FILE bulunamadı veya boş.';
-				} elseif (time() - (int) @filemtime($backupFile) > self::BACKUP_MAX_AGE) {
-					$errors[] = 'RAFIMDA_BACKUP_FILE 24 saatten eski; yeni yedek alın.';
-				}
+			if ($backupFile === '') {
+				$errors[] = 'RAFIMDA_BACKUP_FILE gerekir (aldığınız yedek dosyasının tam yolu).';
+			} elseif (!is_file($backupFile) || (int) @filesize($backupFile) < self::BACKUP_MIN_BYTES) {
+				$errors[] = 'RAFIMDA_BACKUP_FILE bulunamadı veya çok küçük (en az ' . self::BACKUP_MIN_BYTES . ' bayt).';
+			} elseif (time() - (int) @filemtime($backupFile) > self::BACKUP_MAX_AGE) {
+				$errors[] = 'RAFIMDA_BACKUP_FILE 24 saatten eski; yeni yedek alın.';
 			}
 
 			if (!isset(self::OPERATIONS[$operation])) {

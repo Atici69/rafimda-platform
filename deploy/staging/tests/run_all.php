@@ -27,6 +27,7 @@ $suites = [
 	'staging/run_seed' => 'deploy/staging/tests/run_seed.php',
 	'staging/run_order' => 'deploy/staging/tests/run_order.php',
 	'live/run' => 'deploy/live/tests/run.php',
+	'live/run_php81' => 'deploy/live/tests/run_php81.php',
 ];
 $total = 0;
 $failed = 0;

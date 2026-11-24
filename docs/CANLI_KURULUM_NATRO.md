@@ -52,7 +52,7 @@ Ne ekleneceğini listeler, **hiçbir şey yazmaz**.
 ```bash
 export RAFIMDA_BACKUP_CONFIRM=EVET-YEDEK-ALINDI
 export RAFIMDA_MIGRATE_CONFIRM=EVET-MIGRATION      # migration için ayrı onay (modül kurulumu için RAFIMDA_MODULE_CONFIRM=EVET-MODUL-KURULUMU ayrıdır)
-export RAFIMDA_BACKUP_FILE=/home/KULLANICI/yedek.sql   # İSTEĞE BAĞLI: verilirse var, boş değil ve 24 saatten yeni olmalı
+export RAFIMDA_BACKUP_FILE=/home/KULLANICI/yedek.sql   # ZORUNLU: dosya var, en az 1 KB ve 24 saatten yeni olmalı
 php deploy/live/bin/live-migrate.php --apply
 ```
 Canlı araçlar şunları da reddeder: `staging/stg/test` içeren veritabanı adı, `RAFIMDA_STAGING_CONFIRM` tanımlı (karışık oturum), staging site adresi, web (HTTP) üzerinden çalıştırma. Hata mesajlarında DB parolası ve kullanıcı adı `***` ile maskelenir.

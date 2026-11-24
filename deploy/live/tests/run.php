@@ -20,10 +20,14 @@ $root = dirname(__DIR__, 3);
 $cfg = ['DB_HOST' => 'localhost', 'DB_NAME' => 'rafimda_prod', 'DB_USER' => 'u', 'DB_PASS' => 'Sup3rSecret', 'APP_ENV' => 'production', 'APP_DEBUG' => false];
 $env = ['RAFIMDA_ENV' => 'live', 'RAFIMDA_LIVE_CONFIRM' => 'EVET-CANLI-DB', 'RAFIMDA_LIVE_DB_NAME' => 'rafimda_prod'];
 
+$bkOk = sys_get_temp_dir() . '/rf_bkok_' . bin2hex(random_bytes(3)) . '.sql';
+file_put_contents($bkOk, str_repeat('-- dump satiri' . "\n", 200));
+register_shutdown_function(static function () use ($bkOk) { @unlink($bkOk); });
+
 echo "== LiveGuard\n";
 t('dry-run: geçerli ortam kabul (yedek onayı gerekmez)', LiveGuard::check($env, $cfg, false)['ok']);
 t('--apply yedek onayı olmadan RET', !LiveGuard::check($env, $cfg, true)['ok']);
-t('--apply doğru yedek onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION'], $cfg, true)['ok']);
+t('--apply doğru yedek onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION', 'RAFIMDA_BACKUP_FILE' => $bkOk], $cfg, true)['ok']);
 t('yanlış yedek ifadesi RET', !LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'evet'], $cfg, true)['ok']);
 foreach (['RAFIMDA_ENV', 'RAFIMDA_LIVE_CONFIRM', 'RAFIMDA_LIVE_DB_NAME'] as $k) {
 	$e = $env;
@@ -72,11 +76,12 @@ $com = (string) file_get_contents(dirname(__DIR__) . '/bin/_common.php');
 t('canlı komutlar DB parolasını komut satırından/ortamdan almaz (env.php)', strpos($com, 'DB_PASS') === false && strpos($com, 'config/env.php') !== false);
 
 echo "== LiveGuard sertleştirme (0.2)\n";
-$apply = $env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION'];
+$apply = $env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MIGRATE_CONFIRM' => 'EVET-MIGRATION', 'RAFIMDA_BACKUP_FILE' => $bkOk];
 t('apply: yedek + migration onayı ile kabul', LiveGuard::check($apply, $cfg, true)['ok']);
-t('apply: migration onayı olmadan RET', !LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI'], $cfg, true)['ok']);
+t('apply: migration onayı olmadan RET', !LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_BACKUP_FILE' => $bkOk], $cfg, true)['ok']);
+t('apply: yedek dosyası verilmezse (ifade tek başına yetmez) RET', !LiveGuard::check(array_diff_key($apply, ['RAFIMDA_BACKUP_FILE' => 1]), $cfg, true)['ok']);
 t('apply: migration onayı modül kurulumu yerine geçmez', !LiveGuard::check($apply, $cfg, true, 'module-install')['ok']);
-t('apply: modül kurulumu kendi onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MODULE_CONFIRM' => 'EVET-MODUL-KURULUMU'], $cfg, true, 'module-install')['ok']);
+t('apply: modül kurulumu kendi onayıyla kabul', LiveGuard::check($env + ['RAFIMDA_BACKUP_CONFIRM' => 'EVET-YEDEK-ALINDI', 'RAFIMDA_MODULE_CONFIRM' => 'EVET-MODUL-KURULUMU', 'RAFIMDA_BACKUP_FILE' => $bkOk], $cfg, true, 'module-install')['ok']);
 t('apply: bilinmeyen işlem türü RET', !LiveGuard::check($apply, $cfg, true, 'drop-all')['ok']);
 t('yanlış migration onay ifadesi RET', !LiveGuard::check(['RAFIMDA_MIGRATE_CONFIRM' => 'evet'] + $apply, $cfg, true)['ok']);
 t('staging DB adı (rafimda_staging) canlıda RET', !LiveGuard::check(['RAFIMDA_LIVE_DB_NAME' => 'rafimda_staging'] + $env, ['DB_NAME' => 'rafimda_staging'] + $cfg, false)['ok']);
@@ -89,7 +94,10 @@ $bk = sys_get_temp_dir() . '/rf_bk_' . bin2hex(random_bytes(3)) . '.sql';
 t('yedek dosyası yoksa RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
 file_put_contents($bk, '');
 t('boş yedek dosyası RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
-file_put_contents($bk, '-- dump');
+file_put_contents($bk, str_repeat('-- dump' . "\n", 300));
+file_put_contents($bk . '.k', '-- x');
+t('1 KB altı yedek dosyası RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk . '.k'] + $apply, $cfg, true)['ok']);
+unlink($bk . '.k');
 t('taze yedek dosyası kabul', LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
 touch($bk, time() - 3 * 86400);
 t('eski (3 gün) yedek dosyası RET', !LiveGuard::check(['RAFIMDA_BACKUP_FILE' => $bk] + $apply, $cfg, true)['ok']);
@@ -126,6 +134,27 @@ t('_common.php LiveGuard::connect(cfg, env, apply, op) çağırır', strpos((str
 $out = [];
 exec('env -i PATH=' . escapeshellarg((string) getenv('PATH')) . ' REQUEST_METHOD=GET ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/live-preflight.php') . ' 2>&1', $out, $rc);
 t('HTTP değişkenli oturumda live-preflight 404 ile çıkar (guard\'a ulaşmaz)', $rc === 0 && stripos(implode("\n", $out), 'REDDEDİLDİ') === false);
+
+echo "== PDO açılış noktaları envanteri\n";
+$sites = [];
+$rootDir = dirname(__DIR__, 3);
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($rootDir, FilesystemIterator::SKIP_DOTS)) as $f) {
+	$rel = substr($f->getPathname(), strlen($rootDir) + 1);
+
+	if (!$f->isFile() || substr($rel, -4) !== '.php' || preg_match('#^(libs|vendor|\.git|logs|cache|backups|storage)/|/tests/#', $rel)) {
+		continue;
+	}
+
+	if (preg_match('/new\s+\\\\?PDO\s*\(/', (string) file_get_contents($f->getPathname()))) {
+		$sites[] = $rel;
+	}
+}
+sort($sites);
+$allowed = ['config/connection.php', 'config/pwa_helpers.php', 'core/Installer.php', 'deploy/live/lib/LiveGuard.php', 'deploy/staging/lib/StagingGuard.php', 'manifest.php', 'tools/export-schema.php'];
+t('new PDO yalnızca bilinen noktalarda (yeni nokta eklenirse bu test elle gözden geçirilmeli)', $sites === $allowed, implode(',', array_diff($sites, $allowed)) . ' | eksik: ' . implode(',', array_diff($allowed, $sites)));
+$deployPdo = array_values(array_filter($sites, static fn(string $r): bool => strpos($r, 'deploy/') === 0));
+t('deploy/ altında PDO yalnızca iki bekçi sınıfında', $deployPdo === ['deploy/live/lib/LiveGuard.php', 'deploy/staging/lib/StagingGuard.php']);
+t('tools/export-schema.php komut satırı dışında 404', strpos((string) file_get_contents($rootDir . '/tools/export-schema.php'), "PHP_SAPI !== 'cli'") !== false);
 
 echo "== Sürüm paketi\n";
 $tmp = sys_get_temp_dir() . '/rel_' . bin2hex(random_bytes(4));

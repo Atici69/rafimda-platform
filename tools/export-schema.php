@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// Veritabanına bağlanır ve config/env.php okur: yalnızca komut satırı (web sunucusunda .htaccess'e ek savunma).
+if (PHP_SAPI !== 'cli') {
+	http_response_code(404);
+	exit;
+}
+
 $root = dirname(__DIR__);
 $env = require $root . '/config/env.php';
 
