@@ -16,6 +16,7 @@
 		<label><input type="checkbox" name="footer" value="1" {if $rtSet.footer == '1'}checked{/if}> Alt bilgi, mobil menü ve kayıt sayfasında satıcı/bayi bağlantılarını göster</label>
 		<p><label>Hero başlığı <input type="text" name="title" maxlength="120" value="{$rtSet.title|escape}" placeholder="Aradığınız Her Şey, Rafımda!" style="width:100%"></label></p>
 		<p><label>Hero alt metni <input type="text" name="subtitle" maxlength="220" value="{$rtSet.subtitle|escape}" style="width:100%"></label></p>
+		<p><label>Hero arka plan görseli (isteğe bağlı; /yol veya https://…) <input type="text" name="hero_image" value="{$rtSet.hero_image|escape}" style="width:100%"></label></p>
 		<h4>Banner / reklam alanları (başlığı boş olan alan gösterilmez)</h4>
 		<p class="text-muted">Bağlantı ve görsel: <code>/yol</code> veya <code>https://…</code>. Görsel adresini kendi sunucunuzdaki bir dosyadan veriniz.</p>
 		{foreach $rtBannerSlots as $i => $b}

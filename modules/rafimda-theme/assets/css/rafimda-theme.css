@@ -58,6 +58,8 @@ html:root {
 /* Banner alanları */
 .rt-banners { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; max-width: 1320px; margin: 0 auto 28px; padding: 0 16px; }
 .rt-banner { position: relative; min-height: 150px; padding: 18px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; border-radius: 16px; color: #fff; text-decoration: none; background: linear-gradient(135deg, var(--rt-navy), #12365f) center/cover no-repeat; overflow: hidden; }
+.rt-banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 37, 64, .78), rgba(10, 37, 64, .15) 70%); }
+.rt-banner > * { position: relative; }
 .rt-banner__t { font-size: 20px; font-weight: 800; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
 .rt-banner__x { font-size: 14px; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
 .rt-banner__c { align-self: flex-start; margin-top: 6px; padding: 6px 14px; border-radius: 999px; background: var(--rt-orange); font-weight: 700; font-size: 13px; }
@@ -65,7 +67,7 @@ html:root {
 /* Ürün bölümleri */
 .rt-sec { max-width: 1320px; margin: 0 auto 30px; padding: 0 16px; }
 .rt-sec__h { margin: 0 0 14px; font-size: clamp(20px, 3vw, 26px); color: var(--rt-navy); border-left: 5px solid var(--rt-orange); padding-left: 10px; }
-.rt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+.rt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
 .rt-card { display: grid; gap: 6px; align-content: start; padding: 10px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; color: inherit; text-decoration: none; transition: box-shadow .2s, transform .2s; }
 .rt-card:hover { box-shadow: 0 8px 22px rgba(10, 37, 64, .12); transform: translateY(-2px); }
 .rt-card__img { position: relative; display: block; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden; background: #f1f5f9; }
@@ -90,3 +92,8 @@ html:root {
 	.rt-promo__in { padding: 26px 16px; }
 	.rt-promo .rt-btn { width: 100%; margin: 0 0 8px; }
 }
+
+/* Hero görseli (isteğe bağlı) */
+.rt-hero--img { background-size: cover; background-position: center; position: relative; }
+.rt-hero--img::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 37, 64, .88), rgba(10, 37, 64, .35)); border-radius: inherit; }
+.rt-hero--img > .rt-hero__inner { position: relative; }

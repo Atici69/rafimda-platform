@@ -27,7 +27,7 @@ if ($dirty !== '') {
 $name = 'rafimda-release-' . substr($commit, 0, 10) . '.zip';
 $zip = rtrim($outDir, '/') . '/' . $name;
 $cmd = 'cd ' . escapeshellarg($root) . ' && git archive --format=zip -o ' . escapeshellarg($zip) . ' HEAD -- . '
-	. escapeshellarg(':(exclude)docs') . ' ' . escapeshellarg(':(exclude,glob)modules/*/tests/**') . ' ' . escapeshellarg(':(exclude,glob)deploy/*/tests/**') . ' ' . escapeshellarg(':(exclude,glob)img/**') . ' ' . escapeshellarg(':(exclude)data') . ' ' . escapeshellarg(':(exclude)modules/theme4/assets/css/theme-settings.css') . ' ' . escapeshellarg(':(exclude)robots.txt') . ' ' . escapeshellarg(':(exclude).htaccess') . ' 2>&1';
+	. escapeshellarg(':(exclude)docs') . ' ' . escapeshellarg(':(exclude,glob)modules/*/tests/**') . ' ' . escapeshellarg(':(exclude,glob)deploy/*/tests/**') . ' ' . escapeshellarg(':(exclude,glob)deploy/preview/**') . ' ' . escapeshellarg(':(exclude,glob)img/**') . ' ' . escapeshellarg(':(exclude)data') . ' ' . escapeshellarg(':(exclude)modules/theme4/assets/css/theme-settings.css') . ' ' . escapeshellarg(':(exclude)robots.txt') . ' ' . escapeshellarg(':(exclude).htaccess') . ' 2>&1';
 exec($cmd, $o, $rc);
 
 if ($rc !== 0 || !is_file($zip)) {

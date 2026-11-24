@@ -1,4 +1,4 @@
-<section class="rt-hero" aria-label="Rafımda">
+<section class="rt-hero{if $rtHeroImage} rt-hero--img{/if}" aria-label="Rafımda"{if $rtHeroImage} style="background-image:url('{$rtHeroImage|escape}')"{/if}>
 	<div class="rt-hero__inner">
 		<h1 class="rt-hero__title">{$rtTitle|escape}</h1>
 		<p class="rt-hero__sub">{$rtSubtitle|escape}</p>

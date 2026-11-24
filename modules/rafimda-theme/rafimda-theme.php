@@ -16,7 +16,7 @@ require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 class RafimdaThemeModule extends ModuleBase
 {
 	public const VERSION = '0.2.0';
-	public const KEYS = ['hero' => 'RAFIMDA_THEME_HERO', 'title' => 'RAFIMDA_THEME_TITLE', 'subtitle' => 'RAFIMDA_THEME_SUBTITLE', 'footer' => 'RAFIMDA_THEME_FOOTER_LINKS', 'sections' => 'RAFIMDA_THEME_SECTIONS', 'banners' => 'RAFIMDA_THEME_BANNERS'];
+	public const KEYS = ['hero' => 'RAFIMDA_THEME_HERO', 'title' => 'RAFIMDA_THEME_TITLE', 'subtitle' => 'RAFIMDA_THEME_SUBTITLE', 'footer' => 'RAFIMDA_THEME_FOOTER_LINKS', 'sections' => 'RAFIMDA_THEME_SECTIONS', 'banners' => 'RAFIMDA_THEME_BANNERS', 'hero_image' => 'RAFIMDA_THEME_HERO_IMAGE'];
 	public const BANNER_SLOTS = 4;
 
 	public string $name = 'rafimda-theme';
@@ -235,6 +235,7 @@ class RafimdaThemeModule extends ModuleBase
 			}
 
 			$vars['rtCategories'] = self::homeData()['categories'];
+			$vars['rtHeroImage'] = self::cleanBanner(['image' => self::setting('hero_image', '')])['image'];
 			$html = $this->renderFrontTemplate('hero', $vars);
 
 			return $html !== '' ? $html : null;
@@ -295,7 +296,7 @@ class RafimdaThemeModule extends ModuleBase
 		}
 
 		$smarty->assign(['pageTitle' => $this->title, 'rtFlash' => $flash, 'rtToken' => $adminToken, 'rtMods' => $mods, 'rtBannerSlots' => $banners, 'rtSet' => [
-			'hero' => self::setting('hero', '1'), 'footer' => self::setting('footer', '1'), 'sections' => self::setting('sections', '1'), 'title' => self::setting('title', ''), 'subtitle' => self::setting('subtitle', ''),
+			'hero_image' => self::setting('hero_image', ''), 'hero' => self::setting('hero', '1'), 'footer' => self::setting('footer', '1'), 'sections' => self::setting('sections', '1'), 'title' => self::setting('title', ''), 'subtitle' => self::setting('subtitle', ''),
 		]]);
 	}
 
@@ -306,6 +307,7 @@ class RafimdaThemeModule extends ModuleBase
 		Settings::set(self::KEYS['footer'], !empty($in['footer']) ? '1' : '0');
 		Settings::set(self::KEYS['sections'], !empty($in['sections']) ? '1' : '0');
 		Settings::set(self::KEYS['title'], mb_substr(trim(strip_tags((string) ($in['title'] ?? ''))), 0, 120));
+		Settings::set(self::KEYS['hero_image'], self::cleanBanner(['image' => (string) ($in['hero_image'] ?? '')])['image']);
 		Settings::set(self::KEYS['subtitle'], mb_substr(trim(strip_tags((string) ($in['subtitle'] ?? ''))), 0, 220));
 		$list = [];
 

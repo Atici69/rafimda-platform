@@ -115,5 +115,22 @@ t(str_contains($hero, 'rt-cat__ph') && str_contains($hero, '/c/giyim'), 'kategor
 Module::$en = ['rafimda-dealer'];
 $f = $m->renderDisplayHook('footer');
 t($f !== null && str_contains($f, 'bayi-giris') && !str_contains($f, 'satici-giris'), 'altbilgi: yalnızca bayi etkinken bayi bağlantıları');
+
+$_SERVER['REQUEST_METHOD'] = 'POST'; $_POST = ['token' => 'tok123', 'hero' => '1', 'hero_image' => '/img/hero.jpg']; $m->adminPage(); $_SERVER['REQUEST_METHOD'] = 'GET';
+t(Settings::get('RAFIMDA_THEME_HERO_IMAGE') === '/img/hero.jpg', 'hero görseli kaydedilir');
+$_SERVER['REQUEST_METHOD'] = 'POST'; $_POST = ['token' => 'tok123', 'hero' => '1', 'hero_image' => 'javascript:alert(1)']; $m->adminPage(); $_SERVER['REQUEST_METHOD'] = 'GET';
+t(Settings::get('RAFIMDA_THEME_HERO_IMAGE') === '', 'javascript: hero görseli reddedilir');
+$h = $m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtHeroImage' => '/img/hero.jpg']);
+t(strpos($h, 'rt-hero--img') !== false && strpos($h, "url('/img/hero.jpg')") !== false, 'hero görseli şablonda arka plan olur');
+t(strpos($m->renderFrontTemplate('hero', RafimdaThemeModule::viewVars() + ['rtCategories' => [], 'rtHeroImage' => '']), 'rt-hero--img') === false, 'hero görseli yoksa sınıf yok');
+
+$vSrc = (string) file_get_contents(dirname(__DIR__, 2) . '/rafimda-vendor/rafimda-vendor.php');
+$dSrc = (string) file_get_contents(dirname(__DIR__, 2) . '/rafimda-dealer/rafimda-dealer.php');
+$vv = RafimdaThemeModule::viewVars();
+foreach (['rtRegisterUrl' => $vSrc, 'rtLoginUrl' => $vSrc, 'rtDealerApplyUrl' => $dSrc, 'rtDealerLoginUrl' => $dSrc] as $k => $srcMod) {
+	$slug = basename((string) parse_url($vv[$k], PHP_URL_PATH));
+	t(preg_match("/'" . preg_quote($slug, '/') . "'\\s*=>\\s*'front\\/[a-z]+\\.php'/", $srcMod) === 1, "tema bağlantısı /$slug gerçek modül rotasına çıkar");
+}
+t(is_file(dirname(__DIR__, 2) . '/rafimda-dealer/front/apply.php') && is_file(dirname(__DIR__, 2) . '/rafimda-vendor/front/register.php'), 'rota hedef dosyaları mevcut');
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 exit($fail ? 1 : 0);

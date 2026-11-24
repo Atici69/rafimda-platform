@@ -14,7 +14,7 @@
 	</div>
 	<div class="rd-card"><h3>Son komisyonlar</h3>
 		{if $recent}<div class="rd-resp"><table><thead><tr><th>Sipariş</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>
-		{foreach $recent as $r}<tr><td>#{$r.id_order}</td><td>{$r.amount|string_format:"%.2f"} ₺</td><td>{$r.status}</td></tr>{/foreach}
+		{foreach $recent as $r}<tr><td>#{$r.id_order}</td><td>{$r.amount|string_format:"%.2f"} ₺</td><td>{if $r.status=='pending'}Beklemede{elseif $r.status=='approved'}Onaylandı{elseif $r.status=='cancelled'}İptal{else}{$r.status}{/if}</td></tr>{/foreach}
 		</tbody></table></div>{else}<p style="color:var(--rd-muted)">Henüz komisyon kaydı yok. Müşterilerinizi referans bağlantınızla yönlendirin.</p>{/if}
 	</div>
 </div>

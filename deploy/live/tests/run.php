@@ -230,6 +230,8 @@ if ($zips) {
 		$names[] = (string) $z->getNameIndex($i);
 	}
 
+	t('paket önizleme/geliştirme araçlarını (deploy/preview) içermez', count(array_filter($names, static fn(string $n): bool => strpos($n, 'deploy/preview/') === 0)) === 0);
+
 	$hit = static fn(string $re): array => array_values(array_filter($names, static fn(string $n): bool => (bool) preg_match($re, $n)));
 	t('pakette config/env.php / .env / .git / döküm yok', !$hit('#(^|/)config/env\.php$|(^|/)\.env$|^\.git/|\.sql\.gz$|\.dump$#'));
 	t('pakette docs/ ve Rafımda test dizinleri yok', !$hit('#^docs/|^modules/(rafimda-vendor|xml-hub|marketplace-hub|rafimda-showcase)/tests/|^deploy/[a-z]+/tests/#'), json_encode($hit('#^docs/|^modules/(rafimda-vendor|xml-hub|marketplace-hub|rafimda-showcase)/tests/|^deploy/[a-z]+/tests/#')));
