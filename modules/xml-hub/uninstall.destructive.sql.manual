@@ -1,0 +1,9 @@
+-- DİKKAT: Otomatik çalışmaz. Önce yedek alın. Yalnızca XML Hub tablolarını siler; products tablosuna dokunmaz.
+DROP TABLE IF EXISTS `xh_stock_history`;
+DROP TABLE IF EXISTS `xh_price_history`;
+DROP TABLE IF EXISTS `xh_errors`;
+DROP TABLE IF EXISTS `xh_runs`;
+DROP TABLE IF EXISTS `xh_items`;
+DROP TABLE IF EXISTS `xh_connections`;
+DROP TABLE IF EXISTS `xh_suppliers`;
+DROP TABLE IF EXISTS `xh_migrations`;
