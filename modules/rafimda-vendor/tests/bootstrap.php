@@ -91,7 +91,7 @@ class Product { // TAKLİT
 			DB::update('products', ['product_name' => $d['product_name'], 'price' => $d['price'], 'stock' => $d['stock'], 'active' => $d['active']], 'id_product = :pid', ['pid' => $id]);
 			return ['success' => true, 'id' => $id];
 		}
-		$new = DB::insert('products', ['product_name' => $d['product_name'], 'id_category' => $d['id_category'], 'id_brand' => $d['id_brand'], 'price' => $d['price'], 'stock' => $d['stock'], 'active' => $d['active']]);
+		$new = DB::insert('products', ['product_name' => $d['product_name'], 'id_category' => $d['id_category'], 'id_brand' => $d['id_brand'], 'price' => $d['price'], 'stock' => $d['stock'], 'stock_code' => $d['stock_code'] ?? '', 'barcode' => $d['barcode'] ?? '', 'active' => $d['active']]);
 		return ['success' => (bool) $new, 'id' => (int) $new];
 	}
 	public static function deleteById(int $id) { DB::execute('DELETE FROM products WHERE id_product = ?', [$id]); return ['success' => true]; }
@@ -104,7 +104,7 @@ class Product { // TAKLİT
 }
 class RafimdaVendorModule { public const VERSION = 'test'; }
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvView'] as $c) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvLedger', 'RvOrders', 'RvView'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 
@@ -112,9 +112,10 @@ foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProduct
 function rv_mysql_to_sqlite(string $sql): string
 {
 	$sql = preg_replace('/\)\s*ENGINE=.*?;/s', ');', $sql);
-	$sql = preg_replace('/^\s*(UNIQUE\s+)?KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*UNIQUE KEY\s+`[^`]+`\s*(\([^)]*\)),?\s*$/m', 'UNIQUE $1,', $sql);
+	$sql = preg_replace('/^\s*KEY\s+`[^`]+`\s*\([^)]*\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/`(\w+)` (?:int\(11\)|bigint\(20\)) NOT NULL AUTO_INCREMENT,/', '`$1` INTEGER PRIMARY KEY AUTOINCREMENT,', $sql);
-	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log)`\),?\s*$/m', '', $sql);
+	$sql = preg_replace('/^\s*PRIMARY KEY \(`(?:id_vendor|id_staff|id_log|id_vendor_order|id_item|id_entry|id_payout|id_import)`\),?\s*$/m', '', $sql);
 	$sql = preg_replace('/,(\s*\))/', '$1', $sql);
 	return $sql;
 }
@@ -132,8 +133,8 @@ function rv_fresh_db(): void
 	$db->exec('CREATE TABLE brands (id_brand INTEGER PRIMARY KEY, brand_name TEXT, active INTEGER DEFAULT 1)');
 	$db->exec('CREATE TABLE products (id_product INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, id_category INT, id_brand INT, price REAL, old_price REAL DEFAULT 0, stock REAL, stock_code TEXT, barcode TEXT, active INT)');
 	$db->exec('CREATE TABLE images (id_image INTEGER PRIMARY KEY AUTOINCREMENT, id_product INT, cover INT DEFAULT 0)');
-	$db->exec('CREATE TABLE orders (id_order INTEGER PRIMARY KEY, reference TEXT, status INT, date_add TEXT, customer_name TEXT, address_city TEXT)');
-	$db->exec('CREATE TABLE order_detail (id_order_detail INTEGER PRIMARY KEY AUTOINCREMENT, id_order INT, id_product INT, total REAL, qty REAL)');
+	$db->exec('CREATE TABLE orders (id_order INTEGER PRIMARY KEY, reference TEXT, status INT, date_add TEXT, customer_name TEXT, customer_phone TEXT, address_city TEXT, address_district TEXT, address_text TEXT)');
+	$db->exec('CREATE TABLE order_detail (id_order_detail INTEGER PRIMARY KEY AUTOINCREMENT, id_order INT, id_product INT, product_name TEXT, price REAL, total REAL, qty REAL)');
 	$db->exec("INSERT INTO categories VALUES (1,'Giyim',1),(2,'Pasif Kat',0)");
 	$db->exec("INSERT INTO brands VALUES (1,'MarkaA',1)");
 	foreach ([[1, 'Ali', 'ali@x.com'], [2, 'Veli', 'veli@x.com'], [3, 'Ayse', 'ayse@x.com'], [4, 'Fatma', 'fatma@x.com']] as $u) {
@@ -141,4 +142,13 @@ function rv_fresh_db(): void
 	}
 	RvContext::reset();
 	$_SESSION = [];
+}
+
+/** Tüm migration'ları (çeviriyle) uygular. */
+function rv_apply_migrations(): void
+{
+	foreach (RvMigrator::files() as $f) {
+		$GLOBALS['db']->exec(rv_mysql_to_sqlite(file_get_contents(dirname(__DIR__) . '/migrations/' . $f . '.sql')));
+		DB::execute('INSERT OR IGNORE INTO rafimda_migrations (version) VALUES (?)', [$f]);
+	}
 }

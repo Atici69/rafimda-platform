@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvView', 'RvAuthFlow', 'RvPanel'] as $rvClass) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPanel'] as $rvClass) {
 	require_once __DIR__ . '/lib/' . $rvClass . '.php';
 }
 
@@ -16,7 +16,7 @@ foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProduct
  */
 class RafimdaVendorModule extends ModuleBase
 {
-	public const VERSION = '0.1.0';
+	public const VERSION = '0.2.0';
 
 	public string $name = 'rafimda-vendor';
 	public string $title = 'Rafımda Satıcı Sistemi';
@@ -61,6 +61,14 @@ class RafimdaVendorModule extends ModuleBase
 	public function boot(): void
 	{
 		$this->registerAdminMenuLink('Satıcılar (Rafımda)', 'sales', 60);
+
+		// Çekirdek sipariş akışını ASLA bozmamak için dinleyiciler hataları yutar (RvOrders::safeHook).
+		Module::registerHook('order.placed', static function (array $order): void {
+			RvOrders::safeHook(static fn() => RvOrders::splitOrder($order));
+		});
+		Module::registerHook('order.updated', static function (array $order, $oldStatus = 0): void {
+			RvOrders::safeHook(static fn() => RvOrders::onCoreOrderUpdated($order, (int) $oldStatus));
+		});
 	}
 
 	public function adminPage(): void
@@ -69,51 +77,114 @@ class RafimdaVendorModule extends ModuleBase
 
 		$flash = '';
 		$flashType = 'info';
+		$post = Tools::isSubmit('rvAction');
+		$tokenOk = $post && hash_equals((string) $adminToken, (string) Tools::getValue('token'));
+		$demo = Admin::isDemoMode();
+		$adminId = Admin::getId();
+		$tab = (string) Tools::getValue('tab', 'vendors');
 
-		if (RvMigrator::pending() !== [] && Tools::isSubmit('rvRunMigrations')) {
-			if (hash_equals((string) $adminToken, (string) Tools::getValue('token'))) {
-				$r = RvMigrator::run();
-				$flash = $r['success'] ? 'Migration çalıştırıldı: ' . implode(', ', $r['applied']) : $r['error'];
-				$flashType = $r['success'] ? 'success' : 'danger';
-			}
+		if (!in_array($tab, ['vendors', 'products', 'orders', 'finance', 'settings'], true)) {
+			$tab = 'vendors';
 		}
 
-		if (Tools::isSubmit('rvVendorAction')) {
-			if (!hash_equals((string) $adminToken, (string) Tools::getValue('token'))) {
-				$flash = 'Geçersiz istek';
-				$flashType = 'danger';
-			} elseif (Admin::isDemoMode()) {
-				$flash = 'Demo modunda bu işlem yapılamaz.';
-				$flashType = 'warning';
-			} else {
-				$idVendor = (int) Tools::getValue('id_vendor');
-				$to = (string) Tools::getValue('to_status');
-				$ok = RvVendor::setStatus($idVendor, $to, Admin::getId(), (string) Tools::getValue('reason'));
-				$flash = $ok ? 'Satıcı durumu güncellendi.' : 'Durum güncellenemedi.';
-				$flashType = $ok ? 'success' : 'danger';
-			}
-		}
+		if ($post && !$tokenOk) {
+			$flash = 'Geçersiz istek';
+			$flashType = 'danger';
+		} elseif ($post && $demo) {
+			$flash = 'Demo modunda bu işlem yapılamaz.';
+			$flashType = 'warning';
+		} elseif ($post) {
+			$a = (string) Tools::getValue('rvAction');
+			$ok = false;
+			$msg = 'İşlem başarısız.';
 
-		if (Tools::isSubmit('rvSaveSettings') && hash_equals((string) $adminToken, (string) Tools::getValue('token')) && !Admin::isDemoMode()) {
-			Settings::set('RAFIMDA_VENDOR_AUTO_APPROVE', Tools::getValue('auto_approve') === '1' ? '1' : '0');
-			$flash = 'Ayarlar kaydedildi.';
-			$flashType = 'success';
+			switch ($a) {
+				case 'migrate':
+					$r = RvMigrator::run();
+					$ok = $r['success'];
+					$msg = $ok ? 'Migration çalıştırıldı: ' . implode(', ', $r['applied']) : $r['error'];
+					break;
+				case 'vendor_status':
+					$ok = RvVendor::setStatus((int) Tools::getValue('id_vendor'), (string) Tools::getValue('to_status'), $adminId, (string) Tools::getValue('reason'));
+					$msg = $ok ? 'Satıcı durumu güncellendi.' : 'Durum güncellenemedi.';
+					break;
+				case 'product_approve':
+					$ok = RvProducts::approve((int) Tools::getValue('id_product'), $adminId);
+					$msg = $ok ? 'Ürün onaylandı ve yayına alındı.' : 'Ürün bulunamadı.';
+					break;
+				case 'product_reject':
+					$ok = RvProducts::reject((int) Tools::getValue('id_product'), (string) Tools::getValue('note'), $adminId);
+					$msg = $ok ? 'Ürün reddedildi.' : 'Ürün bulunamadı.';
+					break;
+				case 'payout':
+					$r = RvLedger::recordPayout((int) Tools::getValue('id_vendor'), (float) str_replace(',', '.', (string) Tools::getValue('amount')), (string) Tools::getValue('reference'), (string) Tools::getValue('note'), $adminId);
+					$ok = $r['success'];
+					$msg = $r['message'];
+					break;
+				case 'adjustment':
+					$r = RvLedger::adjustment((int) Tools::getValue('id_vendor'), (float) str_replace(',', '.', (string) Tools::getValue('amount')), (string) Tools::getValue('note'), $adminId);
+					$ok = $r['success'];
+					$msg = $r['message'];
+					break;
+				case 'vendor_commission':
+					$rate = (float) str_replace(',', '.', (string) Tools::getValue('commission_rate'));
+					$ok = $rate >= 0 && $rate <= 100 && DB::update('rafimda_vendors', ['commission_rate' => $rate], 'id_vendor = :vid', ['vid' => (int) Tools::getValue('id_vendor')]) !== false;
+					$msg = $ok ? 'Komisyon oranı güncellendi (yalnızca yeni siparişlere uygulanır).' : 'Geçersiz oran (0-100).';
+					if ($ok) {
+						RvAudit::log((int) Tools::getValue('id_vendor'), 'vendor.commission', 'vendor', (int) Tools::getValue('id_vendor'), ['rate' => $rate], $adminId);
+					}
+					break;
+				case 'settings':
+					$c = (float) str_replace(',', '.', (string) Tools::getValue('default_commission'));
+					$h = (int) Tools::getValue('hold_days');
+					$ok = $c >= 0 && $c <= 100 && $h >= 0 && $h <= 90;
+					if ($ok) {
+						Settings::set('RAFIMDA_DEFAULT_COMMISSION', (string) $c);
+						Settings::set('RAFIMDA_PAYOUT_HOLD_DAYS', (string) $h);
+						Settings::set('RAFIMDA_PRODUCT_MODERATION', Tools::getValue('moderation') === '1' ? '1' : '0');
+						Settings::set('RAFIMDA_VENDOR_AUTO_APPROVE', Tools::getValue('auto_approve') === '1' ? '1' : '0');
+					}
+					$msg = $ok ? 'Ayarlar kaydedildi.' : 'Geçersiz değer.';
+					break;
+			}
+
+			$flash = $msg;
+			$flashType = $ok ? 'success' : 'danger';
 		}
 
 		$status = (string) Tools::getValue('status', '');
 		$q = trim((string) Tools::getValue('q', ''));
+		$vendors = RvVendor::adminList($status, $q, 100, 0);
+		$balances = [];
+
+		if ($tab === 'finance') {
+			foreach ($vendors as $v) {
+				$balances[(int) $v['id_vendor']] = RvLedger::balances((int) $v['id_vendor']);
+			}
+		}
 
 		$smarty->assign([
 			'pageTitle' => $this->title,
 			'flash' => $flash,
 			'flashType' => $flashType,
-			'rvVendors' => RvVendor::adminList($status, $q, 100, 0),
+			'rvTab' => $tab,
+			'rvVendors' => $vendors,
 			'rvCounts' => RvVendor::countByStatus(),
 			'rvStatuses' => RvVendor::STATUSES,
 			'rvFilterStatus' => $status,
 			'rvQuery' => $q,
 			'rvPending' => RvMigrator::pending(),
+			'rvModerationQueue' => $tab === 'products' ? RvProducts::moderationQueue((string) Tools::getValue('mod', 'pending')) : [],
+			'rvModState' => (string) Tools::getValue('mod', 'pending'),
+			'rvVendorOrders' => $tab === 'orders' ? RvOrders::adminList($status) : [],
+			'rvOrderStatuses' => RvOrders::STATUSES,
+			'rvTotals' => RvOrders::platformTotals(),
+			'rvBalances' => $balances,
+			'rvPayouts' => $tab === 'finance' ? RvLedger::payouts(0, 30) : [],
 			'rvAutoApprove' => Settings::get('RAFIMDA_VENDOR_AUTO_APPROVE') === '1',
+			'rvModeration' => RvProducts::moderationEnabled(),
+			'rvDefaultCommission' => RvOrders::defaultCommission(),
+			'rvHoldDays' => RvOrders::holdDays(),
 			'rvPanelUrl' => rtrim((string) Settings::get('DOMAIN'), '/') . '/satici-giris',
 		]);
 	}

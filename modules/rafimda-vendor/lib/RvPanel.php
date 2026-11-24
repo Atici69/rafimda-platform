@@ -18,7 +18,7 @@ class RvPanel
 		'customers'    => ['Müşteriler', '☺', false, 'Satıcıya özel müşteri görünümü sonraki aşamada.'],
 		'campaigns'    => ['Kampanyalar', '✦', false, 'Satıcı kampanyaları sonraki aşamada.'],
 		'reports'      => ['Raporlar', '▨', false, 'Satış ve stok raporları sonraki aşamada.'],
-		'finance'      => ['Finans', '₿', false, 'Hakediş ve komisyon sonraki aşamada.'],
+		'finance'      => ['Finans', '₿', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
 		'subscription' => ['Abonelik', '★', false, 'Aşama 10: paket ve abonelik sistemi.'],
@@ -78,6 +78,9 @@ class RvPanel
 				break;
 			case 'orders':
 				[$tpl, $vars] = self::orders($vendor);
+				break;
+			case 'finance':
+				[$tpl, $vars] = self::finance($vendor);
 				break;
 			case 'staff':
 				[$tpl, $vars] = self::staff($vendor, $ctx);
@@ -141,7 +144,8 @@ class RvPanel
 
 		return ['panel_dashboard', [
 			'stats' => RvProducts::stats($id),
-			'recentOrders' => RvProducts::ordersFor($id, 5),
+			'balances' => RvLedger::balances($id),
+			'recentOrders' => RvOrders::listFor($id, '', 5),
 			'audit' => RvAudit::recent($id, 8),
 		]];
 	}
@@ -205,6 +209,22 @@ class RvPanel
 					RvView::redirect($back);
 					break;
 
+				case 'import_csv':
+					self::deny('products.create');
+					$f = $_FILES['csv'] ?? null;
+					$ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
+
+					if (!$f || (int) $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name']) || !in_array($ext, ['csv', 'txt'], true)) {
+						RvView::flash('danger', 'Geçerli bir .csv dosyası seçin.');
+						RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
+					}
+
+					$r = RvProducts::importCsv($idVendor, (string) $f['tmp_name'], (string) $f['name']);
+					$msg = $r['message'] . ($r['errors'] ? ' ' . implode(' | ', array_slice($r['errors'], 0, 8)) : '');
+					RvView::flash(!$r['success'] ? 'danger' : ($r['failed'] > 0 ? 'warning' : 'success'), $msg);
+					RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
+					break;
+
 				case 'delete_image':
 				case 'set_cover':
 					self::deny('products.edit');
@@ -219,6 +239,27 @@ class RvPanel
 		}
 
 		$a = (string) Tools::getValue('a', 'list');
+
+		if ($a === 'template') {
+			self::deny('products.create');
+			header('Content-Type: text/csv; charset=utf-8');
+			header('Content-Disposition: attachment; filename="rafimda-urun-sablonu.csv"');
+			echo RvProducts::csvTemplate();
+			exit;
+		}
+
+		if ($a === 'import') {
+			self::deny('products.create');
+
+			return ['panel_import', [
+				'templateUrl' => RvView::panelUrl('products', ['a' => 'template']),
+				'listUrl' => RvView::panelUrl('products'),
+				'maxRows' => RvProducts::CSV_MAX_ROWS,
+				'categories' => Category::getProductSelectOptions(),
+				'brands' => DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1 ORDER BY brand_name ASC') ?: [],
+				'history' => DB::execute('SELECT * FROM rafimda_import_log WHERE id_vendor = ? ORDER BY id_import DESC LIMIT 10', [$idVendor]) ?: [],
+			]];
+		}
 
 		if ($a === 'new') {
 			self::deny('products.create');
@@ -294,11 +335,53 @@ class RvPanel
 	/** @return array{0:string,1:array<string,mixed>} */
 	private static function orders(array $vendor): array
 	{
+		$idVendor = (int) $vendor['id_vendor'];
+
+		if (RvView::isPost()) {
+			Security::requireCsrf('front');
+			self::deny('orders.manage');
+			$id = (int) RvView::post('id_vendor_order');
+			$res = RvOrders::updateFulfillment($idVendor, $id, RvView::post('status'), RvView::post('cargo_company'), RvView::post('tracking_number'));
+			RvView::flash(!empty($res['success']) ? 'success' : 'danger', $res['message']);
+			RvView::redirect(RvView::panelUrl('orders', ['a' => 'view', 'id' => $id]));
+		}
+
+		if ((string) Tools::getValue('a') === 'view') {
+			$vo = RvOrders::getFor($idVendor, (int) Tools::getValue('id'));
+
+			if (!$vo) {
+				RvView::flash('danger', 'Sipariş bulunamadı.');
+				RvView::redirect(RvView::panelUrl('orders'));
+			}
+
+			return ['panel_order_view', ['vo' => $vo, 'statuses' => RvOrders::STATUSES, 'listUrl' => RvView::panelUrl('orders'), 'canManage' => RvContext::can('orders.manage')]];
+		}
+
 		$page = max(1, (int) Tools::getValue('page', 1));
+		$status = (string) Tools::getValue('state', '');
 
 		return ['panel_orders', [
-			'orders' => RvProducts::ordersFor((int) $vendor['id_vendor'], 30, ($page - 1) * 30),
+			'orders' => RvOrders::listFor($idVendor, $status, 30, ($page - 1) * 30),
+			'statuses' => RvOrders::STATUSES,
+			'state' => $status,
 			'page' => $page,
+		]];
+	}
+
+	/** @return array{0:string,1:array<string,mixed>} */
+	private static function finance(array $vendor): array
+	{
+		$idVendor = (int) $vendor['id_vendor'];
+		$page = max(1, (int) Tools::getValue('page', 1));
+
+		return ['panel_finance', [
+			'balances' => RvLedger::balances($idVendor),
+			'entries' => RvLedger::entries($idVendor, 30, ($page - 1) * 30),
+			'payouts' => RvLedger::payouts($idVendor, 10),
+			'types' => RvLedger::TYPES,
+			'page' => $page,
+			'commission' => RvOrders::commissionRateFor($vendor),
+			'holdDays' => RvOrders::holdDays(),
 		]];
 	}
 

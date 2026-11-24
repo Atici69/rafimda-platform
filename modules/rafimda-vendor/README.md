@@ -1,4 +1,4 @@
-# rafimda-vendor (v0.1.0)
+# rafimda-vendor (v0.2.0)
 
 Rafımda çok satıcılı altyapının ilk aşaması. Çekirdek dosyalara (`core/`, `container/`, `config/`, `templates/theme4`) **dokunmaz**.
 
@@ -9,7 +9,20 @@ Rafımda çok satıcılı altyapının ilk aşaması. Çekirdek dosyalara (`core
 4. Adresler: `/satici-kayit`, `/satici-giris`, `/satici-panel`, `/satici-cikis`.
 
 ## Tablolar
-`rafimda_vendors`, `rafimda_vendor_staff`, `rafimda_vendor_products`, `rafimda_audit_log`, `rafimda_migrations`.
+`rafimda_vendors`, `rafimda_vendor_staff`, `rafimda_vendor_products` (+ `moderation*` sütunları, migration 002), `rafimda_audit_log`, `rafimda_migrations`, `rafimda_import_log` (002), `rafimda_vendor_orders`, `rafimda_vendor_order_items`, `rafimda_ledger`, `rafimda_payouts` (003).
+
+Mevcut kurulumda yeni migration'lar Yönetim → Satıcılar ekranındaki "Migration çalıştır" uyarısıyla uygulanır (yalnızca eklemeli; 002, mevcut ürünleri `approved` olarak işaretler, davranışları değişmez).
+
+## Ayarlar (Settings anahtarları)
+`RAFIMDA_DEFAULT_COMMISSION` (varsayılan 10), `RAFIMDA_PAYOUT_HOLD_DAYS` (7), `RAFIMDA_PRODUCT_MODERATION` (boş/1 = yeni ürünler onaya düşer, 0 = kapalı), `RAFIMDA_VENDOR_AUTO_APPROVE`. Hepsi yönetim → Satıcılar → Ayarlar sekmesinden.
+
+## Sipariş ve finans
+- `order.placed` hook'u siparişi satıcılara böler; `order.updated` teslimde bakiyeyi serbest bırakma sürecini başlatır, iptal/iadede ters kayıt yazar. Hook hataları sipariş akışını engellemez.
+- Defter (`rafimda_ledger`) yalnızca ekleme yapar, `ref_key` UNIQUE ile idempotenttir. Silme/güncelleme metodu yoktur (DB tetikleyicisi YOKTUR; yalnızca kod düzeyinde garanti).
+- Satıcı yalnızca `preparing`/`shipped` durumlarını verebilir; teslim/iptal/iade çekirdek sipariş durumundan türetilir.
+
+## Henüz YAPILMADI
+XML Hub, pazaryeri adaptörleri, Excel içe aktarma, abonelik/paketler, iptal/iade talebi akışı, raporlar/grafikler, çoklu mağaza arayüzü, yöneticide kategori/kampanya yönetimi, DB düzeyinde defter koruması, MySQL'de uçtan uca ve görsel mobil test.
 
 ## Geri dönüş
 - Modülü devre dışı bırakmak rotaları kapatır; veri silinmez (`uninstall.sql` zararsızdır).
