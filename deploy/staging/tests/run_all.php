@@ -22,6 +22,7 @@ $suites = [
 	'rafimda-theme/run_integration' => 'modules/rafimda-theme/tests/run_integration.php',
 	'staging/run' => 'deploy/staging/tests/run.php',
 	'staging/run_seed' => 'deploy/staging/tests/run_seed.php',
+	'staging/run_order' => 'deploy/staging/tests/run_order.php',
 	'live/run' => 'deploy/live/tests/run.php',
 ];
 $total = 0;

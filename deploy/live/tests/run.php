@@ -91,6 +91,8 @@ if ($zips) {
 	$hit = static fn(string $re): array => array_values(array_filter($names, static fn(string $n): bool => (bool) preg_match($re, $n)));
 	t('pakette config/env.php / .env / .git / döküm yok', !$hit('#(^|/)config/env\.php$|(^|/)\.env$|^\.git/|\.sql\.gz$|\.dump$#'));
 	t('pakette docs/ ve Rafımda test dizinleri yok', !$hit('#^docs/|^modules/(rafimda-vendor|xml-hub|marketplace-hub|rafimda-showcase)/tests/|^deploy/[a-z]+/tests/#'), json_encode($hit('#^docs/|^modules/(rafimda-vendor|xml-hub|marketplace-hub|rafimda-showcase)/tests/|^deploy/[a-z]+/tests/#')));
+	t('güncelleme paketi canlı veriyi/özelleştirmeyi ezmez: img/, data/, theme-settings.css, kök .htaccess/robots.txt yok', !$hit('#^img/|^data/|^modules/theme4/assets/css/theme-settings\.css$|^\.htaccess$|^robots\.txt$#'), json_encode($hit('#^img/|^data/|^\.htaccess$|^robots\.txt$#')));
+	t('deploy/.htaccess korunur (yalnızca kök .htaccess hariç)', in_array('deploy/.htaccess', $names, true));
 	t('deploy/.htaccess (web engeli) pakette', in_array('deploy/.htaccess', $names, true));
 	t('canlı araçlar pakette', in_array('deploy/live/bin/live-migrate.php', $names, true) && in_array('deploy/staging/lib/StagingMigrator.php', $names, true));
 	t('FriSay çekirdeği ve Rafımda modülleri pakette', in_array('index.php', $names, true) && in_array('modules/rafimda-vendor/rafimda-vendor.php', $names, true));

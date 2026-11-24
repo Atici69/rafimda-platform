@@ -11,7 +11,7 @@
 1. `rafimda-theme` kur + etkinleştir (migration yok, risksiz). Ana sayfa hero'su ve renkler gelir. Önbellek varsa temizleyin.
 2. `rafimda-vendor` kur + etkinleştir (**rafimda_* tabloları oluşturur**; onayınızla). `/satici-giris`, `/satici-kayit`, `/satici-panel` açılır; footer/mobil menüde bağlantılar belirir. Müşteri oturumu (Customer::login) ortaktır.
 3. `xml-hub`, `marketplace-hub` (xh_*, mh_* tabloları) ve `rafimda-showcase` kur + etkinleştir. Yönetici menüsünde "XML Hub" ve "Pazaryeri Hub" görünür; Rafımda Tema sayfası modül durumunu listeler.
-4. Gizli anahtarları (XML_HUB_SECRET vb.) panelden girin; koda/depoya yazmayın.
+4. XML_HUB_SECRET ve MARKETPLACE_HUB_SECRET kurulumda otomatik üretilir (elle girmeyin). Pazaryeri API anahtarlarını yalnızca panelden girin; koda/depoya yazmayın.
 
 Alternatif (modülsüz): Tema ayarlarından ana/ikincil rengi `#0a2540` / `#ff7a1a` yapın.
 
