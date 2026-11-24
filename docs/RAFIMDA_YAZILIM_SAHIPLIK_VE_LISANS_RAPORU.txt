@@ -1,4 +1,8 @@
 RAFIMDA – YAZILIM SAHİPLİK VE LİSANS RAPORU (ÖN SÜRÜM, 2026-11-24)
+
+DURUM: ŞİMDİLİK BEKLEMEDE – LİSANS VE BAĞIMSIZLAŞMA KARARI BEKLENİYOR (2026-11-25 işletme sahibi kararı).
+FriSay'den bağımsızlaşma, özgün çekirdek ve lisans çözüm çalışmaları pasiftir. Hiçbir dosya, modül, bağımlılık veya Git geçmişi silinmedi;
+mevcut FriSay bağımlılıkları korunur. Diğer geliştirmeler (26 maddelik kapsam) bundan bağımsız sürer.
 Durum: ÖLÇÜLEN gerçekler. Hukuki görüş DEĞİLDİR; lisans yorumu avukat/lisans sahibi teyidi gerektirir.
 
 1) ÖZGÜN RAFIMDA KODU (git geçmişinde yazar "Claude", 2026-11-24 sonrası; yaklaşık satır sayısı)
