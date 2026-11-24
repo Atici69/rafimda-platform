@@ -2,6 +2,11 @@
 # Include these inside the server { } that points document root at this project.
 
 # Sensitive trees (never serve)
+# deploy/ (kurulum/bakım araçları, testler) web'den ASLA sunulmaz. Apache'te deploy/.htaccess bunu yapar; nginx .htaccess okumaz.
+location ^~ /deploy/ {
+    deny all;
+}
+
 location ~ ^/(logs|upgrade|cache|backups|config|core|container|storage|lang|tools)(/|$) {
 	deny all;
 	return 403;

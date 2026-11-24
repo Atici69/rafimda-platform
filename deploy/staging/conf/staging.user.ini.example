@@ -1,0 +1,7 @@
+; staging_guard.php'yi YÜKLEME YÖNTEMİ (paylaşımlı hosting / cPanel, PHP-FPM, FastCGI, LiteSpeed):
+; Bu dosyayı STAGING sitesinin belge kök dizinine ".user.ini" adıyla koyun (test.rafimda.com.tr'nin docroot'u; CANLI docroot'a ASLA).
+; Yol MUTLAK olmalı. Değişikliğin etkili olması user_ini.cache_ttl (varsayılan 300 sn) kadar sürebilir.
+; Apache mod_php (Server API: "Apache 2.0 Handler") ise .user.ini çalışmaz; .htaccess'e şunu yazın:
+;   php_value auto_prepend_file /home/KULLANICI/test.rafimda.com.tr/deploy/staging/conf/staging_guard.php
+; nginx + php-fpm'de havuz dosyasında:  php_admin_value[auto_prepend_file] = /yol/deploy/staging/conf/staging_guard.php
+auto_prepend_file = /home/KULLANICI/test.rafimda.com.tr/deploy/staging/conf/staging_guard.php

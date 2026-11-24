@@ -168,4 +168,50 @@ final class StagingGuard
 			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 		]);
 	}
+
+	/**
+	 * Staging DB kullanıcısının YALNIZCA staging veritabanına yetkili olduğunu ve canlı veritabanını göremediğini değerlendirir.
+	 * Girdiler MySQL'den okunan metinlerdir (SHOW GRANTS FOR CURRENT_USER, SHOW DATABASES); bu fonksiyon veritabanına bağlanmaz.
+	 *
+	 * @param list<string> $grants SHOW GRANTS çıktı satırları
+	 * @param list<string> $databases SHOW DATABASES çıktısı
+	 * @return list<string> bulgular (boşsa izolasyon sağlam)
+	 */
+	public static function isolationFindings(array $grants, array $databases, string $currentDb, string $prodDb): array
+	{
+		$out = [];
+		$cur = strtolower($currentDb);
+		$prod = strtolower(trim($prodDb));
+
+		foreach ($grants as $g) {
+			if (!preg_match('/^\s*GRANT\s+(.+?)\s+ON\s+(\*|`((?:[^`]|``)+)`|\S+?)\.(\*|`[^`]+`|\S+?)\s+TO\b/is', $g, $m)) {
+				continue;
+			}
+
+			$privs = strtoupper(trim($m[1]));
+			$db = $m[2] === '*' ? '*' : strtolower(str_replace(['\\_', '\\%', '``'], ['_', '%', '`'], $m[3] !== '' ? $m[3] : $m[2]));
+
+			if ($db === '*' && $privs !== 'USAGE') {
+				$out[] = 'Global yetki var (ON *.*): ' . $privs . '. Staging kullanıcısı yalnızca kendi veritabanına yetkili olmalı.';
+			} elseif ($db !== '*' && $db !== $cur) {
+				$out[] = 'Başka veritabanına yetki var: ' . $db . '.';
+			} elseif ($db !== '*' && strpos($db, '%') !== false) {
+				$out[] = 'Joker karakterli veritabanı yetkisi var: ' . $db . '.';
+			}
+		}
+
+		if ($prod !== '') {
+			foreach ($databases as $d) {
+				if (strtolower($d) === $prod) {
+					$out[] = 'Staging kullanıcısı canlı veritabanını görebiliyor (' . $prod . ').';
+				}
+			}
+		}
+
+		if (!preg_match('/(staging|stg|test)/', $cur)) {
+			$out[] = 'Bağlı veritabanı adı staging gibi görünmüyor: ' . $cur . '.';
+		}
+
+		return $out;
+	}
 }

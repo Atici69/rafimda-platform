@@ -1,0 +1,9 @@
+-- ŞABLON — ÇALIŞTIRILMADI. Staging veritabanı ve kullanıcısı için (cPanel'de MySQL Databases ekranından da aynısı yapılır).
+-- Amaç: staging kullanıcısı YALNIZCA staging veritabanına yetkili olsun; canlı veritabanını göremesin.
+-- Canlı hesapta değil, tercihen ayrı bir kullanıcıyla oluşturun. Parolayı repoda/sohbette paylaşmayın.
+-- CREATE DATABASE rafimda_staging CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- CREATE USER 'rafimda_staging_user'@'localhost' IDENTIFIED BY '<GÜÇLÜ-PAROLA-BURAYA-YAZILMAZ>';
+-- GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES ON `rafimda\_staging`.* TO 'rafimda_staging_user'@'localhost';
+-- (DROP, GRANT OPTION ve *.* yetkisi VERMEYİN.)
+-- cPanel notu: cPanel veritabanı ve kullanıcı adlarına hesap önekini ekler (ör. hesap_rafimda_staging); önek DB adındaki "staging" ifadesini korur.
+-- Doğrulama (staging ortam değişkenleriyle, salt okunur):  php deploy/staging/bin/staging-preflight.php

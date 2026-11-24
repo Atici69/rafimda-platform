@@ -1,0 +1,11 @@
+# deploy/.htaccess her şeyi reddeder; yalnızca staging robots.txt'in iç yeniden yazımla sunulabilmesi için bu tek dosyaya izin verilir.
+# Diğer dosyalar (staging_guard.php, *.snippet, *.example) üst dizindeki reddi miras alır.
+<Files "robots.staging.txt">
+	<IfModule mod_authz_core.c>
+		Require all granted
+	</IfModule>
+	<IfModule !mod_authz_core.c>
+		Order allow,deny
+		Allow from all
+	</IfModule>
+</Files>

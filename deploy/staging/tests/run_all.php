@@ -26,6 +26,7 @@ $suites = [
 	'staging/run' => 'deploy/staging/tests/run.php',
 	'staging/run_seed' => 'deploy/staging/tests/run_seed.php',
 	'staging/run_order' => 'deploy/staging/tests/run_order.php',
+	'staging/run_web' => 'deploy/staging/tests/run_web.php',
 	'live/run' => 'deploy/live/tests/run.php',
 	'live/run_php81' => 'deploy/live/tests/run_php81.php',
 ];

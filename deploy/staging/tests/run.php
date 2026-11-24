@@ -256,7 +256,7 @@ t('--init-lazy sonrası product_variations yoksa FAIL', strpos($vv->toText(), '[
 
 echo "== Komutlar arası canlı-DB koruması tutarlılığı\n";
 $bins = glob(dirname(__DIR__) . '/bin/staging-*.php');
-t('4 komut betiği var', count($bins) === 4);
+t('5 komut betiği var (env, migrate, preflight, seed, verify)', count($bins) === 5);
 foreach ($bins as $b) {
 	$c = (string) file_get_contents($b);
 	$g = strpos($c, 'staging_guard_or_exit()');
@@ -352,6 +352,21 @@ t('apply: modül tabloları eklenir, kullanıcı/ürün/sipariş verisi birebir 
 foreach (['DROP TABLE users', 'TRUNCATE TABLE orders', 'DELETE FROM products', 'RENAME TABLE users TO u2', 'ALTER TABLE products DROP COLUMN product_name'] as $bad) {
 	t('yıkıcı ifade reddedilir: ' . $bad, StagingMigrator::isDestructive($bad));
 }
+
+echo "== Staging DB izolasyonu (isolationFindings; MySQL'e bağlanmaz)\n";
+$okGrants = ["GRANT USAGE ON *.* TO `u`@`localhost`", "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX ON `rafimda\\_staging`.* TO `u`@`localhost`"];
+t('yalnızca staging DB yetkisi + canlı görünmüyor → bulgu yok', StagingGuard::isolationFindings($okGrants, ['information_schema', 'rafimda_staging'], 'rafimda_staging', 'rafimda_live') === []);
+t('ON *.* ALL PRIVILEGES → bulgu', StagingGuard::isolationFindings(["GRANT ALL PRIVILEGES ON *.* TO `u`@`localhost`"], ['rafimda_staging'], 'rafimda_staging', 'rafimda_live') !== []);
+t('canlı DB\'ye yetki → bulgu', StagingGuard::isolationFindings(array_merge($okGrants, ["GRANT SELECT ON `rafimda\\_live`.* TO `u`@`localhost`"]), ['rafimda_staging'], 'rafimda_staging', 'rafimda_live') !== []);
+t('SHOW DATABASES canlı DB\'yi gösteriyorsa → bulgu', StagingGuard::isolationFindings($okGrants, ['rafimda_staging', 'Rafimda_Live'], 'rafimda_staging', 'rafimda_live') !== []);
+t('joker (%) veritabanı yetkisi → bulgu', StagingGuard::isolationFindings(["GRANT SELECT ON `rafimda\\_%`.* TO `u`@`localhost`"], ['rafimda_staging'], 'rafimda_staging', 'rafimda_live') !== []);
+t('bağlı DB staging gibi değilse → bulgu', StagingGuard::isolationFindings($okGrants, [], 'rafimda_live', '') !== []);
+$pre = (string) file_get_contents(dirname(__DIR__) . '/bin/staging-preflight.php');
+t('staging-preflight: bekçi + salt okunur (yalnızca SELECT/SHOW)', strpos($pre, 'staging_guard_or_exit()') !== false && !preg_match('/\b(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE)\b\s/i', preg_replace('#/\*.*?\*/#s', '', $pre)));
+t('staging-db.sql.example: tüm satırlar yorum (çalıştırılmaz) ve DROP/GRANT OPTION/*.* içermez', !preg_match('/^(?!--)\s*\S/m', (string) file_get_contents(dirname(__DIR__) . '/conf/staging-db.sql.example')) && !preg_match('/^-- GRANT[^\n]*(\*\.\*|WITH GRANT OPTION)/im', (string) file_get_contents(dirname(__DIR__) . '/conf/staging-db.sql.example')));
+t('.user.ini örneği mutlak yol ve açıklama içerir', strpos((string) file_get_contents(dirname(__DIR__) . '/conf/staging.user.ini.example'), 'auto_prepend_file = /') !== false);
+t('deploy/staging/conf/.htaccess yalnızca robots.staging.txt\'e izin verir', preg_match('/<Files "robots\.staging\.txt">/', (string) file_get_contents(dirname(__DIR__) . '/conf/.htaccess')) === 1 && substr_count((string) file_get_contents(dirname(__DIR__) . '/conf/.htaccess'), '<Files') === 1);
+t('nginx.conf.example deploy/ bloğunu içerir', strpos((string) file_get_contents($root . '/nginx.conf.example'), 'location ^~ /deploy/') !== false);
 
 echo "== Güvenlik / depo hijyeni\n";
 $bad = [];
