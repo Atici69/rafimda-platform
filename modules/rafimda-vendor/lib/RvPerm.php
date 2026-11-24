@@ -47,11 +47,11 @@ class RvPerm
 			case 'owner':
 				return array_merge($view, [
 					'products.create', 'products.edit', 'products.delete', 'orders.manage',
-					'xml.manage', 'staff.manage', 'store.manage',
+					'xml.manage', 'marketplaces.manage', 'staff.manage', 'store.manage',
 				]);
 			case 'manager':
 				return array_merge($view, [
-					'products.create', 'products.edit', 'products.delete', 'orders.manage', 'xml.manage',
+					'products.create', 'products.edit', 'products.delete', 'orders.manage', 'xml.manage', 'marketplaces.manage',
 				]);
 			case 'catalog':
 				return ['dashboard.view', 'products.view', 'products.create', 'products.edit', 'products.delete',

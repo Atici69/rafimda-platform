@@ -1,0 +1,6 @@
+-- YALNIZCA ELLE ve yedek aldıktan sonra çalıştırın. Modül kaldırılırken otomatik ÇALIŞMAZ.
+DROP TABLE IF EXISTS `mh_errors`;
+DROP TABLE IF EXISTS `mh_listings`;
+DROP TABLE IF EXISTS `mh_category_map`;
+DROP TABLE IF EXISTS `mh_accounts`;
+DROP TABLE IF EXISTS `mh_migrations`;
