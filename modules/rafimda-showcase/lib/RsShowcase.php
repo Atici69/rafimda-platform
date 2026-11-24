@@ -279,4 +279,89 @@ class RsShowcase
 
 		return $im !== false && class_exists('Product') && method_exists('Product', 'getImageUrl') ? (string) Product::getImageUrl((int) $im) : '';
 	}
+
+	/**
+	 * Öne çıkan mağazalar: YALNIZCA gerçek, aktif ve en az bir aktif+onaylı ürünü olan mağazalar. Puan/takipçi yalnızca onaylı kayıtlardan.
+	 * Mağaza yoksa boş döner (örnek/uydurma mağaza gösterilmez).
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function featuredStores(int $limit = 8): array
+	{
+		if (!class_exists('RvStorefront') || !self::hasTable('rafimda_vendors')) {
+			return [];
+		}
+
+		$rows = DB::execute("SELECT v.id_vendor, v.store_name, v.store_slug, v.city,
+			(SELECT COUNT(*) FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE vp.id_vendor = v.id_vendor AND p.active = 1 AND COALESCE(vp.moderation, 'approved') = 'approved') AS product_count,
+			(SELECT COUNT(*) FROM rafimda_follows f WHERE f.id_vendor = v.id_vendor) AS followers
+			FROM rafimda_vendors v WHERE v.status = 'active' ORDER BY followers DESC, product_count DESC, v.id_vendor ASC LIMIT 60") ?: [];
+		$out = [];
+
+		foreach ($rows as $r) {
+			if ((int) $r['product_count'] < 1) {
+				continue;
+			}
+
+			$id = (int) $r['id_vendor'];
+			$rating = RvStorefront::rating($id);
+			$profile = RvStorefront::profile($id);
+			$out[] = [
+				'name' => (string) $r['store_name'], 'url' => RvStorefront::url($r), 'city' => (string) $r['city'], 'logo' => (string) ($profile['logo_url'] ?? ''),
+				'products' => (int) $r['product_count'], 'followers' => (int) $r['followers'], 'rating' => $rating['avg'], 'rating_count' => $rating['count'],
+				'initial' => mb_strtoupper(mb_substr((string) $r['store_name'], 0, 1)),
+			];
+
+			if (count($out) >= max(1, min(24, $limit))) {
+				break;
+			}
+		}
+
+		return $out;
+	}
+
+	/** Son gezilen ürünler: yalnızca bu ziyaretçinin oturumunda (en fazla 12 kimlik); kişisel veri DB'ye yazılmaz */
+	public static function rememberViewed(int $idProduct): void
+	{
+		if ($idProduct <= 0 || session_status() !== PHP_SESSION_ACTIVE && !isset($_SESSION)) {
+			return;
+		}
+
+		$list = array_values(array_filter(array_map('intval', (array) ($_SESSION['rs_recent'] ?? [])), static fn($id) => $id > 0 && $id !== $idProduct));
+		array_unshift($list, $idProduct);
+		$_SESSION['rs_recent'] = array_slice($list, 0, 12);
+	}
+
+	/** @return array<int,array<string,mixed>> oturumdaki kimliklerden yalnızca hâlâ aktif olan ürünler, gezilme sırasıyla */
+	public static function recentlyViewed(int $limit = 6): array
+	{
+		$ids = array_slice(array_values(array_filter(array_map('intval', (array) ($_SESSION['rs_recent'] ?? [])))), 0, 12);
+		$out = [];
+
+		foreach ($ids as $id) {
+			$p = DB::getRowSafe('products', 'id_product = ? AND active = 1', [$id]);
+
+			if (!$p) {
+				continue;
+			}
+
+			$out[] = ['kind' => 'product', 'title' => (string) $p['product_name'], 'url' => self::productUrl($p), 'image' => self::productImage($id), 'price' => (float) $p['price'], 'old_price' => (float) ($p['old_price'] ?? 0) > (float) $p['price'] ? (float) $p['old_price'] : null];
+
+			if (count($out) >= $limit) {
+				break;
+			}
+		}
+
+		return $out;
+	}
+
+	private static function hasTable(string $t): bool
+	{
+		try {
+			DB::execute('SELECT 1 FROM ' . $t . ' LIMIT 1');
+
+			return true;
+		} catch (Throwable $e) {
+			return false;
+		}
+	}
 }

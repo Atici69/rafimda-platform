@@ -33,6 +33,7 @@
 			<li>Satıcı ürünlerinin dönüşümlü olarak gösterimi</li>
 			<li>Satıcı dostu yaklaşım</li>
 		</ul>
+		<ol class="rt-steps" aria-label="Satıcı olma adımları"><li><b>1</b> Mağazanı Aç</li><li><b>2</b> Ürünlerini Satışa Sun</li><li><b>3</b> Sosyal Medyada Tanıt</li></ol>
 		<a class="rt-btn rt-btn--orange" href="{$rtRegisterUrl|escape}">Satıcımız Olmak İster misiniz?</a>
 	</div>
 </section>

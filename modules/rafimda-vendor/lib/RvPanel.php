@@ -18,7 +18,7 @@ class RvPanel
 		'customers'    => ['Müşteriler', '☺', true, ''],
 		'campaigns'    => ['Kampanyalar ve Vitrin', '✦', false, 'Vitrin modülü (rafimda-showcase) kurulu değil. Kurulduğunda ana sayfada öne çıkan/kampanyalı ürün yerleşimi talep edebilirsiniz.'],
 		'reports'      => ['Raporlar', '▨', true, ''],
-		'finance'      => ['Finans', '₿', true, ''],
+		'finance'      => ['Finans', '▣', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
 		'subscription' => ['Abonelik', '★', true, ''],

@@ -1,4 +1,4 @@
-.rs-showcase{max-width:1200px;margin:24px auto;padding:0 16px}
+.rs-showcase{max-width:1320px;margin:24px auto;padding:0 12px}
 .rs-block{margin:0 0 28px}
 .rs-title{color:#0b2545;font-size:22px;margin:0 0 12px;padding-bottom:8px;border-bottom:3px solid #ff7a00;display:inline-block}
 .rs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
@@ -10,3 +10,11 @@
 .rs-price{font-weight:700;color:#ff7a00}.rs-price s{color:#6b7280;font-weight:400;font-size:12px}
 .rs-banner{grid-column:span 2}.rs-banner img{width:100%;border-radius:6px;max-height:220px;object-fit:cover}
 @media (max-width:520px){.rs-grid{grid-template-columns:repeat(2,1fr);gap:10px}.rs-banner{grid-column:span 2}}
+
+.rs-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.rs-store{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 12px;text-decoration:none;color:#0b2545}
+.rs-store:hover{border-color:#ff7a00;box-shadow:0 4px 14px rgba(11,37,69,.08)}
+.rs-store img,.rs-store-ph{width:56px;height:56px;border-radius:12px;object-fit:cover}
+.rs-store-ph{display:flex;align-items:center;justify-content:center;background:#0b2545;color:#fff;font-weight:800;font-size:24px}
+.rs-store-name{font-weight:700}
+.rs-store-meta{font-size:13px;color:#5b6472}

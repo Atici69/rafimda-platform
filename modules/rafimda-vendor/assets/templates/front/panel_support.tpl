@@ -20,7 +20,7 @@
 <div class="rv-card">
 	<h2>{$ticket.ticket_no} · {$ticket.subject}</h2>
 	<p><span class="pill {if $ticket.status == 'answered'}ok{elseif $ticket.status == 'closed'}off{else}warn{/if}">{$statuses[$ticket.status]}</span> · {$categories[$ticket.category]|default:$ticket.category}</p>
-	<ul class="rv-history">{foreach $ticket.messages as $m}<li><span>{$m.date_add} · {if $m.author == 'admin'}Rafımda Destek{else}Siz{/if}</span><br>{$m.body|nl2br nofilter}</li>{/foreach}</ul>
+	<ul class="rv-history">{foreach $ticket.messages as $m}<li><span>{$m.date_add} · {if $m.author == 'admin'}Rafımda Destek{else}Siz{/if}</span><br>{$m.body|escape|nl2br nofilter}</li>{/foreach}</ul>
 	{if $canManage && $ticket.status != 'closed'}
 	<form method="post"><input type="hidden" name="token" value="{$rvToken}"><input type="hidden" name="action" value="reply"><input type="hidden" name="id_ticket" value="{$ticket.id_ticket}">
 		<label for="t_rep">Yanıt</label><textarea id="t_rep" name="body" rows="3" maxlength="5000" required></textarea>

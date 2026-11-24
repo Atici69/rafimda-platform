@@ -1,0 +1,44 @@
+/* Rafi – lacivert / turuncu / beyaz */
+.rafi{--rafi-navy:#0b2545;--rafi-orange:#ff7a00;position:fixed;right:18px;bottom:18px;z-index:1050;font-family:inherit}
+.rafi-fab{display:flex;align-items:center;gap:8px;background:var(--rafi-navy);color:#fff;border:0;border-radius:999px;padding:6px 16px 6px 6px;box-shadow:0 8px 24px rgba(11,37,69,.28);cursor:pointer;font-weight:700}
+.rafi-fab img{width:44px;height:44px;border-radius:50%;background:#fff;padding:3px}
+.rafi-fab:hover,.rafi-fab:focus-visible{outline:3px solid var(--rafi-orange);outline-offset:2px}
+.rafi--open .rafi-fab{display:none}
+.rafi-hello{position:absolute;right:0;bottom:66px;width:280px;background:#fff;color:#0b2545;border:2px solid var(--rafi-orange);border-radius:14px 14px 4px 14px;padding:12px 30px 12px 14px;box-shadow:0 8px 24px rgba(11,37,69,.18);font-size:14px;cursor:pointer}
+.rafi-hello p{margin:0}
+.rafi-hello-x{position:absolute;top:4px;right:6px;border:0;background:none;font-size:20px;line-height:1;color:#5b6472;cursor:pointer}
+.rafi-panel{position:absolute;right:0;bottom:0;width:380px;max-width:calc(100vw - 24px);height:560px;max-height:calc(100vh - 36px);display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(11,37,69,.3);overflow:hidden}
+.rafi-panel[hidden]{display:none}
+.rafi-head{display:flex;align-items:center;gap:10px;background:var(--rafi-navy);color:#fff;padding:10px 12px}
+.rafi-head img{background:#fff;border-radius:50%;padding:2px}
+.rafi-head div{display:flex;flex-direction:column;flex:1;line-height:1.2}.rafi-head small{color:#cbd5e1}
+.rafi-close{border:0;background:none;color:#fff;font-size:26px;line-height:1;cursor:pointer}
+.rafi-log{flex:1;overflow-y:auto;padding:12px;background:#f5f7fb;display:flex;flex-direction:column;gap:8px}
+.rafi-log>*{flex-shrink:0}
+.rafi-msg{max-width:88%;padding:8px 12px;border-radius:12px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}
+.rafi-msg--bot{background:#fff;color:#0b2545;border:1px solid #e5e7eb;align-self:flex-start;border-bottom-left-radius:4px}
+.rafi-msg--me{background:var(--rafi-orange);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.rafi-wait{opacity:.7;font-style:italic}
+.rafi-cards{display:flex;flex-direction:column;gap:6px}
+.rafi-card{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:6px;text-decoration:none;color:#0b2545}
+.rafi-card:hover{border-color:var(--rafi-orange)}
+.rafi-no{flex:0 0 20px;height:20px;border-radius:50%;background:var(--rafi-navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rafi-card img,.rafi-noimg{flex:0 0 56px;width:56px;height:56px;border-radius:8px;object-fit:cover;background:#eef1f6}
+.rafi-card-b{display:flex;flex-direction:column;min-width:0}
+.rafi-card-n{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rafi-card-p{color:var(--rafi-orange);font-weight:800;font-size:14px}.rafi-card-p s{color:#8a93a3;font-weight:400;font-size:12px}
+.rafi-card-m{font-size:12px;color:#5b6472}.rafi-out{color:#b91c1c}
+.rafi-cmp{overflow-x:auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px}
+.rafi-cmp table{border-collapse:collapse;font-size:12px;min-width:100%}
+.rafi-cmp th,.rafi-cmp td{border-bottom:1px solid #eef1f6;padding:6px 8px;text-align:left;vertical-align:top}
+.rafi-cmp thead th{background:#0b2545;color:#fff}.rafi-cmp thead a{color:#fff}
+.rafi-cmp tbody th{color:#5b6472;white-space:nowrap;font-weight:600}
+.rafi-chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px 0;background:#fff}
+.rafi-chip{border:1px solid var(--rafi-navy);background:#fff;color:var(--rafi-navy);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
+.rafi-chip:hover{background:var(--rafi-navy);color:#fff}
+.rafi-form{display:flex;gap:6px;padding:8px 10px;background:#fff}
+.rafi-form input{flex:1;border:1px solid #cfd6e1;border-radius:999px;padding:8px 14px;font-size:14px;min-width:0}
+.rafi-form input:focus{outline:2px solid var(--rafi-orange);border-color:transparent}
+.rafi-form button{border:0;background:var(--rafi-orange);color:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer}
+.rafi-note{margin:0;padding:0 12px 8px;font-size:11px;color:#8a93a3;background:#fff}
+@media (max-width:575px){.rafi{right:12px;bottom:76px}.rafi-fab-label{display:none}.rafi-fab{padding:6px}.rafi-panel{position:fixed;right:8px;left:8px;bottom:8px;width:auto;max-width:none;height:min(78vh,600px)}.rafi-hello{width:min(280px,calc(100vw - 32px))}}

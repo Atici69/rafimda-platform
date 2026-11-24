@@ -88,4 +88,20 @@ ok(strpos($html, '<script>alert(1)</script>') === false && strpos($html, 'showca
 $code = file_get_contents(dirname(__DIR__, 2) . '/rafimda-vendor/lib/RvPanel.php');
 ok(preg_match("/private static function campaigns.*?requireCsrf\('front'\);\s*self::deny\('products\.edit'\)/s", $code) === 1, 'talep POST: önce CSRF, sonra yetki');
 ok(strpos($code, "class_exists('RsShowcase', false) ? self::campaigns") !== false, 'vitrin modülü kurulu değilse eski \"planlanan\" sayfa gösterilir (geriye uyumlu)');
+section('Öne çıkan mağazalar ve son gezilenler');
+fresh(); require_once dirname(__DIR__, 2) . '/rafimda-vendor/lib/RvStorefront.php';
+ok(RsShowcase::featuredStores() === [], 'mağaza yoksa boş (uydurma mağaza gösterilmez)');
+$mk = function (string $name, string $slug, string $status) { DB::insert('rafimda_vendors', ['owner_user_id' => mt_rand(1000, 9999), 'store_name' => $name, 'store_slug' => $slug, 'status' => $status, 'commission_rate' => 10]); return (int) $GLOBALS['db']->lastInsertId(); };
+$va = $mk('Aktif <b>Mağaza</b>', 'aktif', 'active'); $vb = $mk('Askıda', 'askida', 'suspended'); $vc = $mk('Ürünsüz', 'urunsuz', 'active'); $vd = $mk('Sadece Pasif', 'pasif', 'active'); $ve = $mk('Bekleyen Ürün', 'bekleyen', 'active');
+prod($va, 'A1'); prod($vb, 'B1'); prod($vd, 'D1', ['active' => 0]); prod($ve, 'E1', ['mod' => 'pending']);
+$fs = RsShowcase::featuredStores(); ok(count($fs) === 1 && $fs[0]['products'] === 1 && $fs[0]['rating_count'] === 0, 'yalnızca aktif + en az bir aktif/onaylı ürünlü mağaza listelenir (askıdaki, ürünsüz, pasif ürünlü, onay bekleyen ürünlü hariç)');
+ok(strpos($fs[0]['url'], 'aktif') !== false && $fs[0]['initial'] === 'A', 'mağaza bağlantısı ve baş harf');
+$smarty->assign(['rsBlocks' => [], 'rsStores' => $fs, 'rsRecent' => []]); $h = $e();
+ok(strpos($h, '<b>Mağaza</b>') === false && strpos($h, 'Öne Çıkan Mağazalar') !== false && strpos($h, 'Henüz değerlendirme yok') !== false, 'şablon: mağaza adı kaçışlı, puan yoksa "Henüz değerlendirme yok"');
+$_SESSION = []; $pa = prod($va, 'Gezilen A'); $pb = prod($va, 'Gezilen B'); $pc = prod($va, 'Sonra Pasif', ['active' => 0]);
+foreach ([$pa, $pb, $pa, $pc, 0, -3] as $id) { RsShowcase::rememberViewed($id); }
+ok($_SESSION['rs_recent'] === [$pc, $pa, $pb], 'son gezilenler: tekrar edilen öne alınır, geçersiz kimlik yok sayılır');
+$rv = RsShowcase::recentlyViewed(); ok(array_column($rv, 'title') === ['Gezilen A', 'Gezilen B'], 'son gezilenlerde pasif ürün gösterilmez, sıra korunur');
+for ($k = 0; $k < 20; $k++) { RsShowcase::rememberViewed(1000 + $k); } ok(count($_SESSION['rs_recent']) === 12, 'oturumda en fazla 12 kayıt');
+
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n"; exit($fail ? 1 : 0);

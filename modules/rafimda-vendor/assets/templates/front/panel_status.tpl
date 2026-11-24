@@ -8,7 +8,7 @@
 		<p>Başvuru numarası: <strong>{$app.app_no}</strong> · Başvuru durumu: <span class="pill {if $app.status == 'approved'}ok{elseif $app.status == 'rejected'}bad{else}warn{/if}">{$appStatusLabel}</span></p>
 		<ol class="rv-steps">{foreach ['new','reviewing','docs_required','approved'] as $st}<li class="{if $app.status == $st}is-cur{/if}">{$appStatuses[$st]}</li>{/foreach}</ol>
 	</div>
-	{if $app.status == 'docs_required' && $app.missing_docs}<div class="rv-alert warning"><strong>Eksik belge bildirimi:</strong><br>{$app.missing_docs|nl2br nofilter}</div>{/if}
+	{if $app.status == 'docs_required' && $app.missing_docs}<div class="rv-alert warning"><strong>Eksik belge bildirimi:</strong><br>{$app.missing_docs|escape|nl2br nofilter}</div>{/if}
 	{if $app.status == 'rejected' && $app.admin_note}<div class="rv-alert danger"><strong>Ret gerekçesi:</strong> {$app.admin_note}</div>{/if}
 	{/if}
 	{if $vendor.status == 'pending'}<p>Başvurunuz değerlendiriliyor. Onaylandığında bu sayfadan satıcı paneline erişebileceksiniz.</p>{/if}

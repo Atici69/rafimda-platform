@@ -24,9 +24,10 @@ class RafimdaShowcaseModule extends ModuleBase
 	public array $displayHooks = [
 		'home_showcase' => 'Rafımda ana sayfa vitrini',
 		'home_bottom' => 'Ana sayfa altı (yedek konum)',
+		'product_detail' => 'Son gezilen ürünler: ürün sayfasında oturuma kaydeder (çıktı üretmez)',
 	];
 
-	public array $defaultDisplayHooks = ['home_bottom'];
+	public array $defaultDisplayHooks = ['home_bottom', 'product_detail'];
 
 	public array $frontStylesheets = ['showcase.css'];
 
@@ -53,6 +54,12 @@ class RafimdaShowcaseModule extends ModuleBase
 
 	public function renderDisplayHook(string $hook, array $context = []): ?string
 	{
+		if ($hook === 'product_detail') {
+			RsShowcase::rememberViewed((int) ($context['id_product'] ?? 0));
+
+			return null;
+		}
+
 		if ($hook !== 'home_showcase' && $hook !== 'home_bottom') {
 			return null;
 		}
@@ -67,11 +74,14 @@ class RafimdaShowcaseModule extends ModuleBase
 			}
 		}
 
-		if ($blocks === []) {
+		$stores = RsShowcase::featuredStores(8);
+		$recent = RsShowcase::recentlyViewed(6);
+
+		if ($blocks === [] && $stores === [] && $recent === []) {
 			return null;
 		}
 
-		$html = $this->renderFrontTemplate('showcase', ['rsBlocks' => $blocks]);
+		$html = $this->renderFrontTemplate('showcase', ['rsBlocks' => $blocks, 'rsStores' => $stores, 'rsRecent' => $recent]);
 
 		return $html !== '' ? $html : null;
 	}
