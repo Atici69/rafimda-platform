@@ -2,6 +2,8 @@
 
 > **Durum:** Bu kılavuz ve araçlar hazırlıktır. Bu oturumun Natro hesabına, cPanel'e, MySQL'e veya rafimda.com.tr'ye **erişimi yoktur** (ağ engelli). Aşağıda "kuruldu/çalışıyor" denilen hiçbir şey yoktur; canlıda hiçbir işlem yapılmadı. Rafımda modülleri **hiçbir zaman gerçek MySQL'de çalıştırılmadı** (yalnızca SQLite + stub testleri). Canlıya doğrudan almak bu riski taşır; bu yüzden her adım **yedek + dry-run + doğrulama** ile korunmuştur.
 
+> **Güncel paket (25.11.2026):** Tam public_html paketi artık `php deploy/live/build-public-html.php ÇIKTI 1.0.0-rc1` ile üretilir; adım adım kurulum için `docs/RAFIMDA_A_DAN_Z_YE_KULLANIM_KILAVUZU.txt`, kontrol listesi için `docs/RAFIMDA_CANLIYA_GECIS_KONTROL_LISTESI.txt`.
+
 ## 1. İnceleme bulguları (depo ve paket)
 | Konu | Bulgu |
 |---|---|
@@ -58,7 +60,7 @@ php deploy/live/bin/live-migrate.php --apply
 Canlı araçlar şunları da reddeder: `staging/stg/test` içeren veritabanı adı, `RAFIMDA_STAGING_CONFIRM` tanımlı (karışık oturum), staging site adresi, web (HTTP) üzerinden çalıştırma. Hata mesajlarında DB parolası ve kullanıcı adı `***` ile maskelenir.
 Yalnızca `CREATE TABLE IF NOT EXISTS` ve korumalı `ADD COLUMN`; `DROP/TRUNCATE/DELETE/RENAME` reddedilir; FriSay çekirdek tablolarına **dokunmaz**; ilk hatada durur.
 **7. Doğrulama (salt-okunur):** `php deploy/live/bin/live-verify.php --out=logs/live-verify.md` → 0 FAIL beklenir (gerçek MySQL'de ilk çalıştırma; bir FAIL çıkarsa çıktıyı iletin).
-**8. Modülleri etkinleştirin:** Yönetici paneli → Modüller → `rafimda-vendor`, `xml-hub`, `marketplace-hub`, `rafimda-showcase`, `rafimda-campaign`, `rafimda-legal`, `rafimda-invoice`, `rafimda-social`, `rafimda-dealer` (bayilik kurulsa da `RAFIMDA_DEALER_ENABLED` ayarı olmadığı için PASİF kalır; hukuki modül kurulumda taslak belgeleri ekler, şirket bilgileri panelden doldurulmalıdır) (kampanya modülü satıcı ve vitrin modüllerinden SONRA kurulur; vitrin ücreti `RAFIMDA_SHOWCASE_FEE` ayarı varsayılan 0'dır ve yalnızca borç kaydıdır, ödeme alınmaz) (modül kaydı ve ayar tohumlama — ör. ana komisyon, cron anahtarı, varsayılan paketler — yalnızca panelden kurulumda yapılır).
+**8. Modülleri etkinleştirin:** Yönetici paneli → Modüller → `rafimda-theme`, `rafimda-vendor`, `xml-hub`, `marketplace-hub`, `rafimda-showcase`, `rafimda-campaign`, `rafimda-legal`, `rafimda-invoice`, `rafimda-social`, `rafimda-rafi` (tablo oluşturmaz), `rafimda-dealer` (bayilik kurulsa da `RAFIMDA_DEALER_ENABLED` ayarı olmadığı için PASİF kalır; hukuki modül kurulumda taslak belgeleri ekler, şirket bilgileri panelden doldurulmalıdır) (kampanya modülü satıcı ve vitrin modüllerinden SONRA kurulur; vitrin ücreti `RAFIMDA_SHOWCASE_FEE` ayarı varsayılan 0'dır ve yalnızca borç kaydıdır, ödeme alınmaz) (modül kaydı ve ayar tohumlama — ör. ana komisyon, cron anahtarı, varsayılan paketler — yalnızca panelden kurulumda yapılır).
 **9. Sertleştirme:** `install/` klasörünü **sizin onayınızla** yeniden adlandırın/silin (sihirbaz env.php varken kendini kapatsa da gereksiz); `SECURITY_HSTS` kararını verin (§1); yönetici URI'sini (`ADMIN_URI`) varsayılan `admin`dan değiştirin; `config/env.php` izni 600; cron (§5) ekleyin.
 
 ## 5. Cron (yalnızca siz eklersiniz; eklenmedi)

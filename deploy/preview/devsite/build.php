@@ -3,7 +3,7 @@
  * YALNIZCA GELİŞTİRME ÖNİZLEMESİ — gerçek Rafımda uygulamasını (index.php, theme4 + Rafımda modülleri) MySQL olmadan SQLite ile
  * geçici bir KOPYADA çalıştırır. Depodaki dosyalara yazmaz; canlıya/staging'e bağlanmaz. Veriler FriSay'in kendi demo verisi + açıkça
  * "ÖRNEK" etiketli Rafımda örnekleridir (gerçek mağaza/ürün değildir).
- * Kullanım: php deploy/preview/devsite/build.php /tmp/rfsite   → ardından: php -S 127.0.0.1:8090 -t /tmp/rfsite /tmp/rfsite/devsite/router.php
+ * Kullanım: php deploy/preview/devsite/build.php /tmp/rfsite [paket.zip]   (zip verilirse kurulum provası: kaynak yayın paketidir) → ardından: php -S 127.0.0.1:8090 -t /tmp/rfsite /tmp/rfsite/devsite/router.php
  */
 if (PHP_SAPI !== 'cli') {
 	http_response_code(404);
@@ -18,7 +18,14 @@ if ($dst === '' || str_starts_with(realpath(dirname($dst)) ?: $dst, $repo)) {
 	exit(1);
 }
 
-exec('rm -rf ' . escapeshellarg($dst) . ' && mkdir -p ' . escapeshellarg($dst) . ' && cd ' . escapeshellarg($repo) . " && git ls-files -z --cached --others --exclude-standard | xargs -0 -I{} cp --parents '{}' " . escapeshellarg($dst), $o, $rc);
+$fromZip = $argv[2] ?? '';
+
+if ($fromZip !== '') {
+	// KURULUM PROVASI: kaynak olarak depo yerine yayın paketi (public_html zip) kullanılır
+	exec('rm -rf ' . escapeshellarg($dst) . ' && mkdir -p ' . escapeshellarg($dst) . ' && unzip -q ' . escapeshellarg($fromZip) . ' -d ' . escapeshellarg($dst), $o, $rc);
+} else {
+	exec('rm -rf ' . escapeshellarg($dst) . ' && mkdir -p ' . escapeshellarg($dst) . ' && cd ' . escapeshellarg($repo) . " && git ls-files -z --cached --others --exclude-standard | xargs -0 -I{} cp --parents '{}' " . escapeshellarg($dst), $o, $rc);
+}
 
 if ($rc !== 0) {
 	fwrite(STDERR, "Kopyalama başarısız\n");
@@ -53,6 +60,7 @@ $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
 $path = (string) parse_url($uri, PHP_URL_PATH);
 $rel = ltrim(rawurldecode($path), '/');
 if (preg_match('#^(devsite)(/|$)#', $rel)) { http_response_code(404); exit; }
+if (preg_match('#(^|/)\.ht#', $rel)) { http_response_code(403); echo 'Forbidden'; exit; } // Apache varsayılanı: .ht* dosyaları sunulmaz
 // Alt klasör .htaccess "Require all denied" (Apache) taklidi: config/, storage/ vb. doğrudan erişime kapalı
 for ($d = ($rel !== '' && is_dir($root . '/' . $rel)) ? rtrim($rel, '/') : dirname($rel); $d !== '.' && $d !== '' && $d !== '/'; $d = dirname($d)) {
 	$h = $root . '/' . $d . '/.htaccess';

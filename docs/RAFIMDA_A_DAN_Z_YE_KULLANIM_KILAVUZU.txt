@@ -1,0 +1,151 @@
+RAFIMDA – A'DAN Z'YE KURULUM VE KULLANIM KILAVUZU
+Paket sürümü : 1.0.0-rc1 (sürüm adayı)
+Hazırlanma   : 25.11.2026
+Paket dosyası: rafimda-public_html-1.0.0-rc1-<TARİH>-<COMMIT>.zip  (SHA-256 değeri yanındaki .sha256 dosyasındadır)
+Altyapı      : FriSay V3.0.2 tabanlı (lisans/bağımsızlaşma konusu ŞİMDİLİK BEKLEMEDE)
+
+ÖNEMLİ: Bu kılavuz ve paket hazırlıktır. Paket canlı siteye YÜKLENMEDİ; Natro hesabına, cPanel'e, canlı veritabanına
+erişilmedi ve bağlanılmadı. Aşağıdaki her canlı adımı siz uygularsınız. Paketin gerçek MySQL üzerinde kurulumu bu oturumda
+DENENMEDİ (sunucuda MySQL yok); kurulum provası yalnızca SQLite üzerinde, paketin kendisinden yapılmıştır (bkz. Bölüm 9).
+
+======================================================================
+1. PAKETTE NE VAR, NE YOK
+======================================================================
+Var (public_html köküne doğrudan açılır; iç klasör yoktur):
+  index.php, .htaccess, robots.txt, admin/, api/, config/ (env.php HARİÇ), core/, container/, templates/, libs/, src/,
+  modules/ (FriSay modülleri + Rafımda modülleri), install/ (kurulum sihirbazı), upgrade/, lang/, img/ (Rafımda logoları,
+  favicon, "görsel hazırlanıyor" görseli, koruma dosyaları), cache/ logs/ storage/ backups/ (yalnızca koruma .htaccess/index.php),
+  data/, deploy/live/bin + deploy/live/lib + deploy/staging/lib (yalnızca komut satırı bakım araçları; deploy/.htaccess ile
+  web'e tamamen kapalı), config/RAFIMDA_SURUM.txt (sürüm/commit bilgisi; config/ web'e kapalıdır).
+
+Rafımda modülleri: rafimda-theme 0.2.0, rafimda-vendor 0.3.0, rafimda-showcase 0.1.0, rafimda-campaign 0.1.0,
+  rafimda-legal 0.1.0, rafimda-invoice 0.1.0, rafimda-social 0.1.0, rafimda-dealer 0.1.0 (PASİF), rafimda-rafi 0.1.0,
+  xml-hub 0.3.0, marketplace-hub 0.2.0.
+
+Yok (bilerek): config/env.php, .env, şifre/API anahtarı, veritabanı yedeği, .git, testler, geliştirme belgeleri (docs/),
+  geliştirme araçları (tools/, deploy/preview, staging araçları), önbellek dosyaları, FriSay demo kategori/kişiselleştirme görselleri,
+  ürün görselleri (img/products/ içeriği sitenizde kalır).
+
+======================================================================
+2. GİZLİ / ÖZEL DOSYALAR – NEREDE DURMALI
+======================================================================
+- config/env.php : veritabanı bilgilerini içerir. Kurulumda OLUŞUR, pakette yoktur. public_html/config/ içinde kalır; config/.htaccess
+  web erişimini tamamen kapatır. İzin: 600 (olmazsa 640). Asla e-posta/sohbet/GitHub'a koymayın.
+- Veritabanı yedekleri (.sql / .sql.gz) ve cPanel tam yedekleri: public_html DIŞINDA (ör. /home/KULLANICI/yedekler/) veya
+  bilgisayarınızda saklayın. public_html içinde yedek bırakmayın.
+- Yedekler XML_HUB_SECRET, MARKETPLACE_HUB_SECRET, RAFIMDA_INVOICE_SECRET, RAFIMDA_SOCIAL_SECRET gibi şifreleme anahtarlarını
+  (settings tablosu) taşır → yedeğe erişimi kısıtlayın.
+- storage/ (satıcı başvuru belgeleri: storage/rafimda/vendor-docs) ve logs/ web'e kapalıdır; içeriklerini silmeyin, paylaşmayın.
+- cPanel'de "public_html dışına taşıma" imkânınız varsa en güvenlisi yedekleri ev dizininde tutmaktır; uygulama dosyaları public_html'de kalır.
+
+======================================================================
+3. HOSTİNG GEREKSİNİMLERİ (Natro – SİZİN DOĞRULAMANIZ GEREKİR)
+======================================================================
+Bu oturumda Natro hesabınız görülmedi; aşağıdakiler gereksinimdir, doğrulama değildir.
+  PHP           : 8.1 veya 8.2 (ZORUNLU en az 8.1 – Rafımda kodu PHP 8 fonksiyonları kullanır). PHP sürümünü sizin onayınız olmadan değiştirmeyin.
+  Eklentiler    : pdo_mysql, mbstring, gd, sodium, curl, json (zorunlu); xmlreader, xmlwriter, dom, fileinfo (önerilir)
+  Veritabanı    : MySQL 5.7+ / MariaDB 10.3+ ; utf8mb4
+  Web sunucu    : Apache veya LiteSpeed, mod_rewrite ve .htaccess (AllowOverride) açık
+  SSL           : AutoSSL/Let's Encrypt (rafimda.com.tr + www); HTTP→HTTPS yönlendirmesi
+  Yazılabilir   : config/ (yalnızca kurulum sırasında), cache/, logs/, tmp/, img/products/, img/ (logo yükleme), storage/
+  İzinler       : klasörler 755, dosyalar 644, config/env.php 600
+  İsteğe bağlı  : ffmpeg (sosyal medya video üretimi; yoksa otomatik olarak görsel "storyboard" üretilir), proc_open
+  Cron          : Bölüm 7
+Benden istenen bilgi (Natro panelinden): PHP sürümü, etkin eklenti listesi, MySQL sürümü, SSL durumu, cron erişimi, SSH/Terminal var mı.
+
+======================================================================
+4. YÜKLEMEDEN ÖNCE (ZORUNLU)
+======================================================================
+1) cPanel → Yedekleme → TAM yedek (ev dizini) indirin.
+2) phpMyAdmin → veritabanını Dışa Aktar (SQL) indirin.
+3) Yedekleri bilgisayarınızda ve public_html dışında saklayın; dosyaların açıldığını kontrol edin.
+4) Mevcut public_html içeriğinin listesini not edin (özellikle config/env.php, img/products/, storage/, .htaccess'teki özel kurallar).
+5) Paketin SHA-256 değerini .sha256 dosyasıyla karşılaştırın (Windows: certutil -hashfile DOSYA SHA256).
+
+======================================================================
+5. KURULUM – A) SIFIRDAN YENİ KURULUM (boş veritabanı)
+======================================================================
+1) cPanel → MySQL Veritabanları: yeni veritabanı + kullanıcı oluşturun, kullanıcıya TÜM YETKİLER verin. Şifreyi kimseyle paylaşmayın.
+2) Dosya Yöneticisi → public_html → zip'i yükleyin → "Extract" (çıkar). index.php doğrudan public_html içinde olmalıdır.
+3) Tarayıcıda https://rafimda.com.tr/install/ adresini açın. Sihirbaz gereksinimleri denetler; veritabanı bilgilerini girin,
+   yönetici hesabını oluşturun. "Demo veri" seçeneğini CANLIDA İŞARETLEMEYİN (demo ürünler gerçek değildir).
+   Sihirbaz config/env.php dosyasını yazar ve şemayı kurar. Veritabanının gerçekten BOŞ olduğundan emin olun.
+4) Yönetici paneline girin (varsayılan /admin). Modüller → aşağıdaki sırayla "Kur" + "Etkinleştir":
+   rafimda-theme → rafimda-vendor → xml-hub → marketplace-hub → rafimda-showcase → rafimda-campaign → rafimda-legal →
+   rafimda-invoice → rafimda-social → rafimda-rafi → (rafimda-dealer: kurulabilir, ancak PASİF kalır; etkinleştirme yazılı onay ister)
+   Ayrıca FriSay'in "question" (soru-cevap) ve "reviews" (yorumlar) modülleri kurulu ve etkin olmalıdır.
+5) Bölüm 6'daki yapılandırmayı yapın; Bölüm 8'deki kontrolleri uygulayın.
+6) install/ klasörü: kurulum bittikten sonra sihirbaz env.php varken kendini kapatır; klasörü yeniden adlandırma/silme kararı sizindir.
+
+======================================================================
+5. KURULUM – B) MEVCUT SİTEYİ GÜNCELLEME (rafimda.com.tr'de FriSay zaten kurulu, config/env.php VAR)
+======================================================================
+1) Bölüm 4'teki yedekleri alın (ZORUNLU).
+2) Zip'i public_html'e yükleyip çıkarın. Paket config/env.php İÇERMEZ → mevcut env.php korunur. img/products/ içeriğine
+   dokunulmaz. ÜZERİNE YAZILACAKLAR: çekirdek PHP/şablon dosyaları, .htaccess, robots.txt, img/logo*.png, img/favicon*.ico,
+   img/shopLogo.png, img/default.jpg. Mevcut .htaccess'inizde özel kural varsa yüklemeden önce yedeğini alıp karşılaştırın.
+   Toplu silme YAPMAYIN.
+3) Sihirbaz çalışmaz (env.php var). SSH veya tek seferlik cron ile salt-okunur ön kontrol:
+     cd ~/public_html
+     RAFIMDA_ENV=live RAFIMDA_LIVE_CONFIRM=EVET-CANLI-DB RAFIMDA_LIVE_DB_NAME=<env.php'deki DB_NAME> php deploy/live/bin/live-preflight.php
+4) Migration PLANI (hiçbir şey yazmaz):  ... php deploy/live/bin/live-migrate.php
+5) Uygulama (yalnızca yedekten sonra, sizin kararınızla):
+     RAFIMDA_BACKUP_CONFIRM=EVET-YEDEK-ALINDI RAFIMDA_MIGRATE_CONFIRM=EVET-MIGRATION RAFIMDA_BACKUP_FILE=/home/KULLANICI/yedek.sql \
+     RAFIMDA_ENV=live RAFIMDA_LIVE_CONFIRM=EVET-CANLI-DB RAFIMDA_LIVE_DB_NAME=<DB_NAME> php deploy/live/bin/live-migrate.php --apply
+   Araç yalnızca CREATE TABLE IF NOT EXISTS ve korumalı ADD COLUMN yapar; DROP/TRUNCATE/DELETE reddedilir; FriSay tablolarına dokunmaz.
+6) Doğrulama (salt-okunur): ... php deploy/live/bin/live-verify.php --out=logs/live-verify.md  → 0 FAIL beklenir.
+7) Panelden modülleri Bölüm 5-A/4'teki sırayla kurup etkinleştirin (ayar tohumlama panel kurulumunda yapılır).
+SSH yoksa: cPanel Cron'a komutu "... > /home/KULLANICI/cikti.txt 2>&1" ile bir kez ekleyin, çıktıyı okuyun, cron'u silin.
+
+======================================================================
+6. YAPILANDIRMA (yönetici paneli)
+======================================================================
+- Ayarlar: Site adı "Rafımda", iletişim e-postası/telefonu, adres. Kurulumdaki örnek telefon "0555 000 00 00" ve örnek adresi
+  GERÇEK bilgilerle değiştirin (şirket bilgileri tarafımdan uydurulmadı).
+- Tema: Rafımda teması (rafimda-theme) theme4 üzerine lacivert/turuncu/beyaz görünüm uygular. Logolar img/ altındadır;
+  panelden kendi logonuzu yükleyebilirsiniz.
+- Banner/slider: Modüller → Slider (ana sayfa büyük görsel), Rafımda Vitrin (öne çıkan ürünler, kampanyalı ürünler, reklam alanı).
+- Hukuki Belgeler ve KVKK: şirket bilgilerini doldurun; belgeler TASLAKTIR, avukat incelemesi olmadan yayınlamayın.
+- Rafi Asistanı: Modüller → Rafi Asistanı. Aç/kapat, ana sayfa karşılaması, deneme sorusu. Ücretsizdir, dış servis kullanmaz.
+- Satıcı başvurusu: /satici-kayit (aktif). Başvurular yönetici panelinde "Satıcılar (Rafımda) → Başvurular" sekmesindedir.
+- Bayilik: KAPALI (PASİF). Açmak yazılı onayınız ve "BAYILIGI ETKINLESTIR" onay ifadesini gerektirir.
+- Fatura (e-Fatura/e-Arşiv): canlı gönderim KAPALI; yalnızca test bağdaştırıcısı. Entegratör sözleşmesi ve onayınız gerekir.
+- Sosyal medya: içerik hazırlama açık, otomatik yayın KAPALI. Hesap bağlantıları için hesap erişimi/onayınız gerekir.
+- Ödeme: sağlayıcı seçilmedi; ücretli ödeme entegrasyonu ETKİNLEŞTİRİLMEDİ. Havale/EFT (bankwire) bilgileri panelden girilir.
+- SECURITY_HSTS: tüm alt alanların SSL'i doğrulanmadan "off" bırakın.
+- ADMIN_URI: config/env.php içinde varsayılan "admin" yerine tahmin edilmesi zor bir değer verin.
+
+======================================================================
+7. CRON (yalnızca siz eklersiniz)
+======================================================================
+  XML Hub         : * * * * * curl -s "https://rafimda.com.tr/xml-cron?q=cron&key=ANAHTAR" > /dev/null 2>&1
+  Pazaryeri Hub   : * * * * * curl -s "https://rafimda.com.tr/pazaryeri-cron?q=cron&key=ANAHTAR" > /dev/null 2>&1
+  Sosyal medya    : */5 * * * * php /home/KULLANICI/public_html/modules/rafimda-social/cron.php > /dev/null 2>&1  (yayın kapalıyken yalnızca planlama)
+  ANAHTAR panelde (XML Hub → Cron) görünür; kimseyle paylaşmayın.
+
+======================================================================
+8. KURULUM SONRASI KONTROL (sizin uygulayacağınız)
+======================================================================
+- Bu adresler 403/404 vermeli: /config/env.php, /config/settings.php, /storage/, /logs/, /backups/, /deploy/live/bin/live-migrate.php,
+  /modules/rafimda-vendor/rafimda-vendor.php, /install/schema.sql
+- Ana sayfa, kategori, ürün detay, arama, sepet, giriş/kayıt, /satici-kayit, /hukuki, /cerez-tercihleri açılmalı.
+- Rafi balonu sağ altta görünmeli; "kulaklık" gibi bir arama gerçek ürünlerinizi listelemeli.
+- Yönetici paneli ve satıcı paneli (kendi test satıcınızla) açılmalı. Gerçek müşteriye sipariş/e-posta testi yapmayın.
+- Ayrıntılı liste: RAFIMDA_CANLIYA_GECIS_KONTROL_LISTESI.txt
+
+======================================================================
+9. BU PAKETİN DOĞRULANMASI (bu oturumda yapılanlar)
+======================================================================
+- Zip "unzip -t" testinden geçti; index.php kökte (iç klasör yok); zorunlu dosyalar var; env.php/.env/.git/test/yedek yok.
+- KURULUM PROVASI: paket boş bir klasöre açıldı; FriSay kurulum adımları (şema, ayarlar, başlangıç modülleri) SQLite üzerinde
+  çalıştırıldı; 11 modül (Rafımda + xml-hub + marketplace-hub) gerçek Module::install() ile kuruldu (toplam 121 tablo); site tarayıcıda açıldı:
+  60 iç bağlantı taranıp kırık bağlantı bulunmadı; 27 sayfa masaüstü/tablet/mobil (81 görünüm) ekran görüntüsünde HTTP 200,
+  yatay taşma 0, JS hatası 0; Rafi sohbeti (karşılama, arama, karşılaştırma, sonuçsuz arama) tarayıcıda çalıştı.
+- DENENMEYEN: gerçek MySQL/MariaDB, gerçek install/ sihirbazı arayüzü, Natro ortamı, SSL, cron, e-posta.
+
+======================================================================
+10. GERİ DÖNÜŞ
+======================================================================
+Sorun olursa: siteyi bakım moduna alın → Bölüm 4'teki dosya yedeğini geri yükleyin → gerekiyorsa veritabanı yedeğini geri yükleyin.
+Rafımda modülleri yalnızca YENİ tablolar ekler; FriSay tablolarındaki verilere dokunmaz. Tablo SİLMEYİN; modülü panelden
+devre dışı bırakmak çoğu durumda yeterlidir (veri korunur).

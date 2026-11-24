@@ -1,0 +1,77 @@
+RAFIMDA – CANLIYA GEÇİŞ KONTROL LİSTESİ
+Paket sürümü: 1.0.0-rc1 · Hazırlanma: 25.11.2026
+Durum işaretleri: [Tamamlandı] [Başarısız] [Bekliyor] [Uygulanamaz]
+"Tamamlandı" yalnızca bu oturumda GERÇEKTEN yapılıp doğrulanan işler içindir (geliştirme ortamında, SQLite üzerinde).
+Canlı sistemde hiçbir işlem yapılmadı; canlıya ait satırlar sizin uygulamanızı bekler.
+
+A. KOD VE TESTLER
+[Tamamlandı]  Tüm otomatik test takımları (SQLite + stub): 0 başarısız (ayrıntı: son raporda toplam sayı)
+[Tamamlandı]  PHP 8.1 uyumluluk statik taraması: bulgu yok
+[Tamamlandı]  XSS regresyon (tools/xss-security-regression.php): 349 geçti / 0 başarısız
+[Tamamlandı]  Zip güvenlik regresyonu (tools/zip-security-regression.php): 67 geçti / 0 başarısız
+[Tamamlandı]  Rafımda modüllerinde SQL birleştirme, tehlikeli fonksiyon, nofilter ve CSRF taraması (2 şablonda ek kaçış eklendi)
+[Tamamlandı]  Depoda gizli bilgi taraması (anahtar/şifre/özel anahtar kalıpları): bulgu yok
+[Bekliyor]    Gerçek MySQL/MariaDB üzerinde test (sunucuda MySQL yok; staging veya canlı yedeği gerekir)
+
+B. TEMA VE GÖRÜNÜM (geliştirme önizlemesi, ÖRNEK/TEST verisiyle)
+[Tamamlandı]  Rafımda logosu, favicon, lacivert/turuncu/beyaz tema gerçek uygulamada görünüyor
+[Tamamlandı]  Ana sayfa: logo, arama, kategoriler, giriş/kayıt, sepet, büyük slider, kampanyalar, öne çıkan ürünler, öne çıkan mağazalar, footer
+[Tamamlandı]  Ürün listeleme, ürün detay, arama, sepet, mağaza sayfası, satıcı başvuru, hukuki sayfalar, çerez tercihleri
+[Tamamlandı]  Müşteri hesap merkezi, satıcı paneli (6 bölüm), yönetici paneli (9 sayfa) açılıyor
+[Tamamlandı]  Masaüstü 1440 / tablet 820 / mobil 390: HTTP 200, yatay taşma 0, JS hatası 0 (81 görünüm)
+[Tamamlandı]  İç bağlantı taraması: 60 sayfa, kırık bağlantı 0
+[Bekliyor]    Gerçek ürün görselleri ve gerçek ürün/satıcı verisiyle görünüm (canlı veri sizdedir)
+[Bekliyor]    Banner/slider görsellerinin sizin tarafınızdan yüklenmesi (önizlemedeki ikinci slider FriSay demo görselidir)
+
+C. RAFİ ASİSTANI
+[Tamamlandı]  Ana sayfa karşılaması, metin sohbeti, katalog araması, fiyat/stok/indirim filtreleri, 2–3 ürün karşılaştırması (tarayıcıda)
+[Tamamlandı]  Uydurma bilgi üretmeme (bulunamayan ürün için "bulamadım"), CSRF ve hız sınırı
+[Uygulanamaz] Ücretli yapay zekâ (LLM) bağlantısı – onayınız olmadan bağlanmadı
+
+D. PAKET
+[Tamamlandı]  public_html zip'i üretildi; unzip -t geçti; iç klasör yok; zorunlu dosyalar var; env.php/.env/.git/test/yedek yok
+[Tamamlandı]  Kurulum provası: paket boş klasöre açılıp kuruldu ve tarayıcıda doğrulandı (SQLite)
+[Bekliyor]    SHA-256 değerinin sizin tarafınızdan indirilen dosyayla karşılaştırılması
+
+E. HOSTİNG (Natro) – sizin doğrulamanız
+[Bekliyor]    PHP 8.1 veya 8.2 (sürümü onayınız olmadan değiştirmeyin)
+[Bekliyor]    Eklentiler: pdo_mysql, mbstring, gd, sodium, curl, json (+ xmlreader, xmlwriter, dom, fileinfo)
+[Bekliyor]    MySQL/MariaDB sürümü ve utf8mb4
+[Bekliyor]    SSL (ana alan + www) ve HTTP→HTTPS; alt alanların SSL durumu (HSTS kararı için)
+[Bekliyor]    mod_rewrite/.htaccess etkin; korumalı adreslerin 403/404 vermesi
+[Bekliyor]    Cron erişimi (XML Hub, Pazaryeri Hub, Sosyal medya)
+[Bekliyor]    SSH/Terminal var mı (yoksa tek seferlik cron yöntemi)
+
+F. YEDEK
+[Bekliyor]    Canlı sitenin tam dosya yedeği (cPanel) – SİZ alacaksınız
+[Bekliyor]    Canlı veritabanı yedeği (phpMyAdmin SQL) – SİZ alacaksınız
+[Bekliyor]    Madde 22 (yedekten geri yükleme provası) – gerçek yedek dosyaları sağlanınca
+
+G. YÜKLEME VE KURULUM (canlı – yazılı onayınızla, sizin tarafınızdan)
+[Bekliyor]    Zip'in public_html'e yüklenmesi ve çıkarılması
+[Bekliyor]    Yeni kurulum: install/ sihirbazı (demo veri İŞARETLENMEDEN)  ya da  güncelleme: live-preflight → live-migrate (plan) → --apply → live-verify
+[Bekliyor]    Modüllerin panelden sırayla kurulması/etkinleştirilmesi
+[Bekliyor]    config/env.php izni 600, ADMIN_URI değişikliği, install/ kararı
+[Bekliyor]    Kurulum sonrası 403/404 ve sayfa kontrolleri (kılavuz Bölüm 8)
+
+H. İÇERİK VE ŞİRKET BİLGİLERİ – sizden gelecek
+[Bekliyor]    Şirket unvanı, adres, vergi dairesi/no, MERSİS, KEP, telefon, e-posta, ETBİS kaydı (uydurulmadı; örnek değerler değiştirilmeli)
+[Bekliyor]    Hukuki metinlerin avukat/KVKK danışmanı onayı (belgeler TASLAK)
+[Bekliyor]    Satıcı bandındaki ticari vaatlerin onayı ("Rekabetçi ve düşük komisyon", "İlk ay ana sayfada ürün tanıtım fırsatı")
+[Bekliyor]    Komisyon oranları ve paket fiyatları kararı
+
+I. DIŞ HİZMETLER – onay ve erişim gerektirir
+[Bekliyor]    Ödeme sağlayıcısı seçimi (ücretli entegrasyon ETKİNLEŞTİRİLMEDİ)
+[Bekliyor]    e-Fatura/e-Arşiv entegratörü (canlı gönderim KAPALI)
+[Bekliyor]    SMTP / e-posta gönderim hesabı; SMS sağlayıcısı (yok)
+[Bekliyor]    Trendyol / Hepsiburada / N11 API erişimleri (Pazarama, Amazon, Ozon geliştirilmedi)
+[Bekliyor]    Sosyal medya hesap bağlantıları (otomatik yayın KAPALI)
+[Bekliyor]    Google Analytics / Facebook Pixel kimlikleri (yalnızca çerez izniyle çalışır)
+
+J. KAPALI KALACAKLAR (yazılı onayınız olmadan açılmaz)
+[Tamamlandı]  Bayilik sistemi PASİF (rotalar 404, siparişe bağlı işlem yok)
+[Tamamlandı]  Gerçek ödeme, gerçek fatura gönderimi, otomatik sosyal paylaşım KAPALI
+[Tamamlandı]  Ücretli yapay zekâ hizmeti bağlı değil
+
+K. BEKLEMEDE
+[Bekliyor]    FriSay lisans / bağımsızlaşma kararı (ŞİMDİLİK BEKLEMEDE – hiçbir şey silinmedi)
