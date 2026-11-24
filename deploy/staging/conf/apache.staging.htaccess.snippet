@@ -1,0 +1,15 @@
+# Apache için: .htaccess dosyasına (RewriteEngine bölümünden ÖNCE) eklenecek parçalar.
+<IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+</IfModule>
+
+# robots.txt: tam engel
+RewriteEngine On
+RewriteRule ^robots\.txt$ /deploy/staging/conf/robots.staging.txt [L]
+
+# Önerilen Basic Auth (parola dosyası web kökü DIŞINDA olmalı ve repoda tutulmaz):
+#   htpasswd -c /etc/apache2/.htpasswd-rafimda-staging KULLANICI
+# AuthType Basic
+# AuthName "Rafimda Staging"
+# AuthUserFile /etc/apache2/.htpasswd-rafimda-staging
+# Require valid-user

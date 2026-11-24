@@ -1,0 +1,22 @@
+# test.rafimda.com.tr server { } bloğuna eklenecek parçalar (nginx.conf.example'ı tamamlar, yerine geçmez).
+
+# 1) Her yanıta arama motoru engeli
+add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
+
+# 2) robots.txt her zaman tam engel (FriSay'ın kökteki robots.txt dosyasına dokunmadan)
+location = /robots.txt {
+    default_type text/plain;
+    return 200 "User-agent: *\nDisallow: /\n";
+}
+
+# 3) Önerilen: staging'i HTTP Basic Auth arkasına al (parola dosyası repoda TUTULMAZ)
+#    sudo htpasswd -c /etc/nginx/.htpasswd-rafimda-staging KULLANICI
+auth_basic           "Rafimda Staging";
+auth_basic_user_file /etc/nginx/.htpasswd-rafimda-staging;
+
+# 4) Erişim ve hata logları (canlıdan ayrı dosyalar)
+access_log /var/log/nginx/rafimda-staging.access.log;
+error_log  /var/log/nginx/rafimda-staging.error.log warn;
+
+# 5) cron uçları Basic Auth'u atlamalı ama anahtar zorunlu kalır (cron curl'ü -u ile de çalışabilir):
+#    location ~ ^/(xml-cron|pazaryeri-cron)$ { auth_basic off; try_files $uri /index.php?$args; }
