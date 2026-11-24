@@ -34,7 +34,9 @@ with sync_playwright() as pw:
                     pg.goto(base + '/login'); pg.fill('#loginPagePhone', em); pg.fill('#loginPagePassword', pw_)
                     pg.click('#loginPageForm [type=submit]')
                 pg.wait_for_load_state('networkidle')
-                errs.clear(); bad.clear()
+                if '/login' in pg.url or pg.locator('#adminLoginPassword, #loginPagePassword').count():
+                    errs.append('GİRİŞ BAŞARISIZ: ' + pg.url)
+                errs_keep = list(errs); errs.clear(); bad.clear(); errs.extend([e for e in errs_keep if e.startswith('GİRİŞ')])
             resp = pg.goto(base + p, wait_until="networkidle")
             if os.environ.get('RF_COOKIE') == 'none' and pg.locator('button[name=choice][value=none]').count():
                 pg.click('button[name=choice][value=none]'); pg.wait_for_load_state('networkidle')
@@ -43,6 +45,8 @@ with sync_playwright() as pw:
             pg.wait_for_timeout(400)
             ow = pg.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
             pg.screenshot(path=os.path.join(out, f"{name}.{kind}.png"), full_page=True)
+            if login and pg.locator('#adminLoginPassword, #loginPagePassword').count():
+                errs.append('GİRİŞ SAYFASI GÖRÜNTÜLENDİ (oturum yok)')
             real = [e for e in errs if "Failed to load resource" not in e and "ERR_FAILED" not in e and "ServiceWorker" not in e]
             report.append({"page": p, "view": kind, "status": resp.status if resp else 0, "h_overflow_px": ow, "js_errors": real[:3], "bad_requests": sorted(set(bad))[:5]})
             ctx.close()

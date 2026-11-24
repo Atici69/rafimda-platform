@@ -134,7 +134,12 @@ foreach (['DOMAIN' => 'http://127.0.0.1:8090/', 'FOLDER' => '/', 'SITE_NAME' => 
 	'SHOP_TOKEN' => bin2hex(random_bytes(8)), 'FREE_SHIPPING_MIN' => '500', 'SHIPPING_FEE' => '79.90', 'CARGO_DAY' => '3', 'CONTACT_EMAIL' => 'ornek@rafimda.test', 'MAIL_DRIVER' => 'php'] as $k => $v) {
 	$set($k, $v);
 }
-$pdo->prepare('UPDATE admins SET full_name = ?, email = ?, password = ?, active = 1 WHERE id_admin = 1')->execute(['Önizleme Yönetici', 'admin@rafimda.test', password_hash('Onizleme123!', PASSWORD_DEFAULT)]);
+// Kurulum sihirbazıyla aynı mantık (core/Installer.php): önce UPDATE, satır yoksa INSERT
+$adm = $pdo->prepare('UPDATE admins SET full_name = ?, email = ?, password = ?, active = 1 WHERE id_admin = 1');
+$adm->execute(['Önizleme Yönetici', 'admin@rafimda.test', password_hash('Onizleme123!', PASSWORD_DEFAULT)]);
+if ($adm->rowCount() === 0) {
+	$pdo->prepare('INSERT INTO admins (full_name, email, password, active) VALUES (?, ?, ?, 1)')->execute(['Önizleme Yönetici', 'admin@rafimda.test', password_hash('Onizleme123!', PASSWORD_DEFAULT)]);
+}
 echo "Şema ve demo veri hazır. Hata günlüğü: $log\n";
 // Rafımda modülleri: gerçek Module::install() ile (FriSay'in kendi kurulum yolu), staging'deki sırayla
 $code = <<<'PHP'

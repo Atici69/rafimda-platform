@@ -23,7 +23,7 @@
 </tr>{/foreach}
 </tbody></table></div></div>
 <form method="post" class="mt-3"><input type="hidden" name="token" value="{$rlToken|escape}"><input type="hidden" name="rlAction" value="cms_sync">
-	<button class="btn btn-outline-dark btn-sm" type="submit">Ödeme sayfasındaki CMS metinlerini (mesafeli-satis, gizlilik) yayındaki sürümle güncelle</button>
+	<button class="btn btn-outline-dark btn-sm text-start text-wrap mw-100" style="white-space:normal" type="submit">Ödeme sayfasındaki CMS metinlerini (mesafeli-satis, gizlilik) yayındaki sürümle güncelle</button>
 	<span class="small text-muted ms-2">Yalnızca bu düğmeyle, açık işlemle çalışır.</span>
 </form>
 {/if}
