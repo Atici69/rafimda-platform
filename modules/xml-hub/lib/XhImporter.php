@@ -3,7 +3,47 @@
 /** Tek ürün satırının işlenmesi: eşleştirme → yinelenen/değişiklik denetimi → ekleme/güncelleme → geçmiş ve hata kaydı. */
 class XhImporter
 {
-	/** @return int marka/kategori adına göre (büyük/küçük harf duyarsız, tam ad) aktif kayıt ID'si */
+	private static ?bool $smart = null;
+	/** process() sırasında bağlantı seçeneğine göre açılır: eşleşmeyen markayı oluştur */
+	private static bool $createBrands = false;
+	/** process() sırasında bağlantı seçeneğine göre: otomatik kategori eşleştirme kullan */
+	private static bool $autoCategory = true;
+	/** @var array<string,int>|null normalleştirilmiş marka adı → id */
+	private static ?array $brandIndex = null;
+
+	public static function resetCaches(): void
+	{
+		self::$smart = null;
+		self::$brandIndex = null;
+	}
+
+	/** Rafımda Katalog modülü (otomatik kategori eşleştirme) kurulu ve etkin mi? */
+	public static function smartCategories(): bool
+	{
+		if (self::$smart !== null) {
+			return self::$smart;
+		}
+
+		$enabled = !class_exists('Module') || !method_exists('Module', 'isEnabled') || Module::isEnabled('rafimda-catalog');
+		$file = dirname(__DIR__, 2) . '/rafimda-catalog/lib/RcatMatcher.php';
+
+		if ($enabled && !class_exists('RcatMatcher', false) && is_file($file)) {
+			require_once $file;
+		}
+
+		return self::$smart = $enabled && class_exists('RcatMatcher', false);
+	}
+
+	private static function normName(string $s): string
+	{
+		$s = strtr($s, ['İ' => 'i', 'I' => 'ı']);
+		$s = mb_strtolower($s, 'UTF-8');
+		$s = strtr($s, ['ç' => 'c', 'ğ' => 'g', 'ı' => 'i', 'ö' => 'o', 'ş' => 's', 'ü' => 'u']);
+
+		return trim(preg_replace('/[^a-z0-9]+/', ' ', $s) ?? '');
+	}
+
+	/** @return int marka/kategori adına göre aktif kayıt ID'si (kategori: Rafımda Katalog etkinse akıllı eşleştirme) */
 	public static function lookup(string $kind, string $text): int
 	{
 		$text = trim($text);
@@ -12,12 +52,60 @@ class XhImporter
 			return 0;
 		}
 
-		$sql = $kind === 'brand'
-			? 'SELECT id_brand AS id FROM brands WHERE LOWER(brand_name) = LOWER(?) AND active = 1 LIMIT 1'
-			: 'SELECT id_category AS id FROM categories WHERE LOWER(category_name) = LOWER(?) AND active = 1 LIMIT 1';
-		$r = DB::execute($sql, [$text]);
+		if ($kind === 'brand') {
+			if (self::$brandIndex === null) {
+				self::$brandIndex = [];
 
-		return $r && isset($r[0]) ? (int) $r[0]['id'] : 0;
+				foreach (DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1') ?: [] as $b) {
+					self::$brandIndex[self::normName((string) $b['brand_name'])] = self::$brandIndex[self::normName((string) $b['brand_name'])] ?? (int) $b['id_brand'];
+				}
+			}
+
+			$id = self::$brandIndex[self::normName($text)] ?? 0;
+
+			if ($id === 0 && self::$createBrands) {
+				$id = self::createBrand($text);
+			}
+
+			return $id;
+		}
+
+		$smart = self::$autoCategory && self::smartCategories();
+
+		if ($smart && ($id = RcatMatcher::resolve($text)) > 0) {
+			return $id;
+		}
+
+		// tam ad: akıllı eşleştirme açıkken yalnızca TEK kategori bu adı taşıyorsa (Kadın/Erkek > Mont gibi aynı adlılarda rastgele seçilmez)
+		$r = DB::execute('SELECT id_category AS id FROM categories WHERE LOWER(category_name) = LOWER(?) AND active = 1 LIMIT 2', [$text]) ?: [];
+
+		return isset($r[0]) && (!$smart || count($r) === 1) ? (int) $r[0]['id'] : 0;
+	}
+
+	/** Eşleşmeyen tedarikçi markasını oluşturur (bağlantı seçeneği "Eksik markaları otomatik oluştur" açıkken). */
+	private static function createBrand(string $name): int
+	{
+		$name = mb_substr(trim(strip_tags($name)), 0, 48);
+		$norm = self::normName($name);
+
+		if (mb_strlen($name) < 2 || $norm === '') {
+			return 0;
+		}
+
+		$base = str_replace(' ', '-', $norm);
+		$slug = $base;
+
+		for ($i = 2; $i < 50 && (int) DB::getValue('SELECT COUNT(*) FROM brands WHERE brand_link = ?', [$slug]) > 0; $i++) {
+			$slug = $base . '-' . $i;
+		}
+
+		$id = (int) DB::insert('brands', ['brand_name' => $name, 'brand_link' => mb_substr($slug, 0, 64), 'active' => 1]);
+
+		if ($id > 0) {
+			self::$brandIndex[$norm] = $id;
+		}
+
+		return $id;
 	}
 
 	/**
@@ -68,8 +156,20 @@ class XhImporter
 	public static function preview(array $conn, array $raw): array
 	{
 		$opt = XhRepo::options($conn);
-		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		self::$autoCategory = !empty($opt['auto_category']);
+
+		try {
+			$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		} finally {
+			self::$autoCategory = true;
+		}
+
 		$idVendor = (int) $conn['id_vendor'];
+
+		if ($row['errors'] !== [] && !empty($opt['auto_brand']) && (int) $row['id_brand'] <= 0 && $row['brand_text'] !== '') {
+			// önizleme yazmaz: marka içe aktarmada otomatik oluşturulacak
+			$row['errors'] = array_values(array_filter($row['errors'], static fn(string $e): bool => strpos($e, 'Marka eşleşmedi') !== 0));
+		}
 		$existing = $row['errors'] === [] ? self::resolveExisting($conn, $row) : 0;
 		$row['action'] = $row['errors'] !== [] ? 'error' : ($existing > 0 ? 'update' : 'create');
 		$row['id_product'] = $existing;
@@ -102,7 +202,16 @@ class XhImporter
 		$idVendor = (int) $conn['id_vendor'];
 		$kind = (string) $run['kind'];
 		$opt = XhRepo::options($conn);
-		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		self::$createBrands = !empty($opt['auto_brand']);
+		self::$autoCategory = !empty($opt['auto_category']);
+
+		try {
+			$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		} finally {
+			self::$createBrands = false;
+			self::$autoCategory = true;
+		}
+
 		$key = (string) $row['key'];
 
 		if ($key === '') {

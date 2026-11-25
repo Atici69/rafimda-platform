@@ -244,6 +244,9 @@ class XhMapper
 		$stock = $stockRaw === null ? null : self::parseNumber($stockRaw);
 		$markup = (float) ($opt['price_markup_percent'] ?? 0);
 		$add = (float) ($opt['price_add'] ?? 0);
+		$vatRaw = self::parseNumber($get('vat'));
+		$vatRow = $vatRaw !== null && $vatRaw >= 0 && $vatRaw <= 100 ? $vatRaw : null;
+		$fixPrice = self::priceRule($opt, $vatRow);
 
 		if (mb_strlen($name) < 3) {
 			$errors[] = 'Ürün adı eksik/çok kısa.';
@@ -261,7 +264,7 @@ class XhMapper
 			$price = $sale;
 		}
 
-		$adj = static fn(float $p): float => $p > 0 ? round($p * (1 + $markup / 100) + $add, 2) : 0.0;
+		$adj = static fn(float $p): float => $p > 0 ? $fixPrice($p) : 0.0;
 		$price = $adj($price);
 		$old = $adj($old);
 
@@ -275,7 +278,13 @@ class XhMapper
 
 		// marka / kategori
 		$brandTxt = $str($get('brand'), 128);
-		$catTxt = $str($get('category'), 255);
+		$catRaw = $get('category');
+
+		if (is_array($catRaw) && self::isStringList($catRaw)) {
+			$catRaw = implode(' > ', array_filter(array_map(static fn($v): string => trim((string) $v), $catRaw), static fn(string $v): bool => $v !== ''));
+		}
+
+		$catTxt = $str($catRaw, 255);
 		$brandMap = is_array($mapping['brand_map'] ?? null) ? $mapping['brand_map'] : [];
 		$catMap = is_array($mapping['category_map'] ?? null) ? $mapping['category_map'] : [];
 		$idBrand = $brandTxt !== '' ? (int) ($brandMap[$brandTxt] ?? 0) : 0;
@@ -375,7 +384,7 @@ class XhMapper
 			'desi' => $desi !== null ? max(0, (int) round($desi)) : null,
 			'cargo_day' => ($cd = self::parseNumber($get('cargo_day'))) !== null ? max(0, (int) $cd) : null,
 			'cargo_price' => self::parseNumber($get('cargo_price')),
-			'vat' => ($vt = self::parseNumber($get('vat'))) !== null && $vt >= 0 && $vt <= 100 ? $vt : null,
+			'vat' => $vatRow ?? (($opt['vat_mode'] ?? 'none') === 'add' ? (float) ($opt['vat_rate'] ?? 20) : null),
 			'errors' => $errors,
 		];
 		$hashRow = $row;
@@ -383,6 +392,34 @@ class XhMapper
 		$row['hash'] = sha1((string) json_encode($hashRow, JSON_UNESCAPED_UNICODE));
 
 		return $row;
+	}
+
+	/**
+	 * Fiyat kuralı: tedarikçi fiyatı → (kâr) → (+ sabit) → (+ KDV) → kuruşa yuvarla.
+	 *  profit_mode=markup : fiyat × (1 + %kâr)           (%40 → 100 ₺ maliyet 140 ₺)
+	 *  profit_mode=margin : fiyat ÷ (1 − %kâr)           (%40 → 100 ₺ maliyet 166,67 ₺; satıştan %40 kâr)
+	 *  vat_mode=add       : KDV hariç gelen fiyata KDV eklenir (oran: XML'deki KDV alanı, yoksa vat_rate)
+	 * @param array<string,mixed> $opt
+	 * @return callable(float): float
+	 */
+	public static function priceRule(array $opt, ?float $vatFromRow = null): callable
+	{
+		$pct = (float) ($opt['price_markup_percent'] ?? 0);
+		$add = (float) ($opt['price_add'] ?? 0);
+		$margin = ($opt['profit_mode'] ?? 'markup') === 'margin';
+		$vat = ($opt['vat_mode'] ?? 'none') === 'add' ? ($vatFromRow ?? (float) ($opt['vat_rate'] ?? 20)) : 0.0;
+
+		return static function (float $p) use ($pct, $add, $margin, $vat): float {
+			if ($margin) {
+				$p = $pct > 0 && $pct < 100 ? $p / (1 - $pct / 100) : $p;
+			} else {
+				$p = $p * (1 + $pct / 100);
+			}
+
+			$p = ($p + $add) * (1 + $vat / 100);
+
+			return round($p, 2);
+		};
 	}
 
 	/** @param array<string,mixed> $m @return array<string,mixed> */

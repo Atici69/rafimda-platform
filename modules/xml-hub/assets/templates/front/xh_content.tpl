@@ -165,13 +165,13 @@
 
 {if $tab == 'maps'}
 <div class="xh-card"><h3>Marka ve kategori eşleştirme</h3>
-	<p class="muted">Tedarikçideki adı sitenizdeki marka/kategoriye bağlayın. Eşleştirdikten sonra hatalı satırları "Hatalıları yeniden dene" ile ekleyebilirsiniz.</p>
+	<p class="muted">Kategoriler ad/yol benzerliğiyle otomatik eşlenir; burada yalnızca emin olunamayanlar listelenir ve en iyi öneri seçili gelir — kontrol edip kaydedin. Tedarikçideki adı sitenizdeki marka/kategoriye bağlayın. Eşleştirdikten sonra hatalı satırları "Hatalıları yeniden dene" ile ekleyebilirsiniz.</p>
 	{if $unmapped.brand|count == 0 && $unmapped.category|count == 0}<p class="muted">Eşleştirilecek ad yok. (Liste, içe aktarma/önizleme sonrası kayıtlı satırlardan çıkarılır.)</p>{/if}
 	{if $xhCanManage}<form method="post"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_map_save"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}">
 	{if $unmapped.brand|count > 0}<h4>Markalar</h4>{foreach $unmapped.brand as $u}
 		<div class="row"><span style="flex:1">{$u.text|escape} <span class="pill">{$u.n|escape} ürün</span></span><select name="map_brand[{$u.enc|escape}]"><option value="0">—</option>{foreach $brands as $b}<option value="{$b.id_brand|escape}">{$b.brand_name|escape}</option>{/foreach}</select></div>{/foreach}{/if}
 	{if $unmapped.category|count > 0}<h4>Kategoriler</h4>{foreach $unmapped.category as $u}
-		<div class="row"><span style="flex:1">{$u.text|escape} <span class="pill">{$u.n|escape} ürün</span></span><select name="map_category[{$u.enc|escape}]"><option value="0">—</option>{foreach $categories as $c}<option value="{$c.id_category|escape}">{$c.category_name|escape}</option>{/foreach}</select></div>{/foreach}{/if}
+		<div class="row"><span style="flex:1">{$u.text|escape} <span class="pill">{$u.n|escape} ürün</span></span><select name="map_category[{$u.enc|escape}]"><option value="0">—</option>{foreach $categories as $c}<option value="{$c.id_category|escape}"{if $u.suggest|default:0 == $c.id_category} selected{/if}>{$c.category_name|escape}</option>{/foreach}</select>{if $u.suggest|default:0 > 0}<span class="pill" title="Benzerlik puanı">öneri {$u.score|string_format:"%.2f"}</span>{/if}</div>{/foreach}{/if}
 	{if $unmapped.brand|count > 0 || $unmapped.category|count > 0}<p><button class="btn" type="submit">Eşleştirmeleri kaydet</button></p>{/if}</form>{/if}
 	{if $mapBrand|count > 0 || $mapCategory|count > 0}<h4>Kayıtlı eşleştirmeler</h4><p class="muted">{foreach $mapBrand as $k => $v}<span class="pill">Marka: {$k|escape} → #{$v|escape}</span> {/foreach}{foreach $mapCategory as $k => $v}<span class="pill">Kategori: {$k|escape} → #{$v|escape}</span> {/foreach}</p>{/if}
 </div>

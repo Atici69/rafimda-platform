@@ -104,6 +104,14 @@ class XhPanel
 	/** @return list<array<string,mixed>> */
 	private function categories(): array
 	{
+		if (XhImporter::smartCategories()) {
+			// aynı adlı kategoriler (Kadın > Tişört / Erkek > Tişört) ayırt edilebilsin diye tam yol gösterilir
+			$out = array_map(static fn(array $c): array => ['id_category' => $c['id'], 'category_name' => $c['path']], RcatMatcher::candidates());
+			usort($out, static fn(array $a, array $b): int => strcmp((string) $a['category_name'], (string) $b['category_name']));
+
+			return array_slice($out, 0, 3000);
+		}
+
 		return DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name ASC LIMIT 2000') ?: [];
 	}
 
@@ -215,7 +223,8 @@ class XhPanel
 				$vars['unmapped'][$k] = [];
 
 				foreach ($um[$k] as $text => $n) {
-					$vars['unmapped'][$k][] = ['text' => (string) $text, 'enc' => base64_encode((string) $text), 'n' => $n];
+					$sug = $k === 'category' && XhImporter::smartCategories() ? RcatMatcher::match((string) $text) : ['id' => 0, 'score' => 0];
+					$vars['unmapped'][$k][] = ['text' => (string) $text, 'enc' => base64_encode((string) $text), 'n' => $n, 'suggest' => (int) $sug['id'], 'score' => (float) $sug['score']];
 				}
 			}
 		}
