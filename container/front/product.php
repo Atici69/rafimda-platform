@@ -77,9 +77,7 @@
 		}
 	}
 
-	$havalePercent = Module::getPaymentModule('bank_transfer')
-		? (float) Module::getPaymentDiscount('bank_transfer', 100)['percent']
-		: (float) (Settings::get('BANKWIRE_DISCOUNT_PERCENT') ?: Settings::get('HAVALE') ?: 0);
+	$havalePercent = (float) Module::getPaymentDiscount('bank_transfer', 100)['percent'];
 
 	if (!empty(DB::execute("SHOW TABLES LIKE 'product_reviews'"))) {
 		$reviewStat = DB::execute(
