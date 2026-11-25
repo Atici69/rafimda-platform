@@ -15,7 +15,7 @@ $o = drive(['user' => 0, 'get' => ['s' => 'dashboard']]); ok(redirect($o) === 'h
 $o = drive(['user' => 3, 'get' => ['s' => 'dashboard']]); ok(redirect($o) === 'https://test.local/satici-kayit', 'mağazası olmayan müşteri → satıcı kaydı');
 
 echo "\n== 13 ekran: açılır, hatasız, kendi verisini gösterir\n";
-$screens = ['dashboard' => 'Hızlı işlemler', 'products' => 'Pamuklu Tişört', 'orders' => 'R1', 'stock' => 'Kot Pantolon', 'pricing' => 'Kot Pantolon', 'finance' => 'bakiye', 'store' => 'Moda Evi', 'customers' => 'Ayşe', 'staff' => 'personel@x.com', 'subscription' => 'Paketiniz', 'reports' => 'Satış raporu', 'settings' => 'Düşük stok eşiği', 'campaigns' => 'Vitrin'];
+$screens = ['dashboard' => 'Hızlı işlemler', 'products' => 'Pamuklu Tişört', 'orders' => 'R1', 'stock' => 'Kot Pantolon', 'pricing' => 'Kot Pantolon', 'finance' => 'bakiye', 'store' => 'Moda Evi', 'customers' => 'Ayşe', 'staff' => 'personel@x.com', 'subscription' => 'abonelik veya paket ücreti yoktur', 'reports' => 'Satış raporu', 'settings' => 'Düşük stok eşiği', 'campaigns' => 'Vitrin'];
 foreach ($screens as $s => $needle) {
 	$o = drive(['get' => ['s' => $s], 'campaign' => 1]);
 	ok(has($o, $needle) && clean($o) && has($o, '<main class="rv-content">') && !has($o, 'Başkasının') && !has($o, 'Gizli Müşteri') && redirect($o) === '', "ekran '$s' açılır, '$needle' görünür, başka satıcı verisi yok" . (clean($o) ? '' : ' [UYARI/HATA]'));

@@ -9,7 +9,7 @@ INSERT INTO `categories` (`id_category`, `id_parent`, `category_name`, `category
 
 INSERT INTO `brands` (`id_brand`, `brand_name`, `brand_link`, `meta_title`, `meta_description`, `active`) VALUES
 (1, 'TechnoMark', 'technomark', '', '', 1),
-(2, 'FriSay', 'frisay', '', '', 1),
+(2, 'Rafımda', 'rafimda', '', '', 1),
 (3, 'Solgar', 'solgar', '', '', 1);
 
 INSERT INTO `products` (`id_product`, `id_category`, `id_brand`, `product_name`, `short_description`, `meta_title`, `meta_description`, `description`, `product_link`, `price`, `pack_price_override`, `cost`, `doviz`, `doviz_price`, `doviz_old_price`, `doviz_cost`, `old_price`, `vat`, `active`, `stock`, `stock_empty_at`, `cargo_day`, `label`, `product_video`, `stock_code`, `barcode`, `desi`, `product_type`, `virtual_kind`, `virtual_file`, `virtual_file_name`, `virtual_text`) VALUES
@@ -81,7 +81,7 @@ INSERT INTO `order_detail` (`id_order_detail`, `id_order`, `id_product`, `id_var
 (1, 1, 6, 0, 'Ocean Vitamin D3', '', 4248.69, 1, 4248.69, NULL, '');
 
 INSERT INTO `users` (`id_user`, `user_full_name`, `phone`, `email`, `google_id`, `password`, `image`, `login_code`, `reset_token`, `reset_expires`, `active`, `date_add`) VALUES
-(1, 'Ramazan Benek', '0123456789', 'info@frisay.com', NULL, '$2y$10$uZPeEet42SAFoUJhOTNflOL2uE9IpGhSb2CyGu4O/mnnPcLDpDNXW', '', '4569f6e9902d4dc45cc04bf2e9027b8528f8fd919a1c16fdaff22dc19fd130a4', '', NULL, 1, '2026-07-20 14:31:32');
+(1, 'Ramazan Benek', '0123456789', 'info@rafimda.com.tr', NULL, '$2y$10$uZPeEet42SAFoUJhOTNflOL2uE9IpGhSb2CyGu4O/mnnPcLDpDNXW', '', '4569f6e9902d4dc45cc04bf2e9027b8528f8fd919a1c16fdaff22dc19fd130a4', '', NULL, 1, '2026-07-20 14:31:32');
 
 DROP TABLE IF EXISTS `slider_slides`;
 CREATE TABLE IF NOT EXISTS `slider_slides` (

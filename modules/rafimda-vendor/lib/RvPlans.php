@@ -47,13 +47,9 @@ class RvPlans
 			return ['success' => false, 'message' => 'Paket adı en az 2 karakter olmalı.'];
 		}
 
-		$price = self::num($d['price_monthly'] ?? 0);
-
-		if ($price === null || $price < 0 || $price > 1000000) {
-			return ['success' => false, 'message' => 'Geçersiz aylık ücret.'];
-		}
-
-		$row = ['name' => $name, 'price_monthly' => round($price, 2), 'active' => !empty($d['active']) ? 1 : 0, 'sort_order' => max(0, min(999, (int) ($d['sort_order'] ?? 0)))];
+		// İş modeli: satıcılardan abonelik/paket ücreti ALINMAZ; gelir yalnızca tamamlanan satışlardan komisyondur.
+		// Bu yüzden gelen ücret alanı yok sayılır ve her zaman 0 yazılır (sütun geriye uyumluluk için korunur).
+		$row = ['name' => $name, 'price_monthly' => 0, 'active' => !empty($d['active']) ? 1 : 0, 'sort_order' => max(0, min(999, (int) ($d['sort_order'] ?? 0)))];
 
 		foreach (['max_products', 'max_xml_connections', 'max_marketplace_accounts'] as $k) {
 			$v = trim((string) ($d[$k] ?? ''));
@@ -156,7 +152,7 @@ class RvPlans
 
 		$u = self::usage($idVendor)['products'];
 
-		return $u + $adding <= (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Paketinizin ürün limitine ulaştınız (' . (int) $max . '). Daha yüksek paket için mağaza yönetimiyle iletişime geçin.'];
+		return $u + $adding <= (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Mağazanızın ürün limitine ulaştınız (' . (int) $max . '). Limit artırımı ücretsizdir; mağaza yönetimiyle iletişime geçin.'];
 	}
 
 	/** XML bağlantısı / pazaryeri hesabı kotası. $kind: xml | marketplaces. @return array{ok:bool, message:string} */
@@ -169,6 +165,6 @@ class RvPlans
 			return ['ok' => true, 'message' => ''];
 		}
 
-		return self::usage($idVendor)[$kind] < (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Paketinizin ' . ($kind === 'xml' ? 'XML bağlantı' : 'pazaryeri hesabı') . ' limitine ulaştınız (' . (int) $max . ').'];
+		return self::usage($idVendor)[$kind] < (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Mağazanızın ' . ($kind === 'xml' ? 'XML bağlantı' : 'pazaryeri hesabı') . ' limitine ulaştınız (' . (int) $max . '). Limit artırımı ücretsizdir; mağaza yönetimiyle iletişime geçin.'];
 	}
 }

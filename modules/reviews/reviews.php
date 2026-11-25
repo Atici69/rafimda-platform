@@ -13,7 +13,7 @@ class ReviewsModule extends ModuleBase
 	public string $title = 'Ürün Yorumları';
 	public string $version = '1.1.0';
 	public string $description = 'Ürün yorumları, puanlama ve teslim sonrası yorum davet e-postası';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_tab' => 'Ürün Tabı',

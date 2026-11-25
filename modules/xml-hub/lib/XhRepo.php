@@ -10,6 +10,8 @@ class XhRepo
 		'create_new' => 1, 'update_existing' => 1, 'sync_price' => 1, 'sync_stock' => 1, 'sync_description' => 0, 'sync_images' => 0,
 		'price_markup_percent' => 0, 'price_add' => 0, 'default_category' => 0, 'default_brand' => 0, 'max_images' => 5,
 		'image_mode' => 'if_empty', 'sync_cargo' => 1, 'create_variants' => 1,
+		// Rafımda: otomatik kategori eşleştirme, eksik marka oluşturma, KDV ve kâr kuralı
+		'auto_category' => 1, 'auto_brand' => 1, 'vat_mode' => 'none', 'vat_rate' => 20, 'profit_mode' => 'markup',
 	];
 
 	public static function now(): string
@@ -102,7 +104,7 @@ class XhRepo
 	{
 		$o = [];
 
-		foreach (['create_new', 'update_existing', 'sync_price', 'sync_stock', 'sync_description', 'sync_images', 'sync_cargo', 'create_variants'] as $b) {
+		foreach (['create_new', 'update_existing', 'sync_price', 'sync_stock', 'sync_description', 'sync_images', 'sync_cargo', 'create_variants', 'auto_category', 'auto_brand'] as $b) {
 			$o[$b] = array_key_exists($b, $in) ? (!empty($in[$b]) ? 1 : 0) : (int) self::DEFAULT_OPTIONS[$b]; // formlar işaretsiz kutu için gizli "0" gönderir
 		}
 
@@ -112,6 +114,13 @@ class XhRepo
 		$o['default_brand'] = max(0, (int) ($in['default_brand'] ?? 0));
 		$o['max_images'] = max(0, min(10, (int) ($in['max_images'] ?? 5)));
 		$o['image_mode'] = in_array($in['image_mode'] ?? '', ['if_empty', 'add_new'], true) ? $in['image_mode'] : 'if_empty';
+		$o['vat_mode'] = in_array($in['vat_mode'] ?? '', ['none', 'add'], true) ? $in['vat_mode'] : 'none';
+		$o['vat_rate'] = max(0.0, min(100.0, (float) str_replace(',', '.', (string) ($in['vat_rate'] ?? 20))));
+		$o['profit_mode'] = in_array($in['profit_mode'] ?? '', ['markup', 'margin'], true) ? $in['profit_mode'] : 'markup';
+
+		if ($o['profit_mode'] === 'margin') {
+			$o['price_markup_percent'] = max(0.0, min(90.0, $o['price_markup_percent'])); // marj %100'e yaklaşırsa fiyat sonsuza gider
+		}
 
 		return $o;
 	}

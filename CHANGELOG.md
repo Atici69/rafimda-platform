@@ -12,6 +12,20 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 3.0.0 sonrası geliştirmeler **3.0.2** altında toplandı.
 
 ---
+## [Yayınlanmadı] — 2026-11-25 (feature/rafimda-eksikler)
+
+### Marka
+- Görünür tüm FriSay/FShop adları ve logoları kaldırıldı; yönetim üst başlık/alt bilgi/gösterge paneli, hoş geldin sayfası, modül mağazası ve frisay.com bağlantıları, kurulum metinleri, e-posta/bildirim varsayılan adı, manifest, Hakkımızda, uzak mağaza etiketleri artık Rafımda. İç kimlikler (platform anahtarı, ad alanları, ayar anahtarları) değişmedi.
+
+### Satıcı iş modeli
+- Abonelik/paket ücreti yok: plan ücreti her zaman 0; "Paketler" → "Mağaza Limitleri" (yalnızca teknik limit); satıcı panelinde ücretsiz mağaza bildirimi; satıcı sözleşmesi taslağı güncellendi.
+
+### Kategori ve içe aktarma
+- Yeni modül **rafimda-catalog**: pazaryeri düzeninde tam kategori ağacı (16 ana, ~730 kategori; yalnızca eksikleri ekler) ve otomatik kategori eşleştirme (Türkçe normalleştirme, eş anlamlılar, yol bağlamı, cinsiyet/yaş ayrımı; belirsiz/eşik altı kaynaklar otomatik atanmaz, yönetici onayına düşer; onaylanan eşleme kalıcı).
+- XML Hub: kategori ad/yolu otomatik eşlenir; eksik markalar içe aktarmada oluşturulur; KDV hariç fiyata KDV ekleme; kâr hesabı seçimi (maliyet üzerine / satış içinden marj); kategori seçimleri tam yolla.
+- Satıcı paneli: Excel (.xlsx) içe aktarma ve Excel şablonu; kategori/marka adıyla, KDV ve görsel URL sütunları.
+
+---
 ## [3.0.3] — 2026-11-25
 
 ### Güncelleme sistemi (hata düzeltmesi)

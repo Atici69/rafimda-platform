@@ -30,7 +30,7 @@
 							<option value="hepsiburada"{if $marketplaceOrderPlatform == 'hepsiburada'} selected{/if}>Hepsiburada</option>
 							<option value="n11"{if $marketplaceOrderPlatform == 'n11'} selected{/if}>N11</option>
 							<option value="prestashop"{if $marketplaceOrderPlatform == 'prestashop'} selected{/if}>PrestaShop</option>
-							<option value="frisay"{if $marketplaceOrderPlatform == 'frisay'} selected{/if}>FriSay</option>
+							<option value="frisay"{if $marketplaceOrderPlatform == 'frisay'} selected{/if}>Uzak Mağaza</option>
 						</select>
 					</div>
 
@@ -425,7 +425,7 @@
 						<option value="hepsiburada">Hepsiburada</option>
 						<option value="n11">N11</option>
 						<option value="prestashop">PrestaShop</option>
-						<option value="frisay">FriSay</option>
+						<option value="frisay">Uzak Mağaza</option>
 					</select>
 				</div>
 				<div class="mb-2">

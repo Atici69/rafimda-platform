@@ -13,7 +13,7 @@ class QuantityTiersModule extends ModuleBase
 	public string $title = 'Çok Al Az Öde';
 	public string $version = '1.0.0';
 	public string $description = 'Ürün bazlı miktar kademeli birim fiyat (toplu alım indirimi)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_product_button' => 'Ürün formunda kademe fiyatları',

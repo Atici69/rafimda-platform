@@ -12,7 +12,7 @@ class SocialsModule extends ModuleBase
 	public string $title = 'Social Media';
 	public string $version = '1.0.0';
 	public string $description = 'Sosyal medyada paylaş';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_detail' => 'Sosyal Medya',

@@ -422,8 +422,8 @@ class MobilAppService
 		$icons = self::buildIconEntries($s);
 
 		return [
-			'name' => (string) ($s['app_name'] ?: 'FShop'),
-			'short_name' => (string) ($s['short_name'] ?: self::clip((string) ($s['app_name'] ?: 'FShop'), 12)),
+			'name' => (string) ($s['app_name'] ?: 'Rafımda'),
+			'short_name' => (string) ($s['short_name'] ?: self::clip((string) ($s['app_name'] ?: 'Rafımda'), 12)),
 			'description' => (string) ($s['description'] ?: 'Online alışveriş'),
 			'id' => $scope,
 			'lang' => self::getLangCode(),
@@ -449,7 +449,7 @@ class MobilAppService
 	{
 		$scope = self::getScopePath();
 		$domain = rtrim(self::getDomain(), '/');
-		$siteName = 'FShop';
+		$siteName = 'Rafımda';
 
 		try {
 			$name = trim((string) Settings::get('SITE_NAME'));
@@ -692,7 +692,7 @@ JS;
 	/** @return array<string, mixed> */
 	public static function fallbackSettings(): array
 	{
-		$siteName = 'FShop';
+		$siteName = 'Rafımda';
 
 		try {
 			$name = trim((string) Settings::get('SITE_NAME'));
@@ -1100,7 +1100,7 @@ JS;
 
 	private static function insertDefaults(): void
 	{
-		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'FShop';
+		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'Rafımda';
 
 		DB::execute(
 			'INSERT INTO `' . self::TABLE . '` (`id`, `enabled`, `app_name`, `short_name`, `description`) VALUES (?, 1, ?, ?, ?)',

@@ -18,7 +18,7 @@ class BizimhesapModule extends ModuleBase
 	public string $title = 'BizimHesap e-Fatura';
 	public string $version = '1.0.0';
 	public string $description = 'BizimHesap B2B API ile siparişten e-fatura / muhasebe faturası oluşturma';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_order_detail' => 'Sipariş detayında BizimHesap fatura paneli',

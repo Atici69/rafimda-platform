@@ -17,7 +17,7 @@ class BifaturaModule extends ModuleBase
 	public string $title = 'Bifatura e-Fatura';
 	public string $version = '1.0.0';
 	public string $description = 'Bifatura ile e-Fatura / e-Arşiv oluşturma, PDF ve gelen kutusu';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_order_detail' => 'Sipariş detayında e-fatura paneli',

@@ -28,7 +28,7 @@
 		<div class="border rounded p-3 mb-3">
 			<h3 class="h6 mb-2">{'Browser title suffix'|adminT}</h3>
 			<p class="text-muted small mb-3">
-				{'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.'|adminT}
+				{'Used after the page name on products, categories and other pages (e.g. Product | Rafımda). Homepage uses its own meta title without this suffix.'|adminT}
 			</p>
 			<label class="form-label" for="seo_title_suffix">{'Title suffix'|adminT}</label>
 			<input type="text" name="seo_title_suffix" id="seo_title_suffix" class="form-control"

@@ -13,7 +13,7 @@ class ProductSiblingsModule extends ModuleBase
 	public string $title = 'Ürün Seçenekleri';
 	public string $version = '1.0.0';
 	public string $description = 'Ayrı ürünleri (60/90 kapsül vb.) ürün sayfasında görselli seçenek kartları olarak bağlar';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_inf' => 'Ürün sayfasında seçenek kartları',

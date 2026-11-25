@@ -50,7 +50,7 @@ const REQUIRED = [
 	'modules/rafimda-theme/rafimda-theme.php', 'modules/rafimda-vendor/rafimda-vendor.php', 'modules/rafimda-rafi/rafimda-rafi.php',
 	'modules/rafimda-rafi/assets/img/rafi.svg', 'modules/rafimda-legal/rafimda-legal.php', 'modules/rafimda-showcase/rafimda-showcase.php',
 	'modules/rafimda-campaign/rafimda-campaign.php', 'modules/rafimda-invoice/rafimda-invoice.php', 'modules/rafimda-social/rafimda-social.php',
-	'modules/rafimda-dealer/rafimda-dealer.php', 'modules/xml-hub/xml-hub.php', 'modules/marketplace-hub/marketplace-hub.php',
+	'modules/rafimda-dealer/rafimda-dealer.php', 'modules/rafimda-catalog/rafimda-catalog.php', 'modules/xml-hub/xml-hub.php', 'modules/marketplace-hub/marketplace-hub.php',
 	'modules/rafimda-vendor/migrations/007_engagement.sql', 'config/RAFIMDA_SURUM.txt', 'deploy/.htaccess', 'deploy/live/bin/live-preflight.php',
 	'deploy/live/bin/live-migrate.php', 'deploy/live/bin/live-verify.php', 'deploy/staging/lib/StagingMigrator.php',
 ];

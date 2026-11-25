@@ -82,10 +82,10 @@ if ($rewriteBase === '') {
 
 $defaults = [
 	'db_host' => 'localhost',
-	'db_name' => 'frisay',
+	'db_name' => 'rafimda',
 	'db_user' => 'root',
 	'db_pass' => '',
-	'site_name' => 'FriSay',
+	'site_name' => 'Rafımda',
 	'site_url' => $siteUrl,
 	'rewrite_base' => $rewriteBase,
 	'admin_name' => 'Admin',
@@ -140,7 +140,7 @@ $ui = $wiz['ui_lang'] === 'en' ? 'en' : 'tr';
 
 $T = [
 	'tr' => [
-		'window' => 'FriSay V3 Kurulum',
+		'window' => 'Rafımda Kurulum',
 		'title' => 'Kurulum Sihirbazı',
 		'help' => 'Yardım',
 		'step_of' => 'Adım %d / %d',
@@ -149,7 +149,7 @@ $T = [
 		's3' => 'Mağaza',
 		's4' => 'Yönetici',
 		's5' => 'Tamamlandı',
-		'welcome_h' => 'FriSay V3 kurulumuna hoş geldiniz',
+		'welcome_h' => 'Rafımda kurulumuna hoş geldiniz',
 		'welcome_p' => 'Bu sihirbaz mağazanızı adım adım hazırlar. Devam etmeden önce sunucu gereksinimlerini kontrol edin.',
 		'req_h' => 'Sistem gereksinimleri',
 		'req_fail' => 'Tüm gereksinimler sağlanmadan kuruluma devam edilemez.',
@@ -198,7 +198,7 @@ $T = [
 		'fail' => 'Eksik',
 	],
 	'en' => [
-		'window' => 'FriSay V3 Setup',
+		'window' => 'Rafımda Setup',
 		'title' => 'Setup Wizard',
 		'help' => 'Help',
 		'step_of' => 'Step %d of %d',
@@ -207,7 +207,7 @@ $T = [
 		's3' => 'Store',
 		's4' => 'Administrator',
 		's5' => 'Finished',
-		'welcome_h' => 'Welcome to FriSay V3 setup',
+		'welcome_h' => 'Welcome to Rafımda setup',
 		'welcome_p' => 'This wizard will set up your store step by step. Check the server requirements before continuing.',
 		'req_h' => 'System requirements',
 		'req_fail' => 'You cannot continue until every requirement is met.',

@@ -155,7 +155,7 @@ class FiyattrendFeedService
 	public static function generateXml(): string
 	{
 		$domain = rtrim((string) Settings::get('DOMAIN'), '/');
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$currency = Settings::get('FT_CURRENCY') ?: 'TRY';
 		$condition = Settings::get('FT_CONDITION') ?: 'new';
 		$brandDefault = Settings::get('FT_BRAND_FALLBACK') ?: $siteName;

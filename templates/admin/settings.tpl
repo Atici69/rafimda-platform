@@ -448,7 +448,7 @@
 			<h2 class="h6 mb-3">{'Email info'|adminT}</h2>
 			<ul class="small text-muted mb-0 ps-3">
 				<li><strong>PHP mail():</strong> {'Hosting server mail() function'|adminT}</li>
-				<li><strong>SMTP:</strong> {'External server such as frisay.com'|adminT}</li>
+				<li><strong>SMTP:</strong> Harici sunucu (ör. mail.rafimda.com.tr)</li>
 				<li>{'Test errors are now shown in detail'|adminT}</li>
 				<li>{'SSL usually uses port 465'|adminT}</li>
 			</ul>

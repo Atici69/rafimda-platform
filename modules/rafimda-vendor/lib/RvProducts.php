@@ -572,15 +572,68 @@ class RvProducts
 		) ?: [];
 	}
 
-	// ---- CSV içe aktarma ----
+	// ---- CSV / Excel içe aktarma ----
 
 	public const CSV_MAX_ROWS = 500;
 	public const CSV_MAX_BYTES = 2097152;
-	public const CSV_COLUMNS = ['urun_adi', 'kategori_id', 'marka_id', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'aciklama'];
+	public const XLSX_MAX_ROWS = 2000;
+	public const XLSX_MAX_BYTES = 5242880;
+	/** Şablon sütunları. kategori/marka: ad, yol ("Elektronik > Telefon > Kılıf") ya da numara kabul eder. */
+	public const CSV_COLUMNS = ['urun_adi', 'kategori', 'marka', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'aciklama', 'kdv', 'gorsel_url'];
+
+	/** Başlık eş anlamlıları (Türkçe karakter/boşluk farkı yok sayılır) */
+	private const HEADER_ALIASES = [
+		'urun_adi' => ['urun_adi', 'urun_ismi', 'urunadi', 'ad', 'adi', 'isim', 'baslik', 'name', 'product_name', 'title'],
+		'kategori' => ['kategori', 'kategori_adi', 'kategori_yolu', 'category', 'category_name', 'category_path'],
+		'kategori_id' => ['kategori_id', 'kategori_no', 'category_id', 'id_category'],
+		'marka' => ['marka', 'marka_adi', 'brand', 'brand_name', 'uretici'],
+		'marka_id' => ['marka_id', 'marka_no', 'brand_id', 'id_brand'],
+		'fiyat' => ['fiyat', 'satis_fiyati', 'price', 'kdv_dahil_fiyat'],
+		'stok' => ['stok', 'stok_adedi', 'adet', 'miktar', 'stock', 'quantity', 'qty'],
+		'stok_kodu' => ['stok_kodu', 'stokkodu', 'sku', 'urun_kodu', 'model_kodu', 'stock_code'],
+		'barkod' => ['barkod', 'barcode', 'ean', 'gtin'],
+		'aciklama' => ['aciklama', 'urun_aciklamasi', 'description', 'detay'],
+		'kdv' => ['kdv', 'kdv_orani', 'vat', 'tax'],
+		'gorsel_url' => ['gorsel_url', 'gorsel', 'gorseller', 'resim', 'resim_url', 'image', 'images', 'image_url', 'foto'],
+	];
 
 	public static function csvTemplate(): string
 	{
-		return "\xEF\xBB\xBF" . implode(';', self::CSV_COLUMNS) . "\r\n" . 'Örnek Tişört;1;1;99,90;25;TSH-001;8690000000001;Pamuklu tişört' . "\r\n";
+		return "\xEF\xBB\xBF" . implode(';', self::CSV_COLUMNS) . "\r\n"
+			. 'Örnek Pamuklu Tişört;Kadın > Giyim > Tişört;Rafımda;99,90;25;TSH-001;8690000000001;Pamuklu tişört;20;https://ornek.com/tisort.jpg' . "\r\n";
+	}
+
+	public static function xlsxTemplate(): string
+	{
+		$file = dirname(__DIR__, 3) . '/libs/SimpleGEN.php';
+
+		if (!class_exists('SimpleXLSXGen') && is_file($file)) {
+			require_once $file;
+		}
+
+		if (!class_exists('SimpleXLSXGen')) {
+			return '';
+		}
+
+		$rows = [self::CSV_COLUMNS, ['Örnek Pamuklu Tişört', 'Kadın > Giyim > Tişört', 'Rafımda', '99.90', '25', 'TSH-001', "\0" . '8690000000001', 'Pamuklu tişört', '20', 'https://ornek.com/tisort.jpg']];
+
+		return (string) SimpleXLSXGen::fromArray($rows, 'Ürünler');
+	}
+
+	private static function headerKey(string $h): string
+	{
+		$h = strtr(trim($h), ['İ' => 'i', 'I' => 'ı']);
+		$h = mb_strtolower($h, 'UTF-8');
+		$h = strtr($h, ['ç' => 'c', 'ğ' => 'g', 'ı' => 'i', 'ö' => 'o', 'ş' => 's', 'ü' => 'u']);
+		$h = trim(preg_replace('/[^a-z0-9]+/', '_', $h) ?? '', '_');
+
+		foreach (self::HEADER_ALIASES as $key => $aliases) {
+			if (in_array($h, $aliases, true)) {
+				return $key;
+			}
+		}
+
+		return $h;
 	}
 
 	/**
@@ -603,7 +656,7 @@ class RvProducts
 		$raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw;
 
 		if (!mb_check_encoding($raw, 'UTF-8')) {
-			$res['message'] = 'Dosya UTF-8 olmalı (Excel: "CSV UTF-8" olarak kaydedin).';
+			$res['message'] = 'Dosya UTF-8 olmalı (Excel: "CSV UTF-8" olarak kaydedin ya da doğrudan .xlsx yükleyin).';
 
 			return $res;
 		}
@@ -613,29 +666,97 @@ class RvProducts
 		$fh = fopen('php://temp', 'r+');
 		fwrite($fh, $raw);
 		rewind($fh);
-
 		$header = fgetcsv($fh, 0, $delim, '"', '');
-		$header = is_array($header) ? array_map(static fn($h): string => strtolower(trim((string) $h)), $header) : [];
-		$missing = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header);
+		$rows = (static function () use ($fh, $delim): Generator {
+			while (($cells = fgetcsv($fh, 0, $delim, '"', '')) !== false) {
+				yield $cells;
+			}
+		})();
+
+		$res = self::importRows($idVendor, is_array($header) ? $header : [], $rows, $fileName, self::CSV_MAX_ROWS);
+		fclose($fh);
+
+		return $res;
+	}
+
+	/**
+	 * Excel (.xlsx) içe aktarma: ilk sayfa, ilk satır başlık. Sütunlar CSV ile aynı (Türkçe/İngilizce başlıklar tanınır).
+	 * @return array{success:bool, message:string, total:int, created:int, updated:int, failed:int, errors:list<string>}
+	 */
+	public static function importXlsx(int $idVendor, string $path, string $fileName): array
+	{
+		$res = ['success' => false, 'message' => '', 'total' => 0, 'created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+
+		if (!is_file($path) || filesize($path) > self::XLSX_MAX_BYTES) {
+			$res['message'] = 'Dosya bulunamadı veya 5 MB sınırını aşıyor.';
+
+			return $res;
+		}
+
+		$lib = dirname(__DIR__, 3) . '/libs/SimpleXLSX.php';
+
+		if (!class_exists('SimpleXLSX') && !class_exists('Shuchkin\SimpleXLSX') && is_file($lib)) {
+			require_once $lib;
+		}
+
+		$cls = class_exists('SimpleXLSX') ? 'SimpleXLSX' : (class_exists('Shuchkin\SimpleXLSX') ? 'Shuchkin\SimpleXLSX' : '');
+
+		if ($cls === '') {
+			$res['message'] = 'Excel okuyucu bulunamadı; dosyayı CSV olarak kaydedip yükleyin.';
+
+			return $res;
+		}
+
+		$x = $cls::parse($path);
+
+		if (!$x) {
+			$res['message'] = 'Excel dosyası okunamadı (bozuk ya da .xlsx değil). Eski .xls dosyalarını .xlsx olarak kaydedin.';
+
+			return $res;
+		}
+
+		$all = $x->rows(0, self::XLSX_MAX_ROWS + 2);
+		$header = (array) array_shift($all);
+		$rows = (static function () use ($all): Generator {
+			foreach ($all as $r) {
+				yield array_map(static fn($v): string => is_float($v) && floor($v) === $v && abs($v) < 1e15 ? sprintf('%.0f', $v) : (string) $v, (array) $r);
+			}
+		})();
+
+		return self::importRows($idVendor, $header, $rows, $fileName, self::XLSX_MAX_ROWS);
+	}
+
+	/** @param iterable<array<int,mixed>> $rows */
+	private static function importRows(int $idVendor, array $headerCells, iterable $rows, string $fileName, int $maxRows): array
+	{
+		$res = ['success' => false, 'message' => '', 'total' => 0, 'created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+		$header = array_map(static fn($h): string => self::headerKey((string) $h), $headerCells);
+		$missing = [];
+
+		foreach (['urun_adi' => ['urun_adi'], 'fiyat' => ['fiyat'], 'kategori' => ['kategori', 'kategori_id'], 'marka' => ['marka', 'marka_id']] as $label => $any) {
+			if (array_intersect($any, $header) === []) {
+				$missing[] = $label;
+			}
+		}
 
 		if ($missing !== []) {
-			fclose($fh);
 			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Şablonu indirip kullanın.';
 
 			return $res;
 		}
 
 		$line = 1;
+		$imgQueue = [];
 
-		while (($cells = fgetcsv($fh, 0, $delim, '"', '')) !== false) {
+		foreach ($rows as $cells) {
 			$line++;
 
-			if ($cells === [null] || $cells === []) {
+			if (!is_array($cells) || $cells === [null] || $cells === [] || implode('', array_map('strval', $cells)) === '') {
 				continue;
 			}
 
-			if ($res['total'] >= self::CSV_MAX_ROWS) {
-				$res['errors'][] = 'Satır sınırı (' . self::CSV_MAX_ROWS . ') aşıldı; kalan satırlar işlenmedi.';
+			if ($res['total'] >= $maxRows) {
+				$res['errors'][] = 'Satır sınırı (' . $maxRows . ') aşıldı; kalan satırlar işlenmedi.';
 				break;
 			}
 
@@ -643,7 +764,9 @@ class RvProducts
 			$row = [];
 
 			foreach ($header as $i => $h) {
-				$row[$h] = trim((string) ($cells[$i] ?? ''));
+				if ($h !== '' && !isset($row[$h])) {
+					$row[$h] = trim((string) ($cells[$i] ?? ''));
+				}
 			}
 
 			$code = mb_substr(strip_tags($row['stok_kodu'] ?? ''), 0, 64);
@@ -670,20 +793,42 @@ class RvProducts
 				continue;
 			}
 
-			$c = self::create($idVendor, [
+			$catIn = ($row['kategori'] ?? '') !== '' ? $row['kategori'] : ($row['kategori_id'] ?? '');
+			$brandIn = ($row['marka'] ?? '') !== '' ? $row['marka'] : ($row['marka_id'] ?? '');
+			$idCat = self::resolveCategoryInput($catIn);
+			$idBrand = self::resolveBrandInput($brandIn);
+
+			if ($idCat <= 0 && !ctype_digit($catIn)) {
+				$res['failed']++;
+				$res['errors'][] = 'Satır ' . $line . ': kategori eşleşmedi: "' . mb_substr($catIn, 0, 60) . '"' . ($catIn !== '' ? ' (yönetici onayı bekleyen öneri olarak kaydedildi; kategori numarası da yazabilirsiniz)' : '');
+				continue;
+			}
+
+			$post = [
 				'product_name' => $row['urun_adi'] ?? '',
-				'id_category' => $row['kategori_id'] ?? 0,
-				'id_brand' => $row['marka_id'] ?? 0,
+				'id_category' => $idCat > 0 ? $idCat : $catIn,
+				'id_brand' => $idBrand > 0 ? $idBrand : $brandIn,
 				'price' => $row['fiyat'] ?? 0,
 				'stock' => $row['stok'] ?? 0,
 				'stock_code' => $code,
 				'barcode' => $row['barkod'] ?? '',
 				'description' => $row['aciklama'] ?? '',
 				'active' => 1,
-			]);
+			];
+
+			if (isset($row['kdv']) && $row['kdv'] !== '' && is_numeric(str_replace(',', '.', $row['kdv']))) {
+				$post['vat'] = max(0.0, min(100.0, (float) str_replace(',', '.', $row['kdv'])));
+			}
+
+			$c = self::create($idVendor, $post);
 
 			if (!empty($c['success'])) {
 				$res['created']++;
+				$urls = array_values(array_filter(array_map('trim', preg_split('/[\s,;|]+/', (string) ($row['gorsel_url'] ?? '')) ?: []), static fn(string $u): bool => stripos($u, 'https://') === 0 || stripos($u, 'http://') === 0));
+
+				if ($urls !== [] && (int) ($c['id'] ?? 0) > 0) {
+					$imgQueue[(int) $c['id']] = array_slice($urls, 0, 5);
+				}
 			} else {
 				$res['failed']++;
 				$detail = !empty($c['errors']) ? implode(' ', $c['errors']) : $c['message'];
@@ -691,7 +836,28 @@ class RvProducts
 			}
 		}
 
-		fclose($fh);
+		// görseller: XML Hub'ın güvenli indiricisiyle (SSRF korumalı); modül yoksa atlanır
+		if ($imgQueue !== []) {
+			$sink = class_exists('XhSink');
+
+			foreach ($imgQueue as $idProduct => $urls) {
+				if (!$sink) {
+					$res['errors'][] = 'Görseller indirilmedi: XML Hub modülü kurulu değil (ürün #' . $idProduct . ').';
+					break;
+				}
+
+				try {
+					$im = XhSink::addImages($idVendor, $idProduct, $urls, 5);
+
+					foreach (array_slice((array) ($im['warnings'] ?? []), 0, 2) as $w) {
+						$res['errors'][] = 'Ürün #' . $idProduct . ' görsel: ' . $w;
+					}
+				} catch (Throwable $e) {
+					$res['errors'][] = 'Ürün #' . $idProduct . ' görselleri indirilemedi.';
+				}
+			}
+		}
+
 		$res['success'] = true;
 		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.';
 
@@ -709,5 +875,85 @@ class RvProducts
 		RvAudit::log($idVendor, 'product.import_csv', 'import', 0, ['created' => $res['created'], 'updated' => $res['updated'], 'failed' => $res['failed']]);
 
 		return $res;
+	}
+
+	/** Rafımda Katalog (otomatik kategori eşleştirme) etkin mi; etkinse eşleştiriciyi yükler. */
+	private static function smartCategories(): bool
+	{
+		static $ok = null;
+
+		if ($ok === null) {
+			$enabled = !class_exists('Module') || !method_exists('Module', 'isEnabled') || Module::isEnabled('rafimda-catalog');
+			$file = dirname(__DIR__, 2) . '/rafimda-catalog/lib/RcatMatcher.php';
+
+			if ($enabled && !class_exists('RcatMatcher', false) && is_file($file)) {
+				require_once $file;
+			}
+
+			$ok = $enabled && class_exists('RcatMatcher', false);
+		}
+
+		return $ok;
+	}
+
+	/** "12" → 12; "Elektronik > Telefon > Kılıf" / "Telefon Kılıfı" → otomatik eşleşen kategori; bulunamazsa 0 */
+	public static function resolveCategoryInput(string $in): int
+	{
+		$in = trim($in);
+
+		if ($in === '') {
+			return 0;
+		}
+
+		if (ctype_digit($in)) {
+			return (int) $in;
+		}
+
+		if (self::smartCategories() && ($id = RcatMatcher::resolve($in)) > 0) {
+			return $id;
+		}
+
+		// tam ad yalnızca tek kategoride geçiyorsa (aynı adlı Kadın/Erkek > Mont gibi durumlarda rastgele seçilmez)
+		$r = DB::execute('SELECT id_category FROM categories WHERE LOWER(category_name) = LOWER(?) AND active = 1 LIMIT 2', [$in]) ?: [];
+
+		return count($r) === 1 ? (int) $r[0]['id_category'] : 0;
+	}
+
+	/** "3" → 3; marka adı → mevcut marka (Türkçe/büyük-küçük harf duyarsız); yoksa yeni marka oluşturulur */
+	public static function resolveBrandInput(string $in): int
+	{
+		$in = mb_substr(trim(strip_tags($in)), 0, 48);
+
+		if ($in === '' || ctype_digit($in)) {
+			return $in === '' ? 0 : (int) $in;
+		}
+
+		$fold = static function (string $s): string {
+			$s = mb_strtolower(strtr($s, ['İ' => 'i', 'I' => 'ı']), 'UTF-8');
+
+			return trim(preg_replace('/[^a-z0-9]+/', ' ', strtr($s, ['ç' => 'c', 'ğ' => 'g', 'ı' => 'i', 'ö' => 'o', 'ş' => 's', 'ü' => 'u'])) ?? '');
+		};
+		$key = $fold($in);
+
+		if ($key === '' || mb_strlen($in) < 2) {
+			return 0;
+		}
+
+		foreach (DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1') ?: [] as $b) {
+			if ($fold((string) $b['brand_name']) === $key) {
+				return (int) $b['id_brand'];
+			}
+		}
+
+		$slug = str_replace(' ', '-', $key);
+		$base = $slug;
+
+		for ($i = 2; $i < 50 && (int) DB::getValue('SELECT COUNT(*) FROM brands WHERE brand_link = ?', [$slug]) > 0; $i++) {
+			$slug = $base . '-' . $i;
+		}
+
+		$id = (int) DB::insert('brands', ['brand_name' => $in, 'brand_link' => mb_substr($slug, 0, 64), 'active' => 1]);
+
+		return max(0, $id);
 	}
 }

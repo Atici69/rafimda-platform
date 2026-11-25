@@ -242,7 +242,7 @@ class InstagramGalleryService
 		$context = stream_context_create([
 			'http' => [
 				'timeout' => 12,
-				'header' => "User-Agent: FShop Instagram Gallery\r\n",
+				'header' => "User-Agent: Rafimda Instagram Gallery\r\n",
 			],
 		]);
 

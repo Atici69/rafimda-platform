@@ -13,7 +13,7 @@ class FxPricingModule extends ModuleBase
 	public string $title = 'Canlı Kur & Döviz Fiyat';
 	public string $version = '1.0.0';
 	public string $description = 'Canlı döviz kurları ile mağaza fiyat gösterimi ve admin ürün döviz fiyat girişi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'footer' => 'Para birimi seçici yapılandırması',

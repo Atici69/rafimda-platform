@@ -58,7 +58,7 @@ H. İÇERİK VE ŞİRKET BİLGİLERİ – sizden gelecek
 [Bekliyor]    Şirket unvanı, adres, vergi dairesi/no, MERSİS, KEP, telefon, e-posta, ETBİS kaydı (uydurulmadı; örnek değerler değiştirilmeli)
 [Bekliyor]    Hukuki metinlerin avukat/KVKK danışmanı onayı (belgeler TASLAK)
 [Bekliyor]    Satıcı bandındaki ticari vaatlerin onayı ("Rekabetçi ve düşük komisyon", "İlk ay ana sayfada ürün tanıtım fırsatı")
-[Bekliyor]    Komisyon oranları ve paket fiyatları kararı
+[Bekliyor]    Komisyon oranları kararı (paket/abonelik ücreti YOK – yalnızca komisyon)
 
 I. DIŞ HİZMETLER – onay ve erişim gerektirir
 [Bekliyor]    Ödeme sağlayıcısı seçimi (ücretli entegrasyon ETKİNLEŞTİRİLMEDİ)
@@ -75,4 +75,4 @@ J. KAPALI KALACAKLAR (yazılı onayınız olmadan açılmaz)
 
 K. BEKLEMEDE
 [Bekliyor]    FriSay lisans / bağımsızlaşma kararı (ŞİMDİLİK BEKLEMEDE – hiçbir şey silinmedi)
-[Bekliyor]    Yönetici panelindeki "FriSay" adı/bağlantısı (üst başlık, gösterge paneli, alt bilgi) – lisans kararına bağlı, değiştirilmedi
+[Tamamlandı]  Yönetici panelindeki ve sitedeki "FriSay" adı/bağlantısı/logosu kaldırıldı (25.11.2026 kararı)

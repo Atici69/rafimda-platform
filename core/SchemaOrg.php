@@ -58,7 +58,7 @@ class SchemaOrg
 
 	private static function buildWebPage(string $name, string $description): array
 	{
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$title = trim($name) !== '' ? $name : $siteName;
 		$desc = trim($description) !== '' ? $description : $siteName;
 
@@ -75,7 +75,7 @@ class SchemaOrg
 	{
 		global $domain;
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$email = trim((string) Settings::get('CONTACT_EMAIL'));
 		$phone = trim((string) (Settings::get('CONTACT_PHONE_TEL') ?: Settings::get('CONTACT_PHONE')));
 
@@ -149,7 +149,7 @@ class SchemaOrg
 	{
 		global $domain;
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 
 		return [
 			'@context' => 'https://schema.org',
@@ -245,7 +245,7 @@ class SchemaOrg
 				],
 				'seller' => [
 					'@type' => 'Organization',
-					'name' => Settings::get('SITE_NAME') ?: 'FShop',
+					'name' => Settings::get('SITE_NAME') ?: 'Rafımda',
 				],
 			],
 		];

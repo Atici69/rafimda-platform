@@ -13,7 +13,7 @@ class PrestashopImportModule extends ModuleBase
 	public string $title = 'PrestaShop Import';
 	public string $version = '1.0.0';
 	public string $description = 'PrestaShop tablolarından marka, kategori ve müşteri içe aktarma';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $adminStylesheets = ['admin.css'];
 

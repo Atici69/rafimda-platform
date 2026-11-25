@@ -7,7 +7,7 @@
 
 	<div class="dash-corp-head">
 		<div class="dash-corp-head__intro">
-			<span class="dash-corp-head__eyebrow"><i data-lucide="bar-chart-3"></i> FRISAY · YÖNETİM ÖZETİ</span>
+			<span class="dash-corp-head__eyebrow"><i data-lucide="bar-chart-3"></i> RAFIMDA · YÖNETİM ÖZETİ</span>
 			<h1 class="dash-corp-head__title">{'Dashboard'|adminT}</h1>
 			<p class="dash-corp-head__sub mb-0">{$analytics.period_label|escape} dönemindeki mağaza performansı</p>
 		</div>

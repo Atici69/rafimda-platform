@@ -200,7 +200,7 @@ $sg = XhMapper::suggest($it[0]);
 ok(count($it) === 1 && ($sg['fields']['name'] ?? '') === 'Ad' && ($sg['variant_source'] ?? '') !== '', 'tek ürün akışta okunur; alan ve varyant kaynağı önerilir (' . ($sg['variant_source'] ?? '-') . ')');
 
 section('Marka/kategori eşleştirme sistemi');
-$cm = $mk($vA, feed([['Name' => 'M Ürün 1', 'Sku' => 'MM1', 'Price' => '1', 'Qty' => 1, 'Brand' => 'Bilinmeyen Marka', 'Cat' => 'Tedarikçi Kat'], ['Name' => 'M Ürün 2', 'Sku' => 'MM2', 'Price' => '1', 'Qty' => 1, 'Brand' => 'Bilinmeyen Marka', 'Cat' => 'Tedarikçi Kat'], ['Name' => 'M Ürün 3', 'Sku' => 'MM3', 'Price' => '1', 'Qty' => 1, 'Brand' => 'MarkaB', 'Cat' => 'Giyim']]), ['default_category' => 0, 'default_brand' => 0]);
+$cm = $mk($vA, feed([['Name' => 'M Ürün 1', 'Sku' => 'MM1', 'Price' => '1', 'Qty' => 1, 'Brand' => 'Bilinmeyen Marka', 'Cat' => 'Tedarikçi Kat'], ['Name' => 'M Ürün 2', 'Sku' => 'MM2', 'Price' => '1', 'Qty' => 1, 'Brand' => 'Bilinmeyen Marka', 'Cat' => 'Tedarikçi Kat'], ['Name' => 'M Ürün 3', 'Sku' => 'MM3', 'Price' => '1', 'Qty' => 1, 'Brand' => 'MarkaB', 'Cat' => 'Giyim']]), ['default_category' => 0, 'default_brand' => 0, 'auto_brand' => 0]);
 $mm = $mapping; $mm['fields']['brand'] = 'Brand'; $mm['fields']['category'] = 'Cat';
 XhRepo::setConn($cm, ['mapping' => json_encode($mm)]);
 $r = $run($cm, $vA);

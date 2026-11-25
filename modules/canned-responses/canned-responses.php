@@ -12,7 +12,7 @@ class CannedResponsesModule extends ModuleBase
 	public string $title = 'Hazır Cevaplar (Mesajlar)';
 	public string $version = '1.0.0';
 	public string $description = 'Müşteri mesajlarına hızlı cevap vermek için hazır metinler oluşturun';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_footer' => 'Admin footer (mesaj sayfasında hazır cevapları yükler)',

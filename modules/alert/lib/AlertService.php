@@ -152,7 +152,7 @@ class AlertService
 			];
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$body = '<p>Bu bir test e-postasıdır. Alert modülü admin bildirimleri bu adrese gönderilecek:</p>'
 			. '<p><strong>' . htmlspecialchars(implode(', ', $emails), ENT_QUOTES, 'UTF-8') . '</strong></p>';
 		$sent = Mail::send($emails[0], $siteName . ' — Alert modülü test', $body);
@@ -471,7 +471,7 @@ class AlertService
 
 		$threshold = self::getCriticalThreshold();
 		$adminUrl = htmlspecialchars(self::adminPanelUrl('product?id=' . $idProduct), ENT_QUOTES, 'UTF-8');
-		$siteName = htmlspecialchars(Settings::get('SITE_NAME') ?: 'FShop', ENT_QUOTES, 'UTF-8');
+		$siteName = htmlspecialchars(Settings::get('SITE_NAME') ?: 'Rafımda', ENT_QUOTES, 'UTF-8');
 		$body = Mail::buildCriticalStockBody($product, $newStock, $threshold, $idVariation, $adminUrl);
 
 		$subject = $siteName . ' — Kritik stok: ' . (string) ($product['product_name'] ?? 'Ürün');
@@ -502,7 +502,7 @@ class AlertService
 
 		$rows = DB::execute($sql, $params) ?: [];
 		$productName = (string) ($product['product_name'] ?? 'Ürün');
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 
 		foreach ($rows as $row) {
 			$rowVariation = (int) ($row['id_variation'] ?? 0);

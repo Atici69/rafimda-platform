@@ -1,5 +1,5 @@
 <div class="admin-panel p-3" style="max-width: 720px;">
-	<h2 class="h6 mb-3">FriSay uzak mağaza (Web API)</h2>
+	<h2 class="h6 mb-3">Uzak mağaza (Web API)</h2>
 	{if !$frisayConfigured}
 	<div class="alert alert-warning py-2">Uzak mağaza adresi ve Web API anahtarı zorunludur.</div>
 	{/if}
@@ -9,7 +9,7 @@
 		<input type="hidden" name="token" value="{$adminToken}">
 		<div class="mb-3">
 			<label class="form-label">Mağaza URL</label>
-			<input type="url" name="frisay_url" class="form-control" value="{$frisayUrl|escape}" placeholder="https://uzak-magaza.com veya http://localhost/fshop" autocomplete="off" required>
+			<input type="url" name="frisay_url" class="form-control" value="{$frisayUrl|escape}" placeholder="https://uzak-magaza.com " autocomplete="off" required>
 			<div class="form-text">Kök adres yeter; <code>/api/v1</code> otomatik eklenir.</div>
 		</div>
 		<div class="mb-3">

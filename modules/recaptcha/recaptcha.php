@@ -13,7 +13,7 @@ class RecaptchaModule extends ModuleBase
 	public string $title = 'Google reCAPTCHA';
 	public string $version = '1.0.0';
 	public string $description = 'İletişim, giriş, kayıt ve admin giriş formlarında Google reCAPTCHA doğrulaması';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'contact_form' => 'İletişim formu — CAPTCHA alanı',

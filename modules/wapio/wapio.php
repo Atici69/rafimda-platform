@@ -12,7 +12,7 @@ class WapioModule extends ModuleBase
 	public string $title = 'Wapio WhatsApp';
 	public string $version = '1.0.0';
 	public string $description = 'Sipariş durumu değişince müşteriye WhatsApp mesajı gönderir (Wapio API)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $adminStylesheets = ['admin.css'];
 
@@ -494,7 +494,7 @@ class WapioModule extends ModuleBase
 		}
 
 		if ($message === '') {
-			$message = 'Wapio test mesajı — ' . (Settings::get('SITE_NAME') ?: 'FShop');
+			$message = 'Wapio test mesajı — ' . (Settings::get('SITE_NAME') ?: 'Rafımda');
 		}
 
 		$phone = $this->normalizePhone($phone);

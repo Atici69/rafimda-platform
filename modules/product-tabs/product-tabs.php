@@ -13,7 +13,7 @@ class ProductTabsModule extends ModuleBase
 	public string $title = 'Ürün Sekmeleri';
 	public string $version = '1.0.0';
 	public string $description = 'Ürün sayfasına özel HTML sekmeleri ekler (tüm veya seçili ürünler)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_tab' => 'Ürün sekmesi butonu',

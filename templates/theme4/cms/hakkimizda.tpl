@@ -1,12 +1,12 @@
-<p>FShop, açık kaynak e-ticaret altyapısı sunan bir yazılım mağazasıdır. Temalar, modüller ve dijital ürünler konusunda güvenilir alışveriş deneyimi hedefleriz.</p>
+<p>Rafımda, binlerce satıcıyı ve milyonlarca ürünü tek çatı altında buluşturan çok satıcılı bir alışveriş platformudur. "Aradığınız Her Şey, Rafımda!" diyerek güvenli ve kolay bir alışveriş deneyimi hedefleriz.</p>
 
 <h2 class="fs-6 mt-4">Misyonumuz</h2>
-<p>Müşterilerimize lisanslı, orijinal yazılım ürünlerini hızlı ve güvenli şekilde ulaştırmak.</p>
+<p>Müşterilerimizi güvenilir satıcıların ürünleriyle hızlı, güvenli ve uygun fiyatla buluşturmak; satıcılarımıza ise abonelik ücreti olmadan, yalnızca satış başına komisyonla büyüyebilecekleri bir pazar yeri sunmak.</p>
 
-<h2 class="fs-6 mt-4">Neden FShop?</h2>
+<h2 class="fs-6 mt-4">Neden Rafımda?</h2>
 <ul>
-	<li>%100 orijinal ürün garantisi</li>
-	<li>Hızlı dijital teslimat ve destek</li>
+	<li>Onaylı satıcılar ve doğrulanmış alıcı yorumları</li>
+	<li>Geniş kategori yelpazesi ve hızlı kargo</li>
 	<li>Şeffaf fiyatlandırma ve kampanyalar</li>
 </ul>
 

@@ -6,7 +6,7 @@ abstract class ModuleBase
 	public string $title = '';
 	public string $version = '1.0.0';
 	public string $description = '';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	/** @var array<string, string> slug => relative path from module dir */
 	public array $routes = [];

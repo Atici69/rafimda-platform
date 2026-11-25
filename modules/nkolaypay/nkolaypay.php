@@ -12,7 +12,7 @@ class NkolaypayModule extends ModuleBase
 	public string $title = 'N Kolay Pay';
 	public string $version = '1.0.0';
 	public string $description = 'N Kolay Pay VPOS v1 ile 3D kart ödemesi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;

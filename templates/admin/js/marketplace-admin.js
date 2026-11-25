@@ -560,7 +560,7 @@
 			btn.dataset.tyBound = '1';
 			btn.addEventListener('click', function () {
 				var panel = btn.closest('.trendyol-product-panel');
-				var message = 'Trendyol bağlantısı silinecek. Ürün Trendyol mağazasında kalır; yalnızca FShop eşlemesi kaldırılır. Devam edilsin mi?';
+				var message = 'Trendyol bağlantısı silinecek. Ürün Trendyol mağazasında kalır; yalnızca Rafımda eşlemesi kaldırılır. Devam edilsin mi?';
 				var ask = window.AdminConfirm && AdminConfirm.ask
 					? AdminConfirm.ask({ message: message })
 					: Promise.resolve(false);
@@ -761,7 +761,7 @@
 			hepsiburada: { panel: '.hb-product-panel', sale: '.hb-sale-price-input', list: '.hb-list-price-input', msg: '.hb-action-msg', input: '.hb-merchant-sku-input', label: 'Hepsiburada' },
 			n11: { panel: '.n11-product-panel', sale: '.n11-sale-price-input', list: '.n11-list-price-input', msg: '.n11-action-msg', input: '.n11-stock-code-input', label: 'N11' },
 			prestashop: { panel: '.ps-product-panel', sale: '.ps-sale-price-input', list: null, msg: '.ps-action-msg', input: '.ps-product-id-input', label: 'PrestaShop' },
-			frisay: { panel: '.frisay-product-panel', sale: '.frisay-sale-price-input', list: null, msg: '.frisay-action-msg', input: '.frisay-remote-id-input', label: 'FriSay' }
+			frisay: { panel: '.frisay-product-panel', sale: '.frisay-sale-price-input', list: null, msg: '.frisay-action-msg', input: '.frisay-remote-id-input', label: 'Uzak Mağaza' }
 		};
 		return map[platform] || map.hepsiburada;
 	}
@@ -983,7 +983,7 @@
 				var marketplace = card ? (card.getAttribute('data-marketplace') || 'trendyol') : 'trendyol';
 				var url = window.trendyolUnlinkApiUrl || '';
 				if (!id || !url) return;
-				var message = 'Bağlantı silinecek. Ürün pazaryerinde kalır; yalnızca FShop eşlemesi kaldırılır.';
+				var message = 'Bağlantı silinecek. Ürün pazaryerinde kalır; yalnızca Rafımda eşlemesi kaldırılır.';
 				var ask = window.AdminConfirm && AdminConfirm.ask
 					? AdminConfirm.ask({ message: message })
 					: Promise.resolve(window.confirm(message));

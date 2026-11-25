@@ -9,7 +9,7 @@ if (PHP_SAPI !== 'cli') {
  * sözdizimi ve işlevleri token düzeyinde arar. Kanıt değil, güçlü bir ön elemedir; gerçek doğrulama hostingte `php -v` + `php -l` ile yapılmalıdır.
  */
 $root = dirname(__DIR__, 3);
-$targets = [$root . '/deploy', $root . '/modules/rafimda-theme', $root . '/modules/rafimda-vendor', $root . '/modules/rafimda-dealer', $root . '/modules/rafimda-showcase', $root . '/modules/xml-hub', $root . '/modules/marketplace-hub'];
+$targets = [$root . '/deploy', $root . '/modules/rafimda-theme', $root . '/modules/rafimda-vendor', $root . '/modules/rafimda-dealer', $root . '/modules/rafimda-showcase', $root . '/modules/rafimda-catalog', $root . '/modules/xml-hub', $root . '/modules/marketplace-hub'];
 $funcs = ['json_validate', 'mb_str_pad', 'mb_trim', 'mb_ltrim', 'mb_rtrim', 'array_find', 'array_find_key', 'array_any', 'array_all', 'str_increment', 'str_decrement', 'ini_parse_quantity', 'mysqli_execute_query', 'curl_upkeep', 'memory_reset_peak_usage', 'openssl_cipher_key_length', 'iterator_apply_', 'mb_strrev_'];
 $bad = [];
 $files = 0;

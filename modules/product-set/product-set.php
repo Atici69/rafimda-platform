@@ -13,7 +13,7 @@ class ProductSetModule extends ModuleBase
 	public string $title = 'Ürün Seti';
 	public string $version = '1.0.0';
 	public string $description = 'Birden fazla ürünü set olarak sat; stok en düşük bileşene göre, sepete eklenince parçalanır';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_detail' => 'Ürün sayfasında set içeriği',

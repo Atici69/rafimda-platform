@@ -72,7 +72,7 @@ class AiAssistantClient
 
 		if ($provider === 'openrouter') {
 			$headers[] = 'HTTP-Referer: ' . rtrim((string) Settings::get('DOMAIN'), '/');
-			$headers[] = 'X-Title: FShop AI Assistant';
+			$headers[] = 'X-Title: Rafimda AI Assistant';
 		}
 
 		$response = self::httpPostJson($url, $payload, $headers);

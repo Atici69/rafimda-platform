@@ -12,7 +12,7 @@ class PosModule extends ModuleBase
 	public string $title = 'Point of Sale (Kasa)';
 	public string $version = '1.6.4';
 	public string $description = 'Mağaza / kargo satış kasası — barkod, PIN veya admin ile giriş';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $routes = [
 		'pos' => 'front/pos.php',
@@ -240,7 +240,7 @@ class PosModule extends ModuleBase
 		$stats['register_since_formatted'] = date('d.m.Y H:i', strtotime($since));
 		$stats['generated_at'] = date('d.m.Y H:i');
 		$stats['store_label'] = (string) Settings::get(self::SET_STORE_LABEL, 'Mağaza Satış');
-		$stats['site_name'] = (string) Settings::get('SITE_NAME', 'FShop');
+		$stats['site_name'] = (string) Settings::get('SITE_NAME', 'Rafımda');
 		$stats['cashier'] = $this->getTerminalUserName();
 		$stats['orders'] = $this->getRegisterOrderDetails($since);
 
@@ -1496,7 +1496,7 @@ class PosModule extends ModuleBase
 			'posIsAdmin' => $isAdminContext,
 			'posExitUrl' => $exitUrl,
 			'posAdminUrl' => rtrim($adminUrl, '/'),
-			'posSiteName' => Settings::get('SITE_NAME', 'FShop'),
+			'posSiteName' => Settings::get('SITE_NAME', 'Rafımda'),
 			'posLogoUrl' => (class_exists('SiteAssets') && SiteAssets::logoExists('header'))
 				? SiteAssets::getLogoUrl('header')
 				: '',
@@ -1521,7 +1521,7 @@ class PosModule extends ModuleBase
 			'posHasPin' => $this->hasPinConfigured(),
 			'posIsAdmin' => !empty($_SESSION['id_admin']),
 			'posAdminConfigUrl' => rtrim($adminUrl, '/') . '/module-pos',
-			'posSiteName' => Settings::get('SITE_NAME', 'FShop'),
+			'posSiteName' => Settings::get('SITE_NAME', 'Rafımda'),
 			'posBackUrl' => defined('IN_ADMIN') ? rtrim($adminUrl, '/') . '/login' : rtrim($domain, '/') . '/',
 			'posToken' => $this->getApiToken(),
 		]);
@@ -1538,7 +1538,7 @@ class PosModule extends ModuleBase
 		$html = $this->renderFrontTemplate('pos_lock', [
 			'posError' => $error,
 			'posCssUrl' => $this->getAssetUrl('css/pos.css'),
-			'posSiteName' => Settings::get('SITE_NAME', 'FShop'),
+			'posSiteName' => Settings::get('SITE_NAME', 'Rafımda'),
 			'posToken' => $this->getApiToken(),
 		]);
 
@@ -2207,7 +2207,7 @@ class PosModule extends ModuleBase
 			'date' => date('d.m.Y H:i'),
 			'store_label' => (string) Settings::get(self::SET_STORE_LABEL, 'Mağaza Satış'),
 			'cashier' => $this->getTerminalUserName(),
-			'site_name' => (string) Settings::get('SITE_NAME', 'FShop'),
+			'site_name' => (string) Settings::get('SITE_NAME', 'Rafımda'),
 		];
 	}
 

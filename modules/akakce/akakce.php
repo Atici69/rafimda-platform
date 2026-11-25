@@ -13,7 +13,7 @@ class AkakceModule extends ModuleBase
 	public string $title = 'Akakçe XML';
 	public string $version = '1.0.0';
 	public string $description = 'Akakçe fiyat karşılaştırması için ürün XML feed';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [];
 	public array $defaultDisplayHooks = [];

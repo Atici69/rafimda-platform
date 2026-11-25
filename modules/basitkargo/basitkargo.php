@@ -12,7 +12,7 @@ class BasitKargoModule extends ModuleBase
 	public string $title = 'Basit Kargo';
 	public string $version = '1.0.0';
 	public string $description = 'Basitkargo ile kargo gönder';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_order_detail' => 'Sipariş detayında ek panel',

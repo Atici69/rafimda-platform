@@ -18,7 +18,7 @@ class TamiModule extends ModuleBase
 	public string $title = 'Tami Sanal POS';
 	public string $version = '1.0.0';
 	public string $description = 'Tami 3D Secure kredi/banka kartı ödemesi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;

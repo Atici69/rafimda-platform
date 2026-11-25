@@ -76,7 +76,7 @@
 		exit;
 	}
 
-	$pageTitle = 'FShop';
+	$pageTitle = 'Rafımda';
 	$pageDesc = Settings::get('SITE_NAME');
 	$css = $js = false;
 	$noLayout = false;

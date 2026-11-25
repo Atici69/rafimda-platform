@@ -179,7 +179,7 @@
 				'email' => $email,
 			];
 
-			$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+			$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 			$subject = $siteName . ' - ' . adminT('Order details') . ' ' . (string) ($order['reference'] ?? '');
 
 			$result = CustomerContact::send(

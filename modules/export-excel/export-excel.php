@@ -13,7 +13,7 @@ class ExportExcelModule extends ModuleBase
 	public string $title = 'Excel Aktarım';
 	public string $version = '1.2.0';
 	public string $description = 'Ürün yükle/güncelle ve fiyat-stok-maliyet Excel aktarımı (varyasyon dahil)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_header' => 'Admin orta alan üstü — Excel aktarım',

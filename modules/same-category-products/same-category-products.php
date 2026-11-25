@@ -12,7 +12,7 @@ class SameCategoryProductsModule extends ModuleBase
 	public string $title = 'Aynı Kategorideki Ürünler';
 	public string $version = '1.0.0';
 	public string $description = 'Ürün detay sayfasında aynı kategorideki diğer ürünleri gösterir';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product' => 'Ürün detay sayfası',

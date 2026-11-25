@@ -13,7 +13,7 @@ class KuveytturkModule extends ModuleBase
 	public string $title = 'KuveytTürk Sanal POS';
 	public string $version = '1.1.1';
 	public string $description = 'KuveytTürk 3D Secure ile güvenli kredi/banka kartı ödemesi kabul edin.';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;

@@ -12,7 +12,7 @@ class GoogleAnalyticsModule extends ModuleBase
 	public string $title = 'Google Analytics';
 	public string $version = '1.0.0';
 	public string $description = 'Google Analytics 4 (gtag.js) entegrasyonu';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'footer' => 'Sayfa alt kısmına GA4 tracking kodu ekler',

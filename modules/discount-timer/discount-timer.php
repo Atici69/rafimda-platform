@@ -13,7 +13,7 @@ class DiscountTimerModule extends ModuleBase
 	public string $title = 'İndirim Sayacı';
 	public string $version = '1.1.0';
 	public string $description = 'Ürün indirimlerinin kalan süresini geri sayım ile gösterir; tarih aralığında geçerli indirim';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_inf' => 'Ürün başlığı altında indirim sayacı',

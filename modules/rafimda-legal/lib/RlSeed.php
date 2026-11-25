@@ -156,7 +156,8 @@ Satıcının ürünlerini Rafımda pazaryerinde satışa sunması; Rafımda'nın
 - Komisyon ve hizmet bedellerini satıcı panelinde şeffaf göstermek.
 
 ## Ticari Şartlar
-- Komisyon oranı: satıcının paketinde ve panelinde gösterilen oran; kampanya dönemlerinde ilgili kampanya koşulları uygulanır.
+- Mağaza açılışı ücretsizdir; satıcıdan abonelik, üyelik veya paket ücreti alınmaz.
+- Komisyon yalnızca tamamlanan satışlar üzerinden alınır. Oran, satıcı panelinde gösterilen (kategori veya ürün bazında belirlenebilen) orandır; kampanya dönemlerinde ilgili kampanya koşulları uygulanır.
 - Ödeme vadesi ve hesap kesimi: {{ODEME_VADESI}}.
 
 ## Fesih
