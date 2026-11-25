@@ -97,7 +97,7 @@
 		</div>
 	</div>
 
-	{if $hooks.order_confirmation}
+	{if !empty($hooks.order_confirmation)}
 	<div class="dress-account-card mb-4">
 		{$hooks.order_confirmation nofilter}
 	</div>

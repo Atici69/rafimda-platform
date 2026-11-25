@@ -79,7 +79,7 @@
 								<span class="t4-product__stars{if $product.review_count|default:0 == 0} is-empty{/if}" aria-hidden="true">★★★★★</span>
 								<span class="t4-product__reviews-label">{'Reviews'|translate|default:'Yorum'} ({$product.review_count|default:0})</span>
 							</div>
-							{if $hooks.product_inf}{$hooks.product_inf nofilter}{/if}
+							{if !empty($hooks.product_inf)}{$hooks.product_inf nofilter}{/if}
 						</div>
 
 						<div class="product-price-block t4-product__prices">
@@ -180,7 +180,7 @@
 							<p class="t4-product__oos-hint small text-muted mt-2 mb-0">{'This product is currently unavailable. Leave your email below to get notified when it is back.'|translate|default:'Ürün şu an stokta yok. Tekrar gelince haber almak için e-posta bırakabilirsiniz.'}</p>
 							{/if}
 
-							{if $hooks.product_detail}
+							{if !empty($hooks.product_detail)}
 							<div class="product-detail-hook mt-3">
 								{$hooks.product_detail nofilter}
 							</div>
@@ -202,7 +202,7 @@
 				<button class="nav-link" data-bs-toggle="tab" data-bs-target="#video" type="button">{'Video'|translate}</button>
 			</li>
 			{/if}
-			{if $hooks.product_tab}{$hooks.product_tab nofilter}{/if}
+			{if !empty($hooks.product_tab)}{$hooks.product_tab nofilter}{/if}
 		</ul>
 		<div class="tab-content product-tab-content">
 			<div class="tab-pane fade show active" id="description">
@@ -215,11 +215,11 @@
 				</div>
 				{/if}
 			</div>
-			{if $hooks.product_tab_content}{$hooks.product_tab_content nofilter}{/if}
+			{if !empty($hooks.product_tab_content)}{$hooks.product_tab_content nofilter}{/if}
 		</div>
 	</div>
 
-	{if $hooks.product}{$hooks.product nofilter}{/if}
+	{if !empty($hooks.product)}{$hooks.product nofilter}{/if}
 
 	{if $brandProducts|default:[]|@count > 0}
 	<section class="t4-product-rail" data-t4-rail-section>

@@ -57,7 +57,7 @@
 		{/if}
 	</section>
 
-	{if $hooks.cart}
+	{if !empty($hooks.cart)}
 	<div class="prime-cart-recommendations">
 		{$hooks.cart nofilter}
 	</div>
@@ -139,7 +139,7 @@
 
 			</section>
 
-			{if $hooks.cart}
+			{if !empty($hooks.cart)}
 			<div class="prime-cart-recommendations">
 				{$hooks.cart nofilter}
 			</div>

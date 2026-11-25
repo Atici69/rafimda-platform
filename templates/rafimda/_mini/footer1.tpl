@@ -70,7 +70,7 @@
 			<div class="col-6 col-md-3 col-xl">
 				<h3 class="t4-footer__title">{if $t4Chrome.footer_menu_title|default:'' != ''}{$t4Chrome.footer_menu_title|escape}{else}{'Menu'|translate|default:'Menü'}{/if}</h3>
 				<ul class="t4-footer__list">
-					{if $hooks.footer_menu}
+					{if !empty($hooks.footer_menu)}
 					{$hooks.footer_menu nofilter}
 					{else}
 					<li><a href="{$domain}">{'Home Page'|translate}</a></li>

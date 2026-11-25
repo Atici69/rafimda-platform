@@ -28,7 +28,7 @@
 				</div>
 			</div>
 
-			{if $hooks.order_confirmation}{$hooks.order_confirmation nofilter}{/if}
+			{if !empty($hooks.order_confirmation)}{$hooks.order_confirmation nofilter}{/if}
 
 			{assign var="hasVirtual" value=false}
 			{foreach $order.items as $item}

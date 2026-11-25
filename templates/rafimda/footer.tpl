@@ -7,7 +7,7 @@
 {include file='./_mini/footer1.tpl'}
 {include file='./plugin/cart.tpl'}
 {include file='./plugin/auth-modal.tpl'}
-{if $hooks.footer}{$hooks.footer nofilter}{/if}
+{if !empty($hooks.footer)}{$hooks.footer nofilter}{/if}
 {/if}
 <script type="text/javascript" src="{($js_dir|cat:'jquery-3.2.1.min.js')|asset_url}"></script>
 <script type="text/javascript" src="{($js_dir|cat:'bootstrap.bundle.min.js')|asset_url}"></script>

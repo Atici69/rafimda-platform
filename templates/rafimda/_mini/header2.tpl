@@ -60,7 +60,7 @@
 				</a>
 			</div>
 			<ul class="categories-menu d-none d-xl-flex">
-				{if $hooks.main_menu}
+				{if !empty($hooks.main_menu)}
 					{$hooks.main_menu nofilter}
 				{else}
 				<li class="category-item"><a href="{$domain}" class="desktop-nav-link">

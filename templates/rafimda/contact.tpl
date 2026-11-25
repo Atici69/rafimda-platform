@@ -100,7 +100,7 @@
 
 				</div>
 
-				{if $hooks.contact_form}
+				{if !empty($hooks.contact_form)}
 				{$hooks.contact_form nofilter}
 				{/if}
 

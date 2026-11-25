@@ -18,7 +18,7 @@
 
 	<section class="rf-hero{if !$hooks.home_slider} rf-hero--solo{/if}">
 		<div class="rf-hero__main">
-			{if $hooks.home_slider}
+			{if !empty($hooks.home_slider)}
 				{$hooks.home_slider nofilter}
 			{else}
 				<div class="rf-hero__fallback">
@@ -77,7 +77,7 @@
 		{/foreach}
 	{/if}
 
-	{if $hooks.home_bottom}
+	{if !empty($hooks.home_bottom)}
 	<div class="rf-home__bottom">{$hooks.home_bottom nofilter}</div>
 	{/if}
 </div>

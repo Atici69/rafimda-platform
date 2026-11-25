@@ -36,7 +36,7 @@
 								<input class="form-check-input" type="checkbox" id="authModalRemember" value="1" checked>
 								<label class="form-check-label" for="authModalRemember">{'Remember me'|translate}</label>
 							</div>
-							{if $hooks.auth_login}
+							{if !empty($hooks.auth_login)}
 							{$hooks.auth_login nofilter}
 							{/if}
 							<button type="submit" class="btn btn-primary w-100">{'Sign In'|translate}</button>
@@ -68,7 +68,7 @@
 								</div>
 								<div class="form-text auth-password-hint">{'Password requirements hint'|translate}</div>
 							</div>
-							{if $hooks.auth_register}
+							{if !empty($hooks.auth_register)}
 							{$hooks.auth_register nofilter}
 							{/if}
 							<button type="submit" class="btn btn-primary w-100">{'Create account'|translate}</button>

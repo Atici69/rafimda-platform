@@ -195,7 +195,7 @@
 					<h2>{'Checkout step payment'|translate}</h2>
 				</header>
 				<div class="checkout-section__body">
-					{if $hooks.order_payment}
+					{if !empty($hooks.order_payment)}
 					<div class="checkout-payment-list" id="checkoutPaymentList" data-default-payment="{$formData.payment_method|escape}">
 						{$hooks.order_payment nofilter}
 					</div>

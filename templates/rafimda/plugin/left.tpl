@@ -125,7 +125,7 @@
 				<span class="t4-drawer__row-label">{'Contact Us'|translate}</span>
 				<span class="t4-drawer__chev" aria-hidden="true"></span>
 			</a>
-			{if $hooks.mobile_menu}
+			{if !empty($hooks.mobile_menu)}
 			<div class="t4-drawer__hook">{$hooks.mobile_menu nofilter}</div>
 			{/if}
 		</div>

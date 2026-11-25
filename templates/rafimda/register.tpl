@@ -83,7 +83,7 @@
 				</div>
 			</div>
 
-			{if $hooks.auth_register}
+			{if !empty($hooks.auth_register)}
 			{$hooks.auth_register nofilter}
 			{/if}
 

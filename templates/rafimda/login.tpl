@@ -64,7 +64,7 @@
 				<a class="t4-auth__link" href="{$domain}forgot-password">{'Forgot password'|translate}</a>
 			</div>
 
-			{if $hooks.auth_login}
+			{if !empty($hooks.auth_login)}
 			{$hooks.auth_login nofilter}
 			{/if}
 
