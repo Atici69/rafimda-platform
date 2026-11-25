@@ -36,21 +36,21 @@ class XhMapper
 	public const VARIANT_TARGETS = ['sku' => 'Varyant SKU', 'barcode' => 'Varyant barkod', 'price' => 'Varyant fiyat', 'stock' => 'Varyant stok', 'size' => 'Beden', 'color' => 'Renk'];
 
 	private const SYNONYMS = [
-		'name' => ['name', 'productname', 'title', 'urunadi', 'urunismi', 'ad', 'baslik', 'isim', 'label', 'product'],
-		'description' => ['description', 'desc', 'aciklama', 'detail', 'urunaciklama', 'content', 'longdescription', 'detay'],
+		'name' => ['name', 'productname', 'title', 'urunadi', 'urunismi', 'ad', 'baslik', 'isim', 'label', 'product', 'productname1', 'urunbasligi', 'urunisim'],
+		'description' => ['description', 'desc', 'aciklama', 'detail', 'urunaciklama', 'content', 'longdescription', 'detay', 'aciklama1', 'urunaciklamasi', 'detail1'],
 		'short_description' => ['shortdescription', 'kisaaciklama', 'summary', 'ozet'],
-		'sku' => ['sku', 'stockcode', 'stokkodu', 'productcode', 'urunkodu', 'code', 'kod', 'productid', 'id', 'modelcode', 'supplierstockcode'],
-		'barcode' => ['barcode', 'barkod', 'ean', 'gtin', 'upc'],
-		'price' => ['price', 'fiyat', 'listprice', 'listefiyati', 'satisfiyati', 'saleprice', 'sellprice', 'pricewithvat', 'kdvlifiyat'],
-		'sale_price' => ['discountprice', 'discountedprice', 'indirimlifiyat', 'specialprice', 'campaignprice', 'kampanyafiyati', 'netprice'],
-		'stock' => ['stock', 'stok', 'quantity', 'qty', 'miktar', 'stockamount', 'stokadedi', 'inventory'],
-		'brand' => ['brand', 'marka', 'manufacturer', 'vendor', 'ureticifirma'],
-		'category' => ['category', 'kategori', 'categoryname', 'kategoriadi', 'categorypath', 'maincategory', 'catalog'],
-		'images' => ['images', 'image', 'img', 'picture', 'pictures', 'resim', 'resimler', 'gorsel', 'gorseller', 'photo', 'photos', 'imageurl', 'image1', 'resim1', 'picture1'],
+		'sku' => ['sku', 'stockcode', 'stokkodu', 'productcode', 'urunkodu', 'code', 'kod', 'productid', 'id', 'modelcode', 'supplierstockcode', 'mpn', 'urunstokkodu', 'stokkod', 'productsku', 'sellersku'],
+		'barcode' => ['barcode', 'barkod', 'ean', 'gtin', 'upc', 'gtin13', 'ean13', 'barkodno'],
+		'price' => ['price', 'fiyat', 'listprice', 'listefiyati', 'satisfiyati', 'saleprice', 'sellprice', 'pricewithvat', 'kdvlifiyat', 'price1', 'fiyat1', 'satisfiyat', 'piyasafiyati', 'listprice1'],
+		'sale_price' => ['discountprice', 'discountedprice', 'indirimlifiyat', 'specialprice', 'campaignprice', 'kampanyafiyati', 'netprice', 'price2', 'indirimfiyati', 'saleprice'],
+		'stock' => ['stock', 'stok', 'quantity', 'qty', 'miktar', 'stockamount', 'stokadedi', 'inventory', 'stokmiktari', 'stockquantity', 'quantityinstock', 'adet', 'stokadet'],
+		'brand' => ['brand', 'marka', 'manufacturer', 'vendor', 'ureticifirma', 'markaadi', 'brandname'],
+		'category' => ['category', 'kategori', 'categoryname', 'kategoriadi', 'categorypath', 'maincategory', 'catalog', 'producttype', 'googleproductcategory', 'kategoriyolu', 'categorytree', 'kategoriagaci', 'anakategori'],
+		'images' => ['images', 'image', 'img', 'picture', 'pictures', 'resim', 'resimler', 'gorsel', 'gorseller', 'photo', 'photos', 'imageurl', 'image1', 'resim1', 'picture1', 'imagelink', 'resimurl', 'gorselurl', 'additionalimagelink', 'picture1path'],
 		'desi' => ['desi', 'deci', 'volumetricweight'],
 		'cargo_price' => ['cargoprice', 'kargoucreti', 'shippingcost', 'shipping'],
 		'cargo_day' => ['cargoday', 'kargosuresi', 'deliverytime', 'leadtime', 'shippingtime'],
-		'vat' => ['vat', 'kdv', 'tax', 'taxrate', 'kdvorani'],
+		'vat' => ['vat', 'kdv', 'tax', 'taxrate', 'kdvorani', 'vatrate', 'kdvoran'],
 	];
 
 	private const VARIANT_SYNONYMS = [
