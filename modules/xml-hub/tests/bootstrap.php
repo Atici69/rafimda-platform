@@ -119,7 +119,7 @@ $rv = dirname(__DIR__, 2) . '/rafimda-vendor/lib/';
 foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvPlans'] as $c) {
 	require_once $rv . $c . '.php';
 }
-foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $c) {
+foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhImageRepair', 'XhRunner', 'XhPanel'] as $c) {
 	require_once dirname(__DIR__) . '/lib/' . $c . '.php';
 }
 

@@ -198,7 +198,8 @@ class Product
 			}
 		}
 
-		return $domain . 'templates/default/img/favicon.png';
+		// Görsel dosyası yoksa sitede gerçekten bulunan yer tutucu (eski yol templates/default/… bu kurulumda yok → kırık görsel)
+		return $domain . 'img/default.jpg';
 	}
 
 	public static function getYoutubeEmbedUrl(string $url): string
@@ -1668,21 +1669,14 @@ class Product
 			return self::fail('Görsel kaydedilemedi');
 		}
 
-		$dest = dirname(__DIR__) . '/img/products/' . (int) $idImage . '.jpg';
-		$dir = dirname($dest);
+		$written = self::writeImageFile((int) $idImage, $binary);
 
-		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-			return self::fail('Görsel klasörü oluşturulamadı');
+		if (!$written['success']) {
+			// Dosyası olmayan görsel kaydı bırakılmaz (sitede kırık görsel olarak görünürdü).
+			DB::execute('DELETE FROM images WHERE id_image = ?', [(int) $idImage]);
+
+			return self::fail($written['message']);
 		}
-
-		$source = imagecreatefromstring($binary);
-
-		if (!$source) {
-			return self::fail('Görsel işlenemedi');
-		}
-
-		imagejpeg($source, $dest, 88);
-		imagedestroy($source);
 
 		return [
 			'success' => true,
@@ -1692,6 +1686,50 @@ class Product
 			'url' => self::getImageUrl((int) $idImage),
 			'cover' => $hasCover > 0 ? 0 : 1,
 		];
+	}
+
+	/**
+	 * Görsel verisini img/products/{id_image}.jpg olarak yazar ve dosyanın gerçekten oluştuğunu doğrular.
+	 * Şeffaf PNG/WEBP beyaz zemine oturtulur (JPEG'de siyah zemin olmasın).
+	 *
+	 * @return array{success:bool, message:string}
+	 */
+	public static function writeImageFile(int $idImage, string $binary): array
+	{
+		$dest = dirname(__DIR__) . '/img/products/' . $idImage . '.jpg';
+		$dir = dirname($dest);
+
+		if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return ['success' => false, 'message' => 'Görsel klasörü (img/products) oluşturulamadı'];
+		}
+
+		if (!is_writable($dir)) {
+			return ['success' => false, 'message' => 'Görsel klasörüne (img/products) yazılamıyor: klasör izinlerini kontrol edin (755, sahibi site kullanıcısı)'];
+		}
+
+		$source = @imagecreatefromstring($binary);
+
+		if (!$source) {
+			return ['success' => false, 'message' => 'Görsel işlenemedi'];
+		}
+
+		$w = imagesx($source);
+		$h = imagesy($source);
+		$canvas = imagecreatetruecolor($w, $h);
+		imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+		imagecopy($canvas, $source, 0, 0, 0, 0, $w, $h);
+		imagedestroy($source);
+		$tmp = $dest . '.tmp' . bin2hex(random_bytes(3));
+		$ok = @imagejpeg($canvas, $tmp, 88);
+		imagedestroy($canvas);
+
+		if (!$ok || !is_file($tmp) || filesize($tmp) === 0 || !@rename($tmp, $dest)) {
+			@unlink($tmp);
+
+			return ['success' => false, 'message' => 'Görsel dosyası yazılamadı (img/products izinleri veya disk kotası)'];
+		}
+
+		return ['success' => true, 'message' => ''];
 	}
 
 	public static function importImageFromUrl(int $idProduct, string $url): array

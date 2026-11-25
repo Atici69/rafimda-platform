@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhRunner', 'XhPanel'] as $xhClass) {
+foreach (['XhUrlGuard', 'XhHttp', 'XhXml', 'XhMapper', 'XhMigrator', 'XhOwner', 'XhStorage', 'XhCrypt', 'XhMeta', 'XhExport', 'XhRepo', 'XhSink', 'XhImporter', 'XhImageRepair', 'XhRunner', 'XhPanel'] as $xhClass) {
 	require_once __DIR__ . '/lib/' . $xhClass . '.php';
 }
 
@@ -107,6 +107,9 @@ class XmlHubModule extends ModuleBase
 				} elseif ($cmAction === 'review_save') {
 					$r = CategoryMatchStore::resolveReview(0, (int) ($_POST['id_product'] ?? 0), (int) ($_POST['id_category'] ?? 0), true);
 					$msg = ['type' => $r['success'] ? 'success' : 'danger', 'message' => $r['message']];
+				} elseif ($cmAction === 'image_repair') {
+					$r = XhImageRepair::repair(30);
+					$msg = ['type' => $r['failed'] > 0 && $r['fixed'] === 0 ? 'danger' : 'success', 'message' => $r['fixed'] . ' görsel yeniden indirildi (' . $r['products'] . ' ürün)' . ($r['failed'] ? ', ' . $r['failed'] . ' görsel alınamadı: ' . implode(' | ', array_slice($r['errors'], 0, 3)) : '') . '. Kalan varsa düğmeye tekrar basın.'];
 				} elseif ($cmAction === 'review_all') {
 					$msg['message'] = CategoryMatchStore::confirmAllMedium(0) . ' ürünün önerilen kategorisi onaylandı.';
 				}
@@ -144,6 +147,7 @@ class XmlHubModule extends ModuleBase
 			'xhCronUrl' => $key !== '' ? XhRunner::cronUrl((string) $domain, $key) : '',
 			'pageTitle' => $this->title,
 			'cmOpen' => !empty($_GET['cm']),
+			'imgHealth' => $pending === [] ? XhImageRepair::health() : null,
 			'cmPending' => $pending === [] ? CategoryMatchStore::pending(0, 200) : [],
 			'cmFallbackCategory' => (int) Settings::get('RAFIMDA_FALLBACK_CATEGORY'),
 			'cmFallbackBrand' => (int) Settings::get('RAFIMDA_FALLBACK_BRAND'),

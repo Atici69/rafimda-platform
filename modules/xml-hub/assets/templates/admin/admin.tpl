@@ -6,6 +6,10 @@
 {else}
 <div class="xh-card"><strong>Zamanlanmış görev (cron):</strong>
 	{if $xhCronUrl}<div class="muted">Otomatik senkronizasyon için sunucu cron'unun bu adresi dakikada bir çağırması gerekir (çağrılmazsa zamanlanmış güncellemeler ÇALIŞMAZ):</div><code style="word-break:break-all">{$xhCronUrl|escape}</code>{else}<div class="muted">Anahtar henüz yok; modülü yeniden kurun.</div>{/if}</div>
+{if $imgHealth && (!$imgHealth.writable || $imgHealth.missing > 0)}<div class="alert {if !$imgHealth.writable}danger{else}warning{/if}"><strong>Ürün görselleri:</strong>
+	{if !$imgHealth.dir_exists}<b>img/products</b> klasörü yok.{elseif !$imgHealth.writable}<b>img/products</b> klasörüne yazılamıyor — yeni görseller kaydedilemez. cPanel → Dosya Yöneticisi'nden klasör izinlerini 755 yapın.{/if}
+	{if $imgHealth.missing > 0} {$imgHealth.missing|escape} görsel kaydının dosyası sunucuda yok (sitede yer tutucu görünür).{if $imgHealth.repairable > 0} {$imgHealth.repairable|escape} ürün XML kaynağından yeniden indirilebilir.{/if}{/if}
+	{if $imgHealth.repairable > 0 && $imgHealth.writable}<form method="post" class="row" style="margin:6px 0 0"><input type="hidden" name="token" value="{$adminToken|escape}"><input type="hidden" name="cmAction" value="image_repair"><button class="btn navy sm" type="submit">Eksik görselleri yeniden indir (30 ürün)</button></form>{/if}</div>{/if}
 <details class="xh-card"{if $cmOpen || $cmPending} open{/if}><summary><strong>Otomatik kategori eşleştirme</strong>{if $cmPending} <span class="pill">{count($cmPending)} ürün onay bekliyor</span>{/if}</summary>
 	<p class="muted">XML ve Excel aktarımlarında tedarikçi kategorisi (ya da ürün adı) sitedeki kategoriye kendiliğinden bağlanır. Emin olunamayanlar aşağıda onaya düşer; düzeltmeniz hatırlanır. Satıcılar kendi ürünlerini satıcı panelindeki "Kategori kontrolü" ekranından yönetir.</p>
 	<form method="post" class="row" style="flex-wrap:wrap;gap:8px"><input type="hidden" name="token" value="{$adminToken|escape}"><input type="hidden" name="cmAction" value="settings">

@@ -20,6 +20,11 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 - XML Hub: eşleme tablosunda olmayan tedarikçi kategorisi otomatik bulunur; yönetici yedek kategori/marka ve marka açma ayarı.
 - Pazaryeri: "Otomatik eşle" ile tek tıkla kategori eşleme, ürün bazında kategori, özellik ve marka otomatik doldurma.
 
+### Ürün görselleri görünmüyor (canlı site)
+- Görsel dosyası olmayan ürünlerde yer tutucu adresi kurulumda olmayan `templates/default/img/favicon.png` idi → sitede kırık görsel. Artık mevcut `img/default.jpg` ("Görsel hazırlanıyor").
+- `importImageBinary` dosya yazılamasa da (izin/kota) "başarılı" dönüyor ve dosyasız görsel kaydı bırakıyordu → yazım doğrulanır, başarısızsa kayıt geri alınır ve açık hata verilir; şeffaf PNG/WEBP beyaz zemine oturtulur.
+- XML Hub yönetiminde görsel sağlık uyarısı (img/products yazılabilir mi, dosyası eksik görsel sayısı) ve XML kaynağından "Eksik görselleri yeniden indir" onarımı (kayıt silmez, aynı görsel numarasına yazar).
+
 ### Yönetim paneli testinde bulunan ve düzeltilen hatalar
 - Yönetim Excel içe aktarma: Türkçe büyük harfli başlıklar ("Ürün Adı", "KATEGORİ") tanınmıyordu → dosya tamamen reddediliyordu (çok baytlı küçültme).
 - Yönetim Excel içe aktarma: bilinmeyen her kategori adı için ana kategoride YENİ kategori açılıyordu → artık otomatik eşleştirme (yeni kategori açma isteğe bağlı: RAFIMDA_IMPORT_CREATE_CATEGORIES=1); kategori boşsa ürün adından; güncellemede boş kategori hücresi mevcut kategoriyi korur.
