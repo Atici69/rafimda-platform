@@ -397,5 +397,5 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('MAIL_DRIVER', 'php'),
 ('GIFT_WRAP_ENABLED', '0'),
 ('GIFT_WRAP_FEE', '0'),
-('FS_VERSION', '3.0.2');
+('FS_VERSION', '3.0.3');
 
