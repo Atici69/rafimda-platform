@@ -21,7 +21,7 @@ class RvPanel
 		'finance'      => ['Finans', '▣', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
-		'subscription' => ['Abonelik', '★', true, ''],
+		'subscription' => ['Limitler ve Kampanyalar', '★', true, ''],
 		'store'        => ['Mağaza Yönetimi', '⚑', true, ''],
 		'storefront'   => ['Mağaza Vitrini', '❖', true, ''],
 		'questions'    => ['Soru-Cevap', '❓', true, ''],
@@ -660,7 +660,7 @@ class RvPanel
 			$out[] = ['label' => 'Yeni ürün ekle', 'url' => RvView::panelUrl('products', ['a' => 'new'])];
 		}
 
-		foreach (['orders' => 'Siparişleri gör', 'stock' => 'Stok güncelle', 'pricing' => 'Fiyat güncelle', 'finance' => 'Kazançlarım', 'reports' => 'Satış raporu', 'subscription' => 'Paketim ve kampanyalar'] as $k => $l) {
+		foreach (['orders' => 'Siparişleri gör', 'stock' => 'Stok güncelle', 'pricing' => 'Fiyat güncelle', 'finance' => 'Kazançlarım', 'reports' => 'Satış raporu', 'subscription' => 'Limitlerim ve kampanyalar'] as $k => $l) {
 			if (RvContext::can(RvPerm::SECTION_PERMS[$k])) {
 				$out[] = ['label' => $l, 'url' => RvView::panelUrl($k)];
 			}

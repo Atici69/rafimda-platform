@@ -1,5 +1,5 @@
 <div class="rv-card" style="max-width:760px"><h3>Mağaza bilgileri</h3>
-	<p>Durum: <span class="pill ok">Aktif</span> · Mağaza adresi: <code>/{$form.store_slug}</code> · Paket: {$form.plan_code}</p>
+	<p>Durum: <span class="pill ok">Aktif</span> · Mağaza adresi: <code>/{$form.store_slug}</code> · Limit grubu: {$form.plan_code}</p>
 	<form method="post"><input type="hidden" name="token" value="{$rvToken}">
 		<div class="rv-row2">
 			<div><label>Mağaza adı *</label><input type="text" name="store_name" value="{$form.store_name}" required>{if $errors.store_name|default:''}<div class="err">{$errors.store_name}</div>{/if}</div>

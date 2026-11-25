@@ -9,7 +9,7 @@
 {/if}
 
 <ul class="nav nav-tabs mb-3">
-	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'engage' => 'Soru · Yorum · Destek', 'settings' => 'Ayarlar'] as $k => $l}
+	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Mağaza Limitleri', 'engage' => 'Soru · Yorum · Destek', 'settings' => 'Ayarlar'] as $k => $l}
 	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}{if $k == 'applications' && $rvAppOpen|default:0 > 0} <span class="badge text-bg-warning">{$rvAppOpen}</span>{/if}{if $k == 'engage' && $rvEngTicketOpen|default:0 > 0} <span class="badge text-bg-info">{$rvEngTicketOpen}</span>{/if}</a></li>
 	{/foreach}
 </ul>
@@ -198,13 +198,12 @@
 {/if}
 
 {if $rvTab == 'plans'}
-<div class="admin-panel p-3 mb-3"><h5>Paketler</h5>
-	<p class="text-muted small">Ödeme otomasyonu yoktur: paketi elle atarsınız. Limit boşsa sınırsızdır. Süresi dolan paket okuma anında "free" paketine düşer (veri silinmez).</p>
+<div class="admin-panel p-3 mb-3"><h5>Mağaza Limitleri</h5>
+	<div class="alert alert-info small mb-3">Satıcılardan abonelik veya paket ücreti alınmaz; mağaza açmak ücretsizdir ve gelir yalnızca tamamlanan satışlardan alınan komisyondur (bkz. Ayarlar). Buradaki gruplar yalnızca teknik limitlerdir (ürün, XML bağlantısı, pazaryeri hesabı). Limit boşsa sınırsızdır. Süreli atanan grup süresi dolunca varsayılan gruba döner (veri silinmez).</div>
 	{foreach $rvPlans as $p}
 	<form method="post" class="row g-2 align-items-center mb-2 border-bottom pb-2"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_save"><input type="hidden" name="code" value="{$p.code|escape}"><input type="hidden" name="sort_order" value="{$p.sort_order|escape}">
 		<div class="col-auto" style="min-width:90px"><code>{$p.code|escape}</code></div>
 		<div class="col-auto"><input class="form-control form-control-sm" name="name" value="{$p.name|escape}" aria-label="Ad"></div>
-		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="price_monthly" value="{$p.price_monthly|escape}" aria-label="Aylık ücret"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_products" value="{$p.max_products|escape}" placeholder="ürün ∞" aria-label="Ürün limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_xml_connections" value="{$p.max_xml_connections|escape}" placeholder="XML ∞" aria-label="XML limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_marketplace_accounts" value="{$p.max_marketplace_accounts|escape}" placeholder="pazaryeri ∞" aria-label="Pazaryeri limiti"></div>
@@ -214,11 +213,11 @@
 	{/foreach}
 	<form method="post" class="row g-2 mt-2"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_save">
 		<div class="col-auto"><input class="form-control form-control-sm" name="code" placeholder="kod (örn. pro)" required></div><div class="col-auto"><input class="form-control form-control-sm" name="name" placeholder="Ad" required></div>
-		<div class="col-auto"><input class="form-control form-control-sm" name="price_monthly" placeholder="Aylık ₺" value="0"></div><div class="col-auto"><input class="form-control form-control-sm" name="max_products" placeholder="Ürün limiti"></div>
+		<div class="col-auto"><input class="form-control form-control-sm" name="max_products" placeholder="Ürün limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" name="max_xml_connections" placeholder="XML limiti"></div><div class="col-auto"><input class="form-control form-control-sm" name="max_marketplace_accounts" placeholder="Pazaryeri limiti"></div>
-		<input type="hidden" name="active" value="1"><div class="col-auto"><button class="btn btn-sm btn-outline-dark" type="submit">Yeni paket</button></div></form>
+		<input type="hidden" name="active" value="1"><div class="col-auto"><button class="btn btn-sm btn-outline-dark" type="submit">Yeni limit grubu</button></div></form>
 </div>
-<div class="admin-panel p-3"><h5>Satıcıya paket ata</h5>
+<div class="admin-panel p-3"><h5>Satıcıya limit grubu ata</h5>
 	<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Satıcı</th><th>Mevcut</th><th>Ata</th></tr></thead><tbody>
 	{foreach $rvVendors as $v}<tr><td>{$v.store_name|escape} <span class="text-muted">#{$v.id_vendor|escape}</span></td><td><code>{$v.plan_code|escape}</code>{if $v.plan_expires_at} <small class="text-muted">→ {$v.plan_expires_at|escape}</small>{/if}</td>
 		<td><form method="post" class="d-flex gap-1 flex-wrap"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_assign"><input type="hidden" name="id_vendor" value="{$v.id_vendor|escape}">

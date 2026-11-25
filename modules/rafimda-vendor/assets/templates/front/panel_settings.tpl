@@ -11,5 +11,5 @@
 		{if $can.store}<p><button class="rv-btn" type="submit">Kaydet</button></p>{else}<p style="color:var(--rv-muted)">Ayarları yalnızca mağaza sahibi değiştirebilir.</p>{/if}
 	</form>
 	<hr style="border:0;border-top:1px solid var(--rv-line);margin:18px 0">
-	<p>Mağaza bilgileri için <a href="?s=store">Mağaza Yönetimi</a>, ekip için <a href="?s=staff">Personel</a>, paket ve kampanyalar için <a href="?s=subscription">Abonelik</a> sayfalarına bakın.</p>
+	<p>Mağaza bilgileri için <a href="?s=store">Mağaza Yönetimi</a>, ekip için <a href="?s=staff">Personel</a>, limitler ve kampanyalar için <a href="?s=subscription">Limitler ve Kampanyalar</a> sayfalarına bakın.</p>
 </div>
