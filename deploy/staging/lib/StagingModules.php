@@ -29,6 +29,7 @@ final class StagingModules
 			['rafimda-legal', null],
 			['rafimda-invoice', null],
 			['rafimda-social', null],
+			['rafimda-catalog', null],
 		];
 		$out = [];
 

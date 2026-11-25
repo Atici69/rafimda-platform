@@ -168,7 +168,7 @@ ok($r['created'] === RvProducts::CSV_MAX_ROWS && $r['total'] === RvProducts::CSV
 $r = RvProducts::importCsv($vendA, $csv($h . "=cmd|' /C calc'!A0;1;1;1;1;INJ;;\r\n"), 'g.csv');
 ok($r['created'] === 1, 'formül benzeri hücre metin olarak kaydedilir (çalıştırılmaz)');
 ok((int) DB::getValue('SELECT COUNT(*) FROM rafimda_import_log WHERE id_vendor = ?', [$vendA]) >= 3, 'içe aktarma günlüğü yazıldı');
-ok(strpos(RvProducts::csvTemplate(), 'urun_adi;kategori_id') !== false, 'CSV şablonu üretilir');
+ok(strpos(RvProducts::csvTemplate(), 'urun_adi;kategori;marka;fiyat') !== false, 'CSV şablonu üretilir (kategori/marka adıyla)');
 
 // ---------- 6d. Sipariş bölme, komisyon, defter ----------
 section('Sipariş bölme ve komisyon');

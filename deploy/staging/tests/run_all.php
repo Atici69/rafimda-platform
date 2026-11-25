@@ -16,6 +16,7 @@ $suites = [
 	'rafimda-vendor/run_flows' => 'modules/rafimda-vendor/tests/run_flows.php',
 	'rafimda-vendor/run_app' => 'modules/rafimda-vendor/tests/run_app.php',
 	'rafimda-vendor/run_engage' => 'modules/rafimda-vendor/tests/run_engage.php',
+	'rafimda-vendor/run_import' => 'modules/rafimda-vendor/tests/run_import.php',
 	'rafimda-campaign/run' => 'modules/rafimda-campaign/tests/run.php',
 	'rafimda-legal/run' => 'modules/rafimda-legal/tests/run.php',
 	'rafimda-invoice/run' => 'modules/rafimda-invoice/tests/run.php',

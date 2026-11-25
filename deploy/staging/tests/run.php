@@ -59,7 +59,7 @@ t('ALTER ile eklenen sütun şemaya girer (plan_expires_at, moderation)', in_arr
 t('rafimda-vendor beklenen tablo sayısı >= 10', count($rv) >= 10, (string) count($rv));
 foreach (StagingModules::all() as $m) {
 	$e = StagingModules::expectedSchema($m);
-	t($m['key'] . ': şema çıkarıldı (' . count($e) . ' tablo)', count($e) >= 2);
+	t($m['key'] . ': şema çıkarıldı (' . count($e) . ' tablo)', count($e) >= ($m['key'] === 'rafimda-catalog' ? 1 : 2));
 	foreach ($e as $tbl => $d) {
 		if (!in_array('PRIMARY', $d['indexes'], true) && $tbl !== 'xh_settings_dummy') {
 			t($m['key'] . '.' . $tbl . ' PRIMARY KEY tanımlı', false, 'ayrıştırılamadı veya yok');

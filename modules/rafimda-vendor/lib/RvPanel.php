@@ -420,12 +420,15 @@ class RvPanel
 					$f = $_FILES['csv'] ?? null;
 					$ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
 
-					if (!$f || (int) $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name']) || !in_array($ext, ['csv', 'txt'], true)) {
-						RvView::flash('danger', 'Geçerli bir .csv dosyası seçin.');
+					if (!$f || (int) $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name']) || !in_array($ext, ['csv', 'txt', 'xlsx'], true)) {
+						RvView::flash('danger', 'Geçerli bir Excel (.xlsx) veya .csv dosyası seçin.');
 						RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
 					}
 
-					$r = RvProducts::importCsv($idVendor, (string) $f['tmp_name'], (string) $f['name']);
+					@set_time_limit(300);
+					$r = $ext === 'xlsx'
+						? RvProducts::importXlsx($idVendor, (string) $f['tmp_name'], (string) $f['name'])
+						: RvProducts::importCsv($idVendor, (string) $f['tmp_name'], (string) $f['name']);
 					$msg = $r['message'] . ($r['errors'] ? ' ' . implode(' | ', array_slice($r['errors'], 0, 8)) : '');
 					RvView::flash(!$r['success'] ? 'danger' : ($r['failed'] > 0 ? 'warning' : 'success'), $msg);
 					RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
@@ -446,6 +449,14 @@ class RvPanel
 
 		$a = (string) Tools::getValue('a', 'list');
 
+		if ($a === 'template' && Tools::getValue('f') === 'xlsx' && ($bin = RvProducts::xlsxTemplate()) !== '') {
+			self::deny('products.create');
+			header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+			header('Content-Disposition: attachment; filename="rafimda-urun-sablonu.xlsx"');
+			echo $bin;
+			exit;
+		}
+
 		if ($a === 'template') {
 			self::deny('products.create');
 			header('Content-Type: text/csv; charset=utf-8');
@@ -459,8 +470,10 @@ class RvPanel
 
 			return ['panel_import', [
 				'templateUrl' => RvView::panelUrl('products', ['a' => 'template']),
+				'templateXlsxUrl' => RvView::panelUrl('products', ['a' => 'template', 'f' => 'xlsx']),
 				'listUrl' => RvView::panelUrl('products'),
 				'maxRows' => RvProducts::CSV_MAX_ROWS,
+				'maxRowsXlsx' => RvProducts::XLSX_MAX_ROWS,
 				'categories' => Category::getProductSelectOptions(),
 				'brands' => DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1 ORDER BY brand_name ASC') ?: [],
 				'history' => DB::execute('SELECT * FROM rafimda_import_log WHERE id_vendor = ? ORDER BY id_import DESC LIMIT 10', [$idVendor]) ?: [],
