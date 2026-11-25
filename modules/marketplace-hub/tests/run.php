@@ -166,7 +166,7 @@ foreach ([false, true] as $auto) {
 }
 $smarty->setEscapeHtml(false); $smarty->assign(array_merge($base, $views['list'], ['view' => 'list']));
 $html = $smarty->fetch('file:' . $tplDir . 'admin/admin.tpl');
-ok(strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 200 && strpos($html, 'gerçek API entegrasyonu yoktur') !== false, 'admin şablonu render: XSS kaçışı ve "gerçek API yok" uyarısı görünür');
+ok(strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 200 && strpos($html, 'yeni ürün oluşturma</b> henüz etkin değildir') !== false, 'admin şablonu render: XSS kaçışı ve "yeni ürün oluşturma yok" uyarısı görünür');
 
 section('Gerçek RvContext/RvPerm ile oturum/RBAC kapıları (Pazaryeri Hub)');
 $rbac = fn(string $args): string => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(dirname(__DIR__, 2) . '/xml-hub/tests/rbac_probe.php') . ' ' . $args . ' 2>/dev/null'));

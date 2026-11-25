@@ -101,7 +101,7 @@
 
 {if $view == 'conn'}
 <p><a href="{$xhBase|escape}?view=list">← Bağlantılar</a></p>
-<h2 style="color:#0b2545;margin:0 0 4px">{$conn.name|escape} <span class="pill {if $conn.status == 'active'}ok{elseif $conn.status == 'error'}bad{elseif $conn.status == 'paused'}warn{/if}">{$conn.status|escape}</span></h2>
+<h2 style="color:#0b2545;margin:0 0 4px">{$conn.name|escape} <span class="pill {if $conn.status == 'active'}ok{elseif $conn.status == 'error'}bad{elseif $conn.status == 'paused'}warn{/if}">{if $conn.status == 'active'}Aktif{elseif $conn.status == 'draft'}Taslak{elseif $conn.status == 'paused'}Duraklatıldı{elseif $conn.status == 'error'}Hata{else}{$conn.status|escape}{/if}</span></h2>
 <p class="muted">{if $conn.source_type == 'url'}{$conn.url|escape}{else}Yüklenen dosya{/if}{if $conn.item_path} · ürün düğümü: <code>{$conn.item_path|escape}</code>{/if}</p>
 <nav class="xh-tabs">
 	{foreach ['general' => 'Genel', 'mapping' => 'Alan eşleştirme', 'maps' => 'Marka/Kategori', 'preview' => 'Önizleme ve içe aktarma', 'history' => 'Geçmiş', 'errors' => 'Hatalar'] as $k => $t}<a class="{if $tab == $k}on{/if}" href="{$xhBase|escape}?view=conn&amp;id={$conn.id_connection|escape}&amp;tab={$k|escape}">{$t|escape}</a>{/foreach}
@@ -146,7 +146,7 @@
 	<label>Ürün düğümü yolu</label><input type="text" name="item_path" value="{$conn.item_path|escape}" maxlength="190">
 	<datalist id="xh-keys">{foreach $keys as $k}<option value="{$k|escape}">{/foreach}</datalist>
 	<h3 style="margin-top:14px">Alanlar</h3>
-	<div class="muted">Kaynak alanı seçin ya da yazın. <code>a|b</code> = ilk dolu olan, <code>=Sabit</code> = sabit değer. {if $mapping.fields|count == 0 && isset($suggest)}Boş alanlar için öneriler gösterilir; kaydetmek önerileri uygular.{/if}</div>
+	<div class="muted">Kaynak alanı seçin ya da yazın. <code>a|b</code> = ilk dolu olan, <code>=Sabit</code> = sabit değer. {if ($mapping.fields|default:[])|count == 0 && isset($suggest)}Boş alanlar için öneriler gösterilir; kaydetmek önerileri uygular.{/if}</div>
 	<div class="grid g2">
 	{foreach $targets as $t => $def}
 		<div><label>{$def[0]|escape}{if $def[1]} *{/if}</label><input type="text" list="xh-keys" name="fields[{$t|escape}]" value="{if isset($mapping.fields[$t])}{$mapping.fields[$t]|escape}{elseif isset($suggest.fields[$t])}{$suggest.fields[$t]|escape}{/if}" maxlength="190"></div>
@@ -196,7 +196,7 @@
 {if $tab == 'history'}
 <div class="xh-card"><h3>Bu bağlantının işlemleri</h3>
 	{if $runs}<div class="scroll"><table><thead><tr><th>#</th><th>Tür</th><th>Durum</th><th>İlerleme</th><th>Sonuç</th><th>Tarih</th></tr></thead><tbody>
-	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{$r.kind|escape}</td><td>{$r.status|escape}</td><td>{$r.item_offset|escape} / {$r.total|escape}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
+	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{if $r.kind == 'import'}İçe aktarma{elseif $r.kind == 'sync'}Senkronizasyon{else}Yeniden deneme{/if}</td><td><span class="pill {if $r.status == 'done'}ok{elseif $r.status == 'failed'}bad{elseif $r.status == 'cancelled'}warn{/if}">{if $r.status == 'queued'}Sırada{elseif $r.status == 'running'}Çalışıyor{elseif $r.status == 'done'}Bitti{elseif $r.status == 'failed'}Başarısız{else}İptal{/if}</span></td><td>{if $r.kind == 'retry' && $r.status == 'done'}{$r.total|escape} satır{else}{$r.item_offset|escape} / {$r.total|escape}{/if}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
 </div>
 {/if}
 

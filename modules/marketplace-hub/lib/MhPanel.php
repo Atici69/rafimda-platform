@@ -93,7 +93,7 @@ class MhPanel
 			$vars = ['acc' => $acc, 'tab' => $tab, 'adapter' => ['title' => $a ? $a->title() : '', 'implemented' => $a ? $a->implemented() : false, 'stock_price' => $a instanceof MhCoreAdapter, 'fields' => $a ? $a->credentialFields() : []], 'credStatus' => MhRepo::credentialStatus($id), 'counts' => MhRepo::listingCounts($id), 'catMap' => [], 'categories' => [], 'products' => [], 'listings' => [], 'errors' => []];
 
 			if ($tab === 'categories') {
-				$vars['categories'] = DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name ASC LIMIT 500') ?: [];
+				$vars['categories'] = $this->usedCategories((int) $acc['id_vendor']);
 				$vars['catMap'] = MhRepo::categoryMap($id);
 			} elseif ($tab === 'products') {
 				$vars['products'] = $this->ownProducts((int) $acc['id_vendor']);
@@ -119,6 +119,54 @@ class MhPanel
 	}
 
 	/** @return list<array<string,mixed>> */
+	/**
+	 * Eşleme için yalnızca bu hesabın ürünlerinin bulunduğu kategoriler (yüzlerce kategoriyi listelemek yerine),
+	 * aynı adlı kategoriler ayırt edilsin diye tam yol ile. Ürün yoksa tüm aktif kategoriler (en çok 500).
+	 * @return list<array{id_category:int, category_name:string, products:int}>
+	 */
+	private function usedCategories(int $owner): array
+	{
+		$counts = [];
+
+		foreach ($this->ownProducts($owner) as $p) {
+			$counts[(int) $p['id_category']] = ($counts[(int) $p['id_category']] ?? 0) + 1;
+		}
+
+		$rows = DB::execute('SELECT id_category, id_parent, category_name FROM categories WHERE active = 1') ?: DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1') ?: [];
+		$byId = [];
+
+		foreach ($rows as $r) {
+			$byId[(int) $r['id_category']] = $r;
+		}
+
+		$path = static function (int $id) use ($byId): string {
+			$parts = [];
+			$guard = 0;
+
+			while (isset($byId[$id]) && $guard++ < 10) {
+				if ((int) ($byId[$id]['id_parent'] ?? 0) === 0 && $parts !== []) {
+					break; // kök (Katalog) yola katılmaz
+				}
+
+				array_unshift($parts, (string) $byId[$id]['category_name']);
+				$id = (int) ($byId[$id]['id_parent'] ?? 0);
+			}
+
+			return implode(' > ', $parts);
+		};
+		$out = [];
+
+		foreach ($counts !== [] ? array_keys($counts) : array_slice(array_keys($byId), 0, 500) as $id) {
+			if (isset($byId[$id])) {
+				$out[] = ['id_category' => $id, 'category_name' => $path($id), 'products' => $counts[$id] ?? 0];
+			}
+		}
+
+		usort($out, static fn(array $a, array $b): int => strcmp($a['category_name'], $b['category_name']));
+
+		return $out;
+	}
+
 	private function ownProducts(int $owner): array
 	{
 		if ($owner > 0) {

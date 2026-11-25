@@ -61,6 +61,10 @@ if (!empty($cfg['pending_app'])) {
 	RvApplication::transition($ap['id_application'], 'docs_required', 1, 'Vergi levhası eksik');
 }
 if (!empty($cfg['activate'])) { $GLOBALS['RV_TEST_ACTIVATE'] = true; }
+// Rafi Akademi video çekimi: zengin ÖRNEK katalog (tam kategori ağacı, markalar, görselli ürünler) ve isteğe bağlı bildirim
+if (!empty($cfg['rich'])) { $GLOBALS['RV_VIDEO_EXTRA'] = $cfg['extra'] ?? []; $GLOBALS['RV_VIDEO_SQL'] = $cfg['sql'] ?? []; require __DIR__ . '/video_seed.php'; rv_video_seed($vA); }
+if (!empty($cfg['flash'])) { $_SESSION['rv_flash'] = $cfg['flash']; }
+Settings::set('RAFI_HELP_VIDEOS', !empty($cfg['help']) ? '1' : '0');
 Customer::as((int) ($cfg['user'] ?? 1));
 $_SERVER['REQUEST_METHOD'] = $cfg['method'] ?? 'GET'; $_GET = $cfg['get'] ?? []; $_POST = ($cfg['post'] ?? []) + (($cfg['method'] ?? 'GET') === 'POST' ? ['token' => 'csrf-test'] : []);
 RvView::$onRedirect = static function (string $url): void { echo "\nREDIRECT:" . $url . "\n"; exit(0); };

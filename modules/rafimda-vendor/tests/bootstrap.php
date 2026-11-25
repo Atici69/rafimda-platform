@@ -101,7 +101,7 @@ class Product { // TAKLİT
 	}
 	public static function deleteById(int $id) { DB::execute('DELETE FROM products WHERE id_product = ?', [$id]); return ['success' => true]; }
 	public static function getByIdAdmin(int $id) { return DB::getRowSafe('products', 'id_product = ?', [$id]) ?: null; }
-	public static function getImages(int $id) { return []; }
+	public static function getImages(int $id) { return array_map(static fn(array $r): array => $r + ['url' => '/img/products/' . $r['id_image'] . '.jpg'], DB::execute('SELECT * FROM images WHERE id_product = ? ORDER BY cover DESC, id_image ASC', [$id]) ?: []); }
 	public static function getImageUrl(int $id) { return '/img/products/' . $id . '.jpg'; }
 	public static function uploadImage(int $id, array $f) { return ['success' => true]; }
 	public static function deleteImage(int $id) { DB::execute('DELETE FROM images WHERE id_image = ?', [$id]); return ['success' => true]; }

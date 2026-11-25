@@ -12,10 +12,11 @@
 		<input type="file" name="csv" accept=".xlsx,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required><p><button class="rv-btn" type="submit">Yükle ve işle</button></p></form>
 	<p style="color:var(--rv-muted);font-size:12px">Eşleşmeyen kategoriler hatalı satır olarak raporlanır ve yöneticinin onayına öneri olarak düşer; onaylandıktan sonra aynı dosyayı tekrar yüklemeniz yeterlidir.</p>
 </div>
-<div class="rv-grid c2">
-	<div class="rv-card"><h3>Kategori numaraları (isteğe bağlı)</h3><table><tbody>{foreach $categories as $c}<tr><td>{$c.id_category}</td><td>{$c.category_name}</td></tr>{/foreach}</tbody></table></div>
-	<div class="rv-card"><h3>Marka numaraları</h3><table><tbody>{foreach $brands as $b}<tr><td>{$b.id_brand}</td><td>{$b.brand_name}</td></tr>{/foreach}</tbody></table></div>
-</div>
+<details class="rv-card"><summary style="cursor:pointer;font-weight:600">Kategori ve marka numaraları (isteğe bağlı — ad yazmanız yeterli)</summary>
+<div class="rv-grid c2" style="margin-top:12px">
+	<div><h3>Kategoriler</h3><div style="max-height:360px;overflow:auto"><table><tbody>{foreach $categories as $c}<tr><td>{$c.id_category}</td><td>{$c.category_name}</td></tr>{/foreach}</tbody></table></div></div>
+	<div><h3>Markalar</h3><div style="max-height:360px;overflow:auto"><table><tbody>{foreach $brands as $b}<tr><td>{$b.id_brand}</td><td>{$b.brand_name}</td></tr>{/foreach}</tbody></table></div></div>
+</div></details>
 <div class="rv-card"><h3>Son yüklemeler</h3>
 	{if $history}<div style="overflow-x:auto"><table><thead><tr><th>Tarih</th><th>Dosya</th><th>Yeni</th><th>Güncellenen</th><th>Hatalı</th></tr></thead><tbody>{foreach $history as $h}<tr><td>{$h.date_add}</td><td>{$h.file_name}</td><td>{$h.rows_created}</td><td>{$h.rows_updated}</td><td>{$h.rows_failed}</td></tr>{/foreach}</tbody></table></div>{else}<p style="color:var(--rv-muted)">Henüz yükleme yok.</p>{/if}
 </div>

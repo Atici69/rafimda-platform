@@ -1,0 +1,30 @@
+{
+ "urun-ekleme": {
+  "seconds": 80,
+  "v": "202611260023"
+ },
+ "excel-yukleme": {
+  "seconds": 86,
+  "v": "202611260025"
+ },
+ "xml-yukleme": {
+  "seconds": 113,
+  "v": "202611260027"
+ },
+ "kategori-eslestirme": {
+  "seconds": 68,
+  "v": "202611260028"
+ },
+ "gorsel": {
+  "seconds": 73,
+  "v": "202611260029"
+ },
+ "fiyat-stok": {
+  "seconds": 69,
+  "v": "202611260031"
+ },
+ "trendyol": {
+  "seconds": 106,
+  "v": "202611260033"
+ }
+}

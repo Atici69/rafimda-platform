@@ -33,6 +33,7 @@
 		{else}
 			{include file=$contentFile}
 		{/if}
+		{if $rafiHelp|default:''}{$rafiHelp nofilter}{/if}
 	</main>
 </div></div>
 <script src="{$rvJs}"></script></body></html>
