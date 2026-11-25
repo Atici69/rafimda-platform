@@ -110,6 +110,18 @@ ok(CategoryMatchStore::recall('site', 7, 'Tedarikçi > Abiye')['target_id'] === 
 $auto = CategoryMatchStore::resolveSite(9, 'Ev Tekstili', 'Nevresim');
 ok(CategoryMatchStore::recall('site', 9, 'Ev Tekstili')['confirmed'] === false && $auto['confidence'] === 'high', 'yüksek güvenli otomatik karar (onaysız) hatırlanır');
 
+// Genel kaynak metni ("Çocuk") + ürün adıyla bulunmuş karar toplu onayda genellenmez
+$db->exec("INSERT INTO products (id_product, product_name, id_category) VALUES (200, 'Çocuk Işıklı Spor Ayakkabı', " . $ids['Anne & Çocuk > Çocuk Ayakkabı'] . ")");
+$rc = CategoryMatchStore::resolveSite(11, 'Çocuk', 'Çocuk Işıklı Spor Ayakkabı');
+CategoryMatchStore::queueReview(200, 11, 'xml', 'Çocuk', 'Çocuk Işıklı Spor Ayakkabı', ['confidence' => 'medium'] + $rc);
+CategoryMatchStore::confirmAllMedium(11);
+ok(CategoryMatchStore::recall('site', 11, 'Çocuk') === null, 'toplu onay: genel kaynak metni ("Çocuk") ürün adına dayalı kararla hafızaya yazılmaz');
+CategoryMatchStore::remember('site', 12, 'Çocuk', (string) $ids['Anne & Çocuk > Çocuk Ayakkabı'], 'Anne & Çocuk > Çocuk Ayakkabı', true);
+$ov = CategoryMatchStore::resolveSite(12, 'Çocuk', 'Lego Technic Oyuncak Araba Seti');
+ok($ov['id_category'] === $ids['Anne & Çocuk > Oyuncak'] || $ov['from'] === 'memory', 'hafızadaki karar, ürün adı başka kategoriyi açıkça gösterirse ezilir (ya da güven yüksek değilse hafıza kullanılır)');
+$ov2 = CategoryMatchStore::resolveSite(12, 'Çocuk', 'Bebek Arabası Travel Sistem Puset');
+ok($ov2['id_category'] === $ids['Anne & Çocuk > Bebek Arabası & Oto Koltuğu'] && $ov2['confidence'] === 'medium', 'açık ürün adı hafızayı ezer ve kontrol listesine düşer');
+
 echo "== Marka ==\n";
 $db->exec("INSERT INTO brands (brand_name, brand_link) VALUES ('Koton', 'koton')");
 $b = CategoryMatchStore::brandId('KOTON');

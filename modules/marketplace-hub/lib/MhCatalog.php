@@ -294,8 +294,8 @@ class MhCatalog
 		if ($productName === '') {
 			$mem = CategoryMatchStore::recall($scope, $owner, $sitePath);
 
-			if ($mem) {
-				return ['id' => $mem['target_id'], 'path' => $mem['target_path'], 'score' => 1.0, 'confidence' => $mem['confirmed'] ? 'confirmed' : 'high', 'from' => 'memory', 'alternatives' => []];
+			if ($mem && $mem['confirmed']) {
+				return ['id' => $mem['target_id'], 'path' => $mem['target_path'], 'score' => 1.0, 'confidence' => 'confirmed', 'from' => 'memory', 'alternatives' => []];
 			}
 		}
 

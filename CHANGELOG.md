@@ -20,6 +20,14 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 - XML Hub: eşleme tablosunda olmayan tedarikçi kategorisi otomatik bulunur; yönetici yedek kategori/marka ve marka açma ayarı.
 - Pazaryeri: "Otomatik eşle" ile tek tıkla kategori eşleme, ürün bazında kategori, özellik ve marka otomatik doldurma.
 
+### Yönetim paneli testinde bulunan ve düzeltilen hatalar
+- Yönetim Excel içe aktarma: Türkçe büyük harfli başlıklar ("Ürün Adı", "KATEGORİ") tanınmıyordu → dosya tamamen reddediliyordu (çok baytlı küçültme).
+- Yönetim Excel içe aktarma: bilinmeyen her kategori adı için ana kategoride YENİ kategori açılıyordu → artık otomatik eşleştirme (yeni kategori açma isteğe bağlı: RAFIMDA_IMPORT_CREATE_CATEGORIES=1); kategori boşsa ürün adından; güncellemede boş kategori hücresi mevcut kategoriyi korur.
+- Yönetim Excel içe aktarma: fiyatı boş yeni ürün 0 TL ile yayına giriyordu → reddedilir. Stok kodu yoksa barkod kullanılır.
+- Aynı adlı ikinci ürün (farklı satıcı/tedarikçi) "URL slug zaten kullanılıyor" hatasıyla kaydedilemiyordu → ürün adından üretilen bağlantıya -2, -3… eki (elle girilen bağlantıda eski davranış korunur).
+- Otomatik eşleştirme: onaysız eski kararlar motoru kilitliyordu (yalnızca onaylı kararlar hatırlanır); "Sporcu Gıdası" → Gıda yerine Sporcu Besinleri; "Çocuk" gibi genel kaynak metinleri toplu onayda tek kategoriye genellenmez, ürün adı açıkça başka kategoriyi gösterirse hatırlanan karar ezilir.
+- XML önizlemesine ürünün gideceği kategori ve "otomatik/kontrol" işareti eklendi.
+
 ### Satıcı paneli Excel (.xlsx)
 - Excel şablonu (4 sayfa), Excel ile yükleme (güvenlik denetimli), ürünleri Excel'e aktarma ve geri yükleyerek toplu fiyat/stok güncelleme.
 

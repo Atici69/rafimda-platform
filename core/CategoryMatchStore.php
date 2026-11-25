@@ -239,11 +239,18 @@ class CategoryMatchStore
 	{
 		$mem = self::recall(self::SCOPE_SITE, $owner, $sourceCategory);
 
-		if ($mem && (int) $mem['target_id'] > 0 && DB::execute('SELECT 1 AS x FROM categories WHERE id_category = ? AND active = 1', [(int) $mem['target_id']])) {
-			return ['id_category' => (int) $mem['target_id'], 'path' => $mem['target_path'], 'score' => 1.0, 'confidence' => $mem['confirmed'] ? 'confirmed' : 'high', 'from' => 'memory', 'alternatives' => []];
-		}
-
+		// Yalnızca ONAYLI kararlar (kullanıcı düzeltmesi/onayı) motoru atlar; onaysız otomatik kayıtlar motor iyileştikçe yeniden hesaplanır.
 		$m = CategoryMatcher::match($sourceCategory, $productName, self::prepared(self::SCOPE_SITE, [self::class, 'siteTargets']));
+
+		if ($mem && $mem['confirmed'] && (int) $mem['target_id'] > 0 && DB::execute('SELECT 1 AS x FROM categories WHERE id_category = ? AND active = 1', [(int) $mem['target_id']])) {
+			// Genel bir kaynak kategori ("Çocuk", "Muhtelif") için hatırlanan karar, ürün adı başka bir kategoriyi AÇIKÇA
+			// gösteriyorsa (yüksek güven) uygulanmaz; ürün o kategoriye gider ve kontrol listesine düşer.
+			if ($m['id'] !== null && $m['confidence'] === 'high' && (string) $m['id'] !== (string) $mem['target_id'] && trim($productName) !== '') {
+				return ['id_category' => (int) $m['id'], 'path' => $m['path'], 'score' => $m['score'], 'confidence' => 'medium', 'from' => 'auto', 'alternatives' => array_merge([['id' => (int) $mem['target_id'], 'path' => $mem['target_path'], 'score' => 1.0]], $m['alternatives'])];
+			}
+
+			return ['id_category' => (int) $mem['target_id'], 'path' => $mem['target_path'], 'score' => 1.0, 'confidence' => 'confirmed', 'from' => 'memory', 'alternatives' => []];
+		}
 
 		if ($m['id'] !== null && $m['confidence'] !== 'low') {
 			// Yüksek güvenli kararlar kaynak metin için hatırlanır (aynı tedarikçi kategorisi hep aynı yere gider).
@@ -360,7 +367,17 @@ class CategoryMatchStore
 		}
 
 		$src = trim((string) $rev['source_text']);
-		self::remember(self::SCOPE_SITE, $owner, $src !== '' ? $src : (string) $rev['product_name'], (string) $idCategory, self::sitePath($idCategory), true);
+
+		// Hafızaya yalnızca kaynak kategori metninin kendisi bu kararı taşıyorsa yazılır: kullanıcı elle değiştirdiyse ya da
+		// metin tek başına aynı kategoriyi gösteriyorsa. "Çocuk" gibi genel bir metnin, ürün adıyla bulunmuş kararı
+		// (ör. Çocuk Ayakkabı) toplu onayda bütün "Çocuk" ürünlerine genellenmez.
+		if ($src !== '') {
+			$alone = CategoryMatcher::match($src, '', self::prepared(self::SCOPE_SITE, [self::class, 'siteTargets']));
+
+			if ($changed || (string) $alone['id'] === (string) $idCategory) {
+				self::remember(self::SCOPE_SITE, $owner, $src, (string) $idCategory, self::sitePath($idCategory), true);
+			}
+		}
 
 		return ['success' => true, 'message' => count($ids) . ' ürünün kategorisi ' . ($changed ? 'değiştirildi' : 'onaylandı') . '.', 'updated' => count($ids)];
 	}

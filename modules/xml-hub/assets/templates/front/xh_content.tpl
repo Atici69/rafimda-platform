@@ -183,10 +183,10 @@
 	{if isset($sampleError)}<div class="alert danger">{$sampleError|escape}</div>{/if}
 	{if $rows}
 	<form method="post"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="run_enqueue"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><input type="hidden" name="kind" value="import">
-	<div class="scroll"><table><thead><tr>{if $xhCanManage}<th></th>{/if}<th>Ürün</th><th>SKU</th><th>Fiyat</th><th>Stok</th><th>Varyant</th><th>Görsel</th><th>İşlem</th></tr></thead><tbody>
+	<div class="scroll"><table><thead><tr>{if $xhCanManage}<th></th>{/if}<th>Ürün</th><th>SKU</th><th>Fiyat</th><th>Stok</th><th>Kategori</th><th>Varyant</th><th>Görsel</th><th>İşlem</th></tr></thead><tbody>
 	{foreach $rows as $r}<tr>{if $xhCanManage}<td>{if $r.key && !$r.errors}<input type="checkbox" name="sel[]" value="{$r.key|escape}">{/if}</td>{/if}
 		<td>{$r.name|escape}{if $r.errors}<div class="muted" style="color:#b91c1c">{foreach $r.errors as $e}{$e|escape} {/foreach}</div>{/if}</td>
-		<td>{$r.sku|escape}</td><td>{$r.price|string_format:"%.2f"}{if $r.old_price > 0} <span class="muted"><s>{$r.old_price|string_format:"%.2f"}</s></span>{/if}</td><td>{if $r.stock !== null}{$r.stock|escape}{else}—{/if}</td><td>{$r.variants|count}</td><td>{$r.images|count}</td>
+		<td>{$r.sku|escape}</td><td>{$r.price|string_format:"%.2f"}{if $r.old_price > 0} <span class="muted"><s>{$r.old_price|string_format:"%.2f"}</s></span>{/if}</td><td>{if $r.stock !== null}{$r.stock|escape}{else}—{/if}</td><td>{if $r.category_path}{$r.category_path|escape}{if $r.category_how == 'medium' || $r.category_how == 'low'} <span class="pill warn" title="Emin olunamadı; içe aktarmadan sonra onayınıza sunulur">kontrol</span>{elseif $r.category_how != 'map'} <span class="pill ok">otomatik</span>{/if}{else}—{/if}</td><td>{$r.variants|count}</td><td>{$r.images|count}</td>
 		<td><span class="pill {if $r.action == 'error'}bad{elseif $r.action == 'update'}warn{else}ok{/if}">{if $r.action == 'error'}Hata{elseif $r.action == 'update'}Güncellenecek{else}Eklenecek{/if}</span></td></tr>{/foreach}
 	</tbody></table></div>
 	{if $xhCanManage}<div class="row" style="margin-top:12px"><button class="btn" type="submit" name="selected_only" value="1">Seçilenleri içe aktar</button><button class="btn navy" type="submit">Tümünü içe aktar</button></div>{/if}</form>{/if}

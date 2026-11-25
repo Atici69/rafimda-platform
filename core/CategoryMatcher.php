@@ -31,7 +31,7 @@ class CategoryMatcher
 		'phone' => 'telefon', 'smartphone' => 'telefon', 'gsm' => 'telefon', 'notebook' => 'laptop', 'dizustu' => 'laptop', 'headphone' => 'kulaklik', 'earphone' => 'kulaklik',
 		'tv' => 'televizyon', 'parfum' => 'parfum', 'perfume' => 'parfum', 'fragrance' => 'parfum', 'cosmetic' => 'kozmetik', 'makeup' => 'makyaj', 'skincare' => 'cilt',
 		'toy' => 'oyuncak', 'toys' => 'oyuncak', 'book' => 'kitap', 'books' => 'kitap', 'kitchen' => 'mutfak', 'home' => 'ev', 'garden' => 'bahce', 'pet' => 'evcil',
-		'dog' => 'kopek', 'cat' => 'kedi', 'car' => 'oto', 'auto' => 'oto', 'otomobil' => 'oto', 'arac' => 'oto', 'vitamini' => 'vitamin', 'supplement' => 'takviye',
+		'besin' => 'gida', 'gidasi' => 'gida', 'dog' => 'kopek', 'cat' => 'kedi', 'car' => 'oto', 'auto' => 'oto', 'otomobil' => 'oto', 'arac' => 'oto', 'vitamini' => 'vitamin', 'supplement' => 'takviye',
 	];
 
 	/**
@@ -183,6 +183,7 @@ class CategoryMatcher
 
 			foreach (explode(' ', $w) as $p) {
 				$p = self::stem($p);
+				$p = self::SYN[$p] ?? $p;
 
 				if (strlen($p) >= 2 && !in_array($p, self::STOP, true)) {
 					$out[] = $p;
@@ -394,6 +395,9 @@ class CategoryMatcher
 		if (!empty($c['has_children'])) {
 			$s *= 0.6;
 		}
+
+		// Daha çok kelimesi eşleşen (daha özel) kategori eşit puanda öne geçer: "Sporcu Gıdası" → "Sporcu Besinleri" > "Gıda".
+		$s += 0.02 * min(3, (int) floor($leafHit));
 
 		// tam yol eşleşmesi (kaynak = hedef yol) küçük bonus
 		if ($leafFrac === 1.0 && ($c['parent'] === [] || $parentFrac === 1.0)) {

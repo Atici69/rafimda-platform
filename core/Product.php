@@ -1207,10 +1207,26 @@ class Product
 				}
 			}
 
+			$autoLink = false;
+
 			if ($link === '' && $name !== '') {
 				$link = Tools::createSlug($name);
+				$autoLink = true;
 			} elseif ($link !== '') {
 				$link = Tools::createSlug($link);
+			}
+
+			// Bağlantı ürün adından otomatik üretildiyse ve başka üründe kullanılıyorsa (pazaryerinde farklı satıcıların
+			// aynı adlı ürünleri, Excel/XML aktarımı) -2, -3… eki verilir. Elle girilen bağlantı için hata davranışı aynen korunur.
+			if ($autoLink && $link !== '' && !self::isLinkUnique($link, $idProduct, $lang)) {
+				$base = mb_substr($link, 0, 120);
+
+				for ($n = 2; $n <= 200; $n++) {
+					if (self::isLinkUnique($base . '-' . $n, $idProduct, $lang)) {
+						$link = $base . '-' . $n;
+						break;
+					}
+				}
 			}
 
 			if ($link !== '' && !self::isLinkUnique($link, $idProduct, $lang)) {
@@ -1390,6 +1406,8 @@ class Product
 			return self::fail('Kategori ve marka seçin');
 		}
 
+		$autoLink = $link === '';
+
 		if ($link === '') {
 			$link = Tools::createSlug($name);
 		} else {
@@ -1398,6 +1416,18 @@ class Product
 
 		if ($link === '') {
 			return self::fail('Geçerli bir URL slug girin');
+		}
+
+		// Ürün adından üretilen bağlantı çakışırsa -2, -3… eki (aynı adlı ürünler: farklı satıcılar, Excel/XML aktarımı).
+		if ($autoLink && !self::isLinkUnique($link, $id, $defaultLang)) {
+			$base = mb_substr($link, 0, 120);
+
+			for ($n = 2; $n <= 200; $n++) {
+				if (self::isLinkUnique($base . '-' . $n, $id, $defaultLang)) {
+					$link = $base . '-' . $n;
+					break;
+				}
+			}
 		}
 
 		if (!self::isLinkUnique($link, $id, $defaultLang)) {
@@ -2347,6 +2377,7 @@ class Product
 		$imagesImported = 0;
 		$categoriesCreated = 0;
 		$brandsCreated = 0;
+		$autoCategories = 0;
 		$errors = [];
 		$categoryCache = [];
 		$brandCache = [];
@@ -2383,6 +2414,7 @@ class Product
 
 			if ($result['success']) {
 				$imagesImported += (int) ($result['images_imported'] ?? 0);
+				$autoCategories += !empty($result['auto_category']) ? 1 : 0;
 
 				if (!empty($result['image_warnings'])) {
 					foreach ($result['image_warnings'] as $warning) {
@@ -2423,6 +2455,11 @@ class Product
 
 		if ($brandsCreated > 0) {
 			$message .= ', ' . $brandsCreated . ' marka oluşturuldu';
+		}
+
+		if ($autoCategories > 0) {
+			$pendingReview = class_exists('CategoryMatchStore') ? CategoryMatchStore::pendingCount(0) : 0;
+			$message .= ', ' . $autoCategories . ' ürünün kategorisi otomatik eşlendi' . ($pendingReview > 0 ? ' (' . $pendingReview . ' ürün XML Hub → Otomatik kategori eşleştirme bölümünde onay bekliyor)' : '');
 		}
 
 		if ($imagesImported > 0) {
@@ -2466,19 +2503,46 @@ class Product
 		$stockCode = self::importCell($row, $map, 'stock_code');
 
 		if ($stockCode === '') {
-			return self::fail('Satır ' . $lineNo . ': stok kodu zorunludur');
+			// Stok kodu güncellemelerde eşleşme anahtarıdır: yoksa barkod kullanılır; ikisi de yoksa satır reddedilir.
+			$stockCode = preg_replace('/\s+/', '', $barcode) ?? '';
+		}
+
+		if ($stockCode === '') {
+			return self::fail('Satır ' . $lineNo . ': stok kodu veya barkod zorunludur');
 		}
 
 		$id = self::findIdByStockCode($stockCode);
 
 		$categoryName = self::importCell($row, $map, 'category_name');
 		$brandName = self::importCell($row, $map, 'brand_name');
+		$productName = self::importCell($row, $map, 'product_name');
+		$autoCategory = null;
 
-		$idCategory = self::resolveOrCreateCategoryId($categoryName, $categoryCache, $categoriesCreated);
+		if ($id > 0 && $categoryName === '') {
+			// Mevcut ürün, kategori hücresi boş: kategorisi korunur (ürün adından yeniden tahmin edilmez).
+			$idCategory = (int) DB::getValue('SELECT id_category FROM products WHERE id_product = ?', [$id]);
+		} else {
+			$autoCategory = self::resolveImportCategory($categoryName, $productName, $categoryCache, $categoriesCreated);
+			$idCategory = (int) $autoCategory['id_category'];
+		}
+
+		if ($id <= 0 && (float) str_replace(',', '.', self::importCell($row, $map, 'price')) <= 0) {
+			return self::fail('Satır ' . $lineNo . ': yeni ürün için fiyat zorunludur');
+		}
+
 		$idBrand = self::resolveOrCreateBrandId($brandName, $brandCache, $brandsCreated);
 
+		if ($idBrand <= 0 && $brandName === '') {
+			$idBrand = (int) Settings::get('RAFIMDA_FALLBACK_BRAND');
+			$idBrand = $idBrand > 0 && DB::getValue('SELECT id_brand FROM brands WHERE id_brand = ? AND active = 1', [$idBrand]) ? $idBrand : 0;
+
+			if ($idBrand <= 0) {
+				return self::fail('Satır ' . $lineNo . ': marka zorunludur (marka sütununa marka adını yazın)');
+			}
+		}
+
 		if ($idCategory <= 0) {
-			return self::fail('Satır ' . $lineNo . ': kategori oluşturulamadı');
+			return self::fail('Satır ' . $lineNo . ': kategori bulunamadı (kategori adı yazın ya da XML Hub → Otomatik kategori eşleştirme bölümünden yedek kategori seçin)');
 		}
 
 		if ($idBrand <= 0) {
@@ -2552,7 +2616,59 @@ class Product
 
 		$result['created'] = $id <= 0;
 
+		if ($idProduct > 0 && is_array($autoCategory) && ($autoCategory['from'] ?? '') !== 'exact' && class_exists('CategoryMatchStore')) {
+			CategoryMatchStore::queueReview($idProduct, 0, 'excel', $categoryName, $productName, $autoCategory);
+			$result['auto_category'] = true;
+		}
+
 		return $result;
+	}
+
+	/**
+	 * Excel kategori çözümleme: birebir ad (ya da "A > B" yolunun son parçası) → otomatik eşleştirme (CategoryMatchStore:
+	 * hafıza + motor + yedek kategori) → yalnızca RAFIMDA_IMPORT_CREATE_CATEGORIES=1 ise yeni kategori açma (eski davranış).
+	 * Varsayılan: bilinmeyen tedarikçi kategori adları için kategori AÇILMAZ (katalog dağılmaz).
+	 *
+	 * @return array{id_category:int, path:string, score:float, confidence:string, from:string, alternatives:list<array<string,mixed>>}
+	 */
+	private static function resolveImportCategory(string $name, string $productName, array &$cache, int &$createdCount): array
+	{
+		$name = trim($name);
+		$key = mb_strtolower($name) . '|' . ($name === '' ? mb_strtolower($productName) : '');
+
+		if (isset($cache[$key]) && is_array($cache[$key])) {
+			return $cache[$key];
+		}
+
+		$leaf = trim((string) preg_replace('/^.*(?:>|\/|›|»)\s*/u', '', $name));
+
+		foreach (array_unique(array_filter([$name, $leaf])) as $try) {
+			// Birebir ad yalnızca ALT KATEGORİSİ OLMAYAN tek bir kategoriye denk geliyorsa doğrudan kullanılır;
+			// "Kadın" gibi üst kategoriler motorla (ürün adıyla birlikte) en uygun alt kategoriye indirilir.
+			$hits = DB::execute('SELECT c.id_category FROM categories c WHERE LOWER(c.category_name) = LOWER(?) AND c.active = 1 AND NOT EXISTS (SELECT 1 FROM categories k WHERE k.id_parent = c.id_category AND k.active = 1)', [$try]) ?: [];
+
+			if (count($hits) === 1) {
+				return $cache[$key] = ['id_category' => (int) $hits[0]['id_category'], 'path' => '', 'score' => 1.0, 'confidence' => 'confirmed', 'from' => 'exact', 'alternatives' => []];
+			}
+		}
+
+		if (!class_exists('CategoryMatchStore')) {
+			require_once __DIR__ . '/CategoryMatchStore.php';
+		}
+
+		$r = CategoryMatchStore::resolveSite(0, $name, $productName);
+
+		if ((int) $r['id_category'] <= 0 && $name !== '' && (string) Settings::get('RAFIMDA_IMPORT_CREATE_CATEGORIES') === '1') {
+			$id = self::resolveOrCreateCategoryId($name, $cache, $createdCount);
+			$r = ['id_category' => $id, 'path' => '', 'score' => 1.0, 'confidence' => 'confirmed', 'from' => 'exact', 'alternatives' => []];
+		}
+
+		// Ürün adına bağlı kararlar satıra özeldir; yalnızca kategori metnine bağlı kararlar önbelleğe alınır.
+		if ($name !== '' || (int) $r['id_category'] <= 0) {
+			$cache[$key] = $r;
+		}
+
+		return $r;
 	}
 
 	private static function findIdByStockCode(string $stockCode): int
@@ -2671,7 +2787,10 @@ class Product
 	{
 		$header = strip_tags((string) $header);
 		$header = html_entity_decode($header, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-		$header = strtolower(trim($header));
+		// Türkçe büyük harfler ("Ürün Adı", "KATEGORİ") için çok baytlı küçültme; strtolower yalnızca ASCII küçültür.
+		$header = str_replace(['İ', 'I'], ['i', 'ı'], trim($header));
+		$header = mb_strtolower($header, 'UTF-8');
+		$header = str_replace("i\u{0307}", 'i', $header);
 		$header = preg_replace('/\s+/', ' ', $header);
 
 		return $header ?? '';

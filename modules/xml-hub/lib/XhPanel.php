@@ -198,7 +198,11 @@ class XhPanel
 					$rows = [];
 
 					foreach ($items as $it) {
-						$rows[] = XhImporter::preview($conn, $it);
+						$r = XhImporter::preview($conn, $it);
+						// Ürünün gideceği site kategorisi ve nasıl bulunduğu (önizlemede görünür olsun)
+						$r['category_path'] = (int) ($r['id_category'] ?? 0) > 0 && class_exists('CategoryMatchStore') ? CategoryMatchStore::sitePath((int) $r['id_category']) : '';
+						$r['category_how'] = !empty($r['category_auto']) && (int) $r['category_auto']['id_category'] === (int) ($r['id_category'] ?? 0) ? (string) $r['category_auto']['confidence'] : 'map';
+						$rows[] = $r;
 					}
 
 					$vars['rows'] = $rows;
