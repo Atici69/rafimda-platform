@@ -7,6 +7,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 require_once __DIR__ . '/lib/RafiEngine.php';
 require_once __DIR__ . '/lib/RafiBot.php';
+require_once __DIR__ . '/lib/RafiHelp.php';
 
 /**
  * Rafi – Rafımda alışveriş asistanı. Kural tabanlı, ÜCRETSİZ; harici yapay zekâ API'si / abonelik / ek sunucu KULLANMAZ.
@@ -14,7 +15,7 @@ require_once __DIR__ . '/lib/RafiBot.php';
  */
 class RafimdaRafiModule extends ModuleBase
 {
-	public const VERSION = '0.1.0';
+	public const VERSION = '0.2.0';
 
 	public string $name = 'rafimda-rafi';
 	public string $title = 'Rafi Alışveriş Asistanı (Rafımda)';
@@ -32,7 +33,7 @@ class RafimdaRafiModule extends ModuleBase
 
 	public array $apiActions = ['chat' => 'api/chat.php'];
 
-	public const SETTINGS = ['RAFI_ENABLED' => '1', 'RAFI_GREET_HOME' => '1'];
+	public const SETTINGS = ['RAFI_ENABLED' => '1', 'RAFI_GREET_HOME' => '1', 'RAFI_HELP_VIDEOS' => '1'];
 
 	public function install(): bool
 	{
@@ -110,7 +111,9 @@ class RafimdaRafiModule extends ModuleBase
 
 		$smarty->assign([
 			'pageTitle' => $this->title, 'rafiFlash' => $flash, 'rafiToken' => $adminToken, 'rafiQuery' => $q, 'rafiPreview' => $preview,
-			'rafiSettings' => ['RAFI_ENABLED' => (string) Settings::get('RAFI_ENABLED') !== '0', 'RAFI_GREET_HOME' => (string) Settings::get('RAFI_GREET_HOME') !== '0'],
+			'rafiSettings' => ['RAFI_ENABLED' => (string) Settings::get('RAFI_ENABLED') !== '0', 'RAFI_GREET_HOME' => (string) Settings::get('RAFI_GREET_HOME') !== '0', 'RAFI_HELP_VIDEOS' => (string) Settings::get('RAFI_HELP_VIDEOS') !== '0'],
+			'rafiVideos' => RafiHelp::available(),
+			'rafiVideoBase' => $this->getAssetUrl('video/'),
 			'rafiAvatar' => $this->getAssetUrl('img/rafi.svg'),
 		]);
 	}

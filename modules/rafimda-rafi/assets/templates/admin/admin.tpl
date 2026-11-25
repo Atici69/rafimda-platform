@@ -6,9 +6,12 @@
 		<input type="hidden" name="token" value="{$rafiToken|escape}">
 		<div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="RAFI_ENABLED" name="RAFI_ENABLED" value="1"{if $rafiSettings.RAFI_ENABLED} checked{/if}><label class="form-check-label" for="RAFI_ENABLED">Rafi sohbet balonu açık</label></div>
 		<div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="RAFI_GREET_HOME" name="RAFI_GREET_HOME" value="1"{if $rafiSettings.RAFI_GREET_HOME} checked{/if}><label class="form-check-label" for="RAFI_GREET_HOME">Ana sayfada karşılama mesajı göster (oturum başına bir kez)</label></div>
+		<div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="RAFI_HELP_VIDEOS" name="RAFI_HELP_VIDEOS" value="1"{if $rafiSettings.RAFI_HELP_VIDEOS|default:true} checked{/if}><label class="form-check-label" for="RAFI_HELP_VIDEOS">Satıcı panelinde yardım videoları (Rafi Akademi) göster</label></div>
 		<button class="btn btn-primary">Kaydet</button>
 	</form>
 	<hr>
+	<p class="small mb-1"><strong>Rafi Akademi videoları ({$rafiVideos|default:[]|@count}):</strong></p>
+	<ul class="small mb-3">{foreach $rafiVideos|default:[] as $k => $v}<li><a href="{$rafiVideoBase|default:''|escape}{$k|escape}.mp4" target="_blank" rel="noopener">{$v.title|escape}</a>{if $v.seconds} — {$v.seconds|escape} sn{/if}</li>{foreachelse}<li class="text-muted">Video dosyası yok.</li>{/foreach}</ul>
 	<p class="small text-muted mb-1"><strong>Yapay zekâ seçenekleri:</strong> Şu an ek maliyet yok. Doğal dil üretimi istenirse (ör. OpenAI uyumlu bir hizmet ya da sunucuda açık kaynak model) ayrıca onay ve maliyet değerlendirmesi gerekir; bu modül hiçbir harici hizmete istek göndermez.</p>
 </div></div></div>
 <div class="col-lg-7"><div class="card"><div class="card-body">

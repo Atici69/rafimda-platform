@@ -35,6 +35,14 @@ if ($isPost) {
 $panel = new XhPanel($xhVendor, false, rtrim((string) $domain, '/') . '/xml-merkezi');
 [$view, $vars] = $panel->handle();
 $vars['view'] = $view;
+$rafiFile = dirname(__DIR__, 2) . '/rafimda-rafi/lib/RafiHelp.php';
+$rafiHelp = '';
+
+if (is_file($rafiFile)) {
+	require_once $rafiFile;
+	$rafiHelp = RafiHelp::render('xml', (string) $domain, rtrim((string) $domain, '/') . '/satici-panel?s=support');
+}
+
 $smarty->setEscapeHtml(true);
 $smarty->assign($vars + [
 	'xhFlash' => XhPanel::takeFlash(),
@@ -46,4 +54,6 @@ $smarty->assign($vars + [
 	'panelUrl' => rtrim((string) $domain, '/') . '/satici-panel',
 	'xhContent' => 'file:' . dirname(__DIR__) . '/assets/templates/front/xh_content.tpl',
 ]);
-$smarty->display('file:' . dirname(__DIR__) . '/assets/templates/front/xh_front.tpl');
+$page = $smarty->fetch('file:' . dirname(__DIR__) . '/assets/templates/front/xh_front.tpl');
+// Rafi Akademi yardım bloğu şablon dışında, kendi kaçışlı HTML'iyle sayfa sonuna eklenir (şablonlarda nofilter yok)
+echo $rafiHelp !== '' ? str_replace('</body>', '<div class="xh-wrap">' . $rafiHelp . '</div></body>', $page) : $page;

@@ -215,6 +215,7 @@ class RvPanel
 			'logoutUrl' => RvView::url('satici-cikis'),
 			'storefrontUrl' => RvView::url(''),
 			'contentFile' => 'file:' . RvView::tplDir() . $tpl . '.tpl',
+			'rafiHelp' => self::rafiHelp($section === 'products' && Tools::getValue('a') === 'import' ? 'import' : $section),
 			'can' => [
 				'create' => RvContext::can('products.create'),
 				'edit' => RvContext::can('products.edit'),
@@ -224,6 +225,24 @@ class RvPanel
 			],
 		]);
 		exit;
+	}
+
+	/** Rafi Akademi: sayfanın altına bu bölüme uygun kısa yardım videoları (Rafi modülü kurulu değilse boş). */
+	private static function rafiHelp(string $context): string
+	{
+		$file = dirname(__DIR__, 2) . '/rafimda-rafi/lib/RafiHelp.php';
+
+		if (!is_file($file)) {
+			return '';
+		}
+
+		require_once $file;
+
+		try {
+			return RafiHelp::render($context, RvView::url(''), RvView::panelUrl('support'));
+		} catch (Throwable $e) {
+			return '';
+		}
 	}
 
 	/** @return array{0:string,1:array<string,mixed>} */
