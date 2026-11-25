@@ -17,7 +17,7 @@ class OrderService
 		ProductSyncService::ensureSchema();
 
 		if (!ProductSyncService::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$api = ProductSyncService::api();
@@ -51,7 +51,7 @@ class OrderService
 
 		return [
 			'ok' => true,
-			'message' => $count . ' FriSay siparişi senkronize edildi'
+			'message' => $count . ' uzak mağaza siparişi senkronize edildi'
 				. ($stockUpdates > 0 ? (', ' . $stockUpdates . ' stok hareketi') : ''),
 			'count' => $count,
 			'stock_updates' => $stockUpdates,
@@ -67,7 +67,7 @@ class OrderService
 		ProductSyncService::ensureSchema();
 
 		if (!ProductSyncService::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$orderNumber = trim($orderNumber);
@@ -122,7 +122,7 @@ class OrderService
 		unset($lines);
 
 		if (!ProductSyncService::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$remoteId = (int) ($order['shipment_package_id'] ?? 0);
@@ -137,7 +137,7 @@ class OrderService
 			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'Uzak mağazada iptal başarısız')];
 		}
 
-		return ['ok' => true, 'message' => 'Uzak FriSay siparişi iptal edildi'];
+		return ['ok' => true, 'message' => 'Uzak mağaza siparişi iptal edildi'];
 	}
 
 	/** @return array<int, array<string, mixed>> */

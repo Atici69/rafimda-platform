@@ -1,7 +1,7 @@
 {if !$configured}
 <div class="frisay-product-panel">
 	<div class="alert alert-warning mb-0">
-		<strong>FriSay uzak mağaza API yapılandırılmamış.</strong>
+		<strong>Uzak mağaza API yapılandırılmamış.</strong>
 		<a href="{$settingsUrl|escape}" class="alert-link">Ayarlara git</a>
 	</div>
 </div>
@@ -23,7 +23,7 @@
 		<button type="button" class="btn btn-outline-danger frisay-unlink-btn" data-url="{$unlinkUrl|escape}" data-id="{$id_product}" data-platform="frisay">Bağlantıyı Sil</button>
 	</div>
 	{else}
-	<div class="alert alert-light border small">Uzak FriSay mağazasındaki ürün ID’sini yazın veya bu ürünü uzak mağazaya gönderin.</div>
+	<div class="alert alert-light border small">Uzak mağazadaki ürün ID’sini yazın veya bu ürünü uzak mağazaya gönderin.</div>
 	<label class="form-label">Uzak ürün ID</label>
 	<div class="input-group mb-2">
 		<input type="text" class="form-control frisay-remote-id-input" value="" placeholder="Örn. 15">

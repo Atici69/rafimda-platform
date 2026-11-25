@@ -60,7 +60,7 @@ class MarketplaceLog
 			'hepsiburada' => 'Hepsiburada',
 			'n11' => 'N11',
 			'prestashop' => 'PrestaShop',
-			'frisay' => 'FriSay',
+			'frisay' => 'Uzak Mağaza',
 		];
 
 		return $labels[$platform] ?? 'Mağaza';
@@ -420,7 +420,7 @@ class MarketplaceLog
 			'hepsiburada' => 'Hepsiburada',
 			'n11' => 'N11',
 			'prestashop' => 'PrestaShop',
-			'frisay' => 'FriSay',
+			'frisay' => 'Uzak Mağaza',
 			'fiyattrend' => 'FiyatTrend',
 		];
 

@@ -1,5 +1,5 @@
 <div class="admin-panel p-3" style="max-width: 720px;">
-	<h2 class="h6 mb-3">FriSay uzak mağaza (Web API)</h2>
+	<h2 class="h6 mb-3">Uzak mağaza (Web API)</h2>
 	{if !$frisayConfigured}
 	<div class="alert alert-warning py-2">Uzak mağaza adresi ve Web API anahtarı zorunludur.</div>
 	{/if}

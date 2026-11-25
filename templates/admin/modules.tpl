@@ -101,7 +101,7 @@
 		<div class="module-row-body flex-grow-1 min-w-0">
 			<div class="module-row-title">{$mod.title|escape}</div>
 			<div class="module-row-meta">
-				v{$mod.version|escape} — {$mod.author|escape}{' by'|adminT}
+				v{$mod.version|escape}{if $mod.author && $mod.author != 'FShop'} — {$mod.author|escape}{' by'|adminT}{/if}
 				{if $mod.installed && $mod.active}
 				· <span class="text-success">{'Active'|adminT}</span>
 				{elseif $mod.installed}
@@ -202,15 +202,17 @@
 					</ul>
 				</div>
 
+				{if $frisayModulesUrl}
 				<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 rounded-3 module-upload-store">
 					<div>
-						<div class="fw-semibold">{'FriSay module store'|adminT}</div>
+						<div class="fw-semibold">{'Module store'|adminT}</div>
 						<div class="small text-muted">{'Browse verified modules and download as ZIP.'|adminT}</div>
 					</div>
 					<a href="{$frisayModulesUrl|escape}" class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer">
-						{'Browse FriSay modules'|adminT}
+						{'Browse modules'|adminT}
 					</a>
 				</div>
+				{/if}
 
 				<form method="post" enctype="multipart/form-data" id="uploadModuleForm">
 					<input type="hidden" name="uploadModuleZip" value="1">

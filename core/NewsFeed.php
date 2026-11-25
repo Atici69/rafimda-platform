@@ -2,7 +2,8 @@
 
 class NewsFeed
 {
-	private const REMOTE_URL = 'https://frisay.com/rss.xml';
+	/** Harici haber kaynağı kullanılmaz: duyurular yalnızca data/rafimda-news.json'dan okunur (Rafımda markası; dışarıya istek yok). */
+	private const REMOTE_URL = '';
 	private const CACHE_FILE = 'news-feed.json';
 	private const CACHE_TTL = 3600;
 
@@ -15,15 +16,7 @@ class NewsFeed
 			return array_slice($cached, 0, $limit);
 		}
 
-		$items = self::fetchRemote(self::REMOTE_URL);
-
-		if ($items === [] && class_exists('Settings', false)) {
-			$localDomain = rtrim((string) Settings::get('DOMAIN'), '/');
-
-			if ($localDomain !== '') {
-				$items = self::fetchRemote($localDomain . '/rss.xml');
-			}
-		}
+		$items = self::REMOTE_URL !== '' ? self::fetchRemote(self::REMOTE_URL) : [];
 
 		if ($items === []) {
 			$items = self::loadLocalItems();
@@ -41,7 +34,7 @@ class NewsFeed
 	/** @return array<int, array{title: string, link: string, description: string, pubDate: string, category: string}> */
 	public static function loadLocalItems(): array
 	{
-		$path = dirname(__DIR__) . '/data/frisay-news.json';
+		$path = dirname(__DIR__) . '/data/rafimda-news.json';
 
 		if (!is_file($path)) {
 			return [];
@@ -68,7 +61,7 @@ class NewsFeed
 
 			$items[] = [
 				'title' => (string) ($row['title'] ?? ''),
-				'link' => (string) ($row['link'] ?? 'https://frisay.com'),
+				'link' => (string) ($row['link'] ?? ''),
 				'description' => (string) ($row['description'] ?? ''),
 				'pubDate' => (string) ($row['pubDate'] ?? date('c')),
 				'category' => (string) ($row['category'] ?? 'Haber'),
@@ -93,8 +86,8 @@ class NewsFeed
 	public static function renderRssXml(): string
 	{
 		$items = self::loadLocalItems();
-		$domain = Settings::get('DOMAIN') ?: 'https://frisay.com/';
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$domain = Settings::get('DOMAIN') ?: '/';
+		$siteName = Settings::get('SITE_NAME') ?: FShop::NAME;
 		$channelLink = rtrim($domain, '/');
 		$buildDate = gmdate('D, d M Y H:i:s') . ' GMT';
 
@@ -102,16 +95,17 @@ class NewsFeed
 			'<?xml version="1.0" encoding="UTF-8"?>',
 			'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
 			'<channel>',
-			'<title>' . self::xmlEscape('FriSay ' . FShop::NAME . ' Haberleri') . '</title>',
+			'<title>' . self::xmlEscape($siteName . ' Duyuruları') . '</title>',
 			'<link>' . self::xmlEscape($channelLink) . '</link>',
-			'<description>' . self::xmlEscape(FShop::NAME . ' sürüm, modül ve özellik duyuruları') . '</description>',
+			'<description>' . self::xmlEscape($siteName . ' yenilikleri ve duyuruları') . '</description>',
 			'<language>tr</language>',
-			'<generator>' . self::xmlEscape(FShop::fullName()) . '</generator>',
 			'<lastBuildDate>' . $buildDate . '</lastBuildDate>',
 			'<atom:link href="' . self::xmlEscape($channelLink . '/rss.xml') . '" rel="self" type="application/rss+xml" />',
 		];
 
 		foreach ($items as $item) {
+			// Bağlantısız duyuru sitenin ana sayfasına gider
+			$item['link'] = $item['link'] !== '' ? $item['link'] : $channelLink . '/';
 			$lines[] = '<item>';
 			$lines[] = '<title>' . self::xmlEscape($item['title']) . '</title>';
 			$lines[] = '<link>' . self::xmlEscape($item['link']) . '</link>';
@@ -144,7 +138,7 @@ class NewsFeed
 
 			$normalized[] = [
 				'title' => $title,
-				'link' => trim((string) ($item['link'] ?? 'https://frisay.com')) ?: 'https://frisay.com',
+				'link' => trim((string) ($item['link'] ?? '')),
 				'description' => trim((string) ($item['description'] ?? '')),
 				'date' => date('c', $timestamp),
 				'date_label' => date('d.m.Y', $timestamp),

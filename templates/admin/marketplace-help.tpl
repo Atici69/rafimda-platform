@@ -40,7 +40,7 @@
 		</div>
 		<div class="col-lg-6">
 			<div class="border rounded p-3 bg-light h-100">
-				<div class="fw-semibold mb-2">FriSay</div>
+				<div class="fw-semibold mb-2">Uzak Mağaza</div>
 				<div class="small text-muted mb-1">Sipariş cron</div>
 				<code class="d-block text-break user-select-all">{$cronOrdersUrlFrisay|escape}</code>
 			</div>

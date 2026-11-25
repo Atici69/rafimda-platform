@@ -113,7 +113,7 @@ if (Tools::isSubmit('moduleAction')) {
 $smarty->assign([
 	'modules' => Module::getAdminList(),
 	'moduleStats' => Module::getAdminStats(),
-	'frisayModulesUrl' => 'https://frisay.com/modules',
+	'frisayModulesUrl' => '', // harici modül mağazası bağlantısı kaldırıldı (Rafımda markası)
 	'demoMode' => Admin::isDemoMode(),
 	'flash' => $flash,
 	'flashType' => $flashType,

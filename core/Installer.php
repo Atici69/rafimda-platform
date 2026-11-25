@@ -96,7 +96,7 @@ class Installer
 		$dbName = trim((string) ($data['db_name'] ?? ''));
 		$dbUser = trim((string) ($data['db_user'] ?? ''));
 		$dbPass = (string) ($data['db_pass'] ?? '');
-		$siteName = trim((string) ($data['site_name'] ?? 'FriSay'));
+		$siteName = trim((string) ($data['site_name'] ?? 'Rafımda'));
 		$siteUrl = rtrim(trim((string) ($data['site_url'] ?? '')), '/') . '/';
 		$rewriteBase = trim((string) ($data['rewrite_base'] ?? '/'));
 		$adminName = trim((string) ($data['admin_name'] ?? 'Admin'));

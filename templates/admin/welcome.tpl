@@ -2,7 +2,7 @@
 	<section class="welcome-hero">
 		<div class="welcome-hero__copy">
 			<p class="welcome-kicker">{'Getting started'|adminT}</p>
-			<h2 class="welcome-hero__title">{'Welcome to FriSay'|adminT}</h2>
+			<h2 class="welcome-hero__title">{'Welcome to Rafımda'|adminT}</h2>
 			<p class="welcome-hero__lead">{'This page scores your store setup and SEO so you can see what to finish before selling.'|adminT}</p>
 			<div class="welcome-hero__cta">
 				<span class="welcome-chip">{$welcomeDoneCount|escape}/{$welcomeTotalChecks|escape} {'steps complete'|adminT}</span>
@@ -164,7 +164,7 @@
 	<section class="welcome-panel">
 		<header class="welcome-panel__head">
 			<div>
-				<h3>{'How to use FriSay'|adminT}</h3>
+				<h3>{'How to use Rafımda'|adminT}</h3>
 			</div>
 		</header>
 		<div class="welcome-guide">

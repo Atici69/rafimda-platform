@@ -761,7 +761,7 @@
 			hepsiburada: { panel: '.hb-product-panel', sale: '.hb-sale-price-input', list: '.hb-list-price-input', msg: '.hb-action-msg', input: '.hb-merchant-sku-input', label: 'Hepsiburada' },
 			n11: { panel: '.n11-product-panel', sale: '.n11-sale-price-input', list: '.n11-list-price-input', msg: '.n11-action-msg', input: '.n11-stock-code-input', label: 'N11' },
 			prestashop: { panel: '.ps-product-panel', sale: '.ps-sale-price-input', list: null, msg: '.ps-action-msg', input: '.ps-product-id-input', label: 'PrestaShop' },
-			frisay: { panel: '.frisay-product-panel', sale: '.frisay-sale-price-input', list: null, msg: '.frisay-action-msg', input: '.frisay-remote-id-input', label: 'FriSay' }
+			frisay: { panel: '.frisay-product-panel', sale: '.frisay-sale-price-input', list: null, msg: '.frisay-action-msg', input: '.frisay-remote-id-input', label: 'Uzak Mağaza' }
 		};
 		return map[platform] || map.hepsiburada;
 	}

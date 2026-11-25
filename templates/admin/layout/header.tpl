@@ -43,7 +43,7 @@ try {
 					</span>
 					<span class="sidebar-brand__text">
 						<strong>{$siteName|escape}</strong>
-						<small>FriSay</small>
+						<small>{'Admin Panel'|adminT}</small>
 					</span>
 				</a>
 				<button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="{'Toggle menu'|adminT}" title="{'Toggle menu'|adminT}">
@@ -260,10 +260,6 @@ try {
 					<a href="{$adminUrl}modules" class="menu-item {if $moduleNavActive}active{/if}">
 						<span class="menu-item__icon"><i data-lucide="blocks"></i></span>
 						<span class="menu-item__label">{'Modules'|adminT}</span>
-					</a>
-					<a href="https://frisay.com/modules" target="_blank" rel="noopener" class="menu-item">
-						<span class="menu-item__icon"><i data-lucide="store"></i></span>
-						<span class="menu-item__label">{'Module Store'|adminT}</span>
 					</a>
 					<a href="{$adminUrl}templates" class="menu-item {if $pageName == 'templates'}active{/if}">
 						<span class="menu-item__icon"><i data-lucide="palette"></i></span>

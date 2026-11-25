@@ -22,7 +22,7 @@ class Marketplace
 			'active' => true,
 		],
 		'frisay' => [
-			'label' => 'FriSay',
+			'label' => 'Uzak Mağaza',
 			'active' => true,
 		],
 		'fiyattrend' => [

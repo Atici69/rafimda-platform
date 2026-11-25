@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT')) {
 
 $siteName = Settings::get('SITE_NAME');
 if ($siteName === '') {
-	$siteName = 'FShop Mağazası';
+	$siteName = 'Rafımda';
 }
 
 $description = trim(strip_tags((string) Settings::getFooterDescription()));

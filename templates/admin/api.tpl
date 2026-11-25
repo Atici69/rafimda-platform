@@ -29,7 +29,7 @@
 	<div class="col-lg-5">
 		<div class="admin-panel p-3">
 			<h2 class="h6 mb-3">{'API status'|adminT}</h2>
-			<p class="small text-muted mb-2">FriSay JSON API: <code>{$webApiUrl|escape}</code></p>
+			<p class="small text-muted mb-2">{$fshopName|escape} JSON API: <code>{$webApiUrl|escape}</code></p>
 			<p class="small text-muted mb-2">PrestaShop uyumlu (kargo entegrasyonu): <code>{$psWsUrl|escape}</code></p>
 			<form method="post">
 				<input type="hidden" name="saveApiEnabled" value="1">
@@ -44,7 +44,7 @@
 				<li>Header: <code>X-API-Key: ...</code></li>
 				<li>{'or'|adminT} <code>Authorization: Bearer ...</code></li>
 				<li>PrestaShop / Prapazar: 32 karakterlik anahtar + HTTP Basic (Admin listesindeki Prapazar satırı)</li>
-				<li><a href="{$apiDocsPortalUrl|escape}" target="_blank" rel="noopener">{'FriSay API documentation'|adminT}</a></li>
+				{if $apiDocsPortalUrl}<li><a href="{$apiDocsPortalUrl|escape}" target="_blank" rel="noopener">{'API documentation'|adminT}</a></li>{/if}
 			</ul>
 		</div>
 
@@ -156,6 +156,7 @@
 			{/if}
 		</div>
 
+		{if $apiDocsPortalUrl}
 		<div class="admin-panel p-3 mt-4">
 			<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
 				<h2 class="h6 mb-0">{'Documentation'|adminT}</h2>
@@ -181,6 +182,7 @@
 			</div>
 			{/foreach}
 		</div>
+		{/if}
 
 		<div class="admin-panel p-3 mt-4">
 			<h2 class="h6 mb-2">{'Examples'|adminT}</h2>

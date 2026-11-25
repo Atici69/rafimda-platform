@@ -1,0 +1,30 @@
+[
+	{
+		"title": "Komisyon kuralları ve kazanç dökümü",
+		"link": "",
+		"description": "Kategori ve ürün bazlı komisyon oranları tanımlanabilir. Satıcı panelinde brüt satış, komisyon, kesinti ve net kazanç dökümü gösterilir. Mağaza açmak ücretsizdir; yalnızca gerçekleşen satışlardan komisyon alınır.",
+		"pubDate": "2026-11-25T12:00:00+03:00",
+		"category": "Özellik"
+	},
+	{
+		"title": "Güvenli güncelleme sistemi",
+		"link": "",
+		"description": "Güncellemeler yalnızca Rafımda kanalından kurulur; kurulumdan önce otomatik yedek alınır, hata olursa önceki sürüme dönülür.",
+		"pubDate": "2026-11-25T09:00:00+03:00",
+		"category": "Sürüm"
+	},
+	{
+		"title": "Rafi alışveriş asistanı",
+		"link": "",
+		"description": "Rafi, katalogdaki gerçek ürün, fiyat ve stok bilgilerine göre ürün aramanıza ve karşılaştırmanıza yardımcı olur.",
+		"pubDate": "2026-11-25T08:00:00+03:00",
+		"category": "Özellik"
+	},
+	{
+		"title": "Satıcı başvuru sistemi",
+		"link": "",
+		"description": "Satıcılar /satici-kayit adresinden başvurur; başvurular yönetici panelinde incelenir, onaylanan mağaza etkinleşir.",
+		"pubDate": "2026-11-24T12:00:00+03:00",
+		"category": "Özellik"
+	}
+]

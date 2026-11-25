@@ -404,7 +404,7 @@ class UpdateInstaller
 		if (!preg_match("/const\\s+CHANNEL\\s*=\\s*'([a-z0-9_-]+)'/", $shop, $m) || $m[1] !== FShop::CHANNEL) {
 			throw new RuntimeException(
 				'Bu paket Rafımda kanalına ait değil (kanal: ' . (isset($m[1]) ? $m[1] : 'yok') . ', beklenen: ' . FShop::CHANNEL . '). '
-				. 'Başka bir projenin (ör. FriSay) paketi kurulmadı'
+				. 'Başka bir projenin paketi kurulmadı'
 			);
 		}
 

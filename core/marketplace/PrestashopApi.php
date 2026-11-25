@@ -1119,7 +1119,7 @@ class PrestashopApi
 			CURLOPT_SSL_VERIFYHOST => \Settings::get('PRESTASHOP_SSL_VERIFY') !== '0' ? 2 : 0,
 			CURLOPT_USERPWD => $this->apiKey . ':',
 			CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
-			CURLOPT_USERAGENT => 'FriSay-PrestaShop',
+			CURLOPT_USERAGENT => 'Rafimda-PrestaShop',
 		];
 
 		if (!class_exists('UpdateChecker', false)) {

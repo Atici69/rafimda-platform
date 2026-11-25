@@ -257,14 +257,14 @@ class Theme
 		$labels = [
 			'default' => 'Varsayılan Tema',
 			'blue' => 'Blue',
-			'nova' => 'FriSay Nova',
+			'nova' => 'Nova',
 			'restoran' => 'Restoran',
 			'chapan' => 'Chapan',
 			'dress' => 'Varsayılan Tema',
 			'theme4' => 'Theme4',
 			'prime' => 'Prime',
 			'healt' => 'Healt',
-			'fyazilim' => 'Frisay',
+			'fyazilim' => 'Kurumsal',
 		];
 
 		return $labels[$name] ?? ucfirst(str_replace(['-', '_'], ' ', $name));

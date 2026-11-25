@@ -46,7 +46,7 @@
 				<dt class="col-5 text-muted">{'Installed schema'|adminT}</dt>
 				<dd class="col-7"><code>{$upgradeInstalled|escape}</code> <span class="text-muted">(FS_VERSION)</span></dd>
 				<dt class="col-5 text-muted">{'Code version'|adminT}</dt>
-				<dd class="col-7"><code>{$upgradeCode|escape}</code> <span class="text-muted">(FShop::VERSION)</span></dd>
+				<dd class="col-7"><code>{$upgradeCode|escape}</code></dd>
 				<dt class="col-5 text-muted">{'Status'|adminT}</dt>
 				<dd class="col-7">
 					{if $upgradeUpToDate && !$updateRemoteAvailable}
