@@ -2,6 +2,26 @@
 <div class="alert alert-{$flashType|default:'success'|escape} mb-3">{$flash|escape}</div>
 {/if}
 
+{if $upgradeSchemaAhead}
+<div class="alert alert-danger mb-3">
+	<strong>Sürüm uyumsuzluğu:</strong> veritabanı şema sürümü <code>{$upgradeInstalled|escape}</code>, dosya sürümü <code>{$upgradeCode|escape}</code>.
+	Şema dosyalardan yeni olduğu için güncelleme güvenlik amacıyla engellendi. Veri silinmez; önce yedek alın, sonra sürümü eşitleyin.
+	<form method="post" class="mt-2">
+		<input type="hidden" name="token" value="{$adminToken}">
+		<input type="hidden" name="confirmReconcile" value="1">
+		<button type="submit" name="reconcileSchema" value="1" class="btn btn-danger btn-sm js-admin-confirm js-admin-busy"
+			data-confirm-title="Şema sürümünü eşitle"
+			data-confirm-message="Yedek aldınız mı? Yalnızca FS_VERSION değeri {$upgradeCode|escape} olarak ayarlanır; tablo ve veriler değişmez.">
+			Şema sürümünü eşitle ({$upgradeInstalled|escape} → {$upgradeCode|escape})
+		</button>
+	</form>
+</div>
+{/if}
+
+{if $updateLastError}
+<div class="alert alert-secondary small mb-3">Son güncelleme kontrolü başarısız: {$updateLastError|escape}</div>
+{/if}
+
 {if $updateRemoteAvailable}
 <div class="alert alert-warning mb-3">
 	<strong>{'Remote update available'|adminT}:</strong>
@@ -69,7 +89,7 @@
 					</button>
 				</form>
 
-				{if $updateRemoteAvailable && $updateCanZip && $updateCanHttp}
+				{if $updateRemoteAvailable && $updateCanZip && $updateCanHttp && !$upgradeSchemaAhead}
 				<form method="post" class="d-inline">
 					<input type="hidden" name="token" value="{$adminToken}">
 					<button type="submit" name="runFullUpdate" value="1" class="btn btn-dark btn-sm js-admin-confirm js-admin-busy"

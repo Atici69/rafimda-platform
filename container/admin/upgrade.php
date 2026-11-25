@@ -54,8 +54,25 @@
 		}
 	}
 
+	if (Tools::isSubmit('reconcileSchema')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals((string) $adminToken, $postToken)) {
+			$flash = adminT('Invalid request');
+			$flashType = 'danger';
+		} elseif ((string) Tools::getValue('confirmReconcile') !== '1') {
+			$flash = 'Eşitleme için onay kutusunu işaretleyin.';
+			$flashType = 'danger';
+		} else {
+			$result = Upgrade::reconcileSchemaVersion();
+			$flash = (string) ($result['message'] ?? '');
+			$flashType = !empty($result['success']) ? 'success' : 'danger';
+		}
+	}
+
 	$installed = Upgrade::getInstalledVersion();
 	$code = Upgrade::getCodeVersion();
+	$schemaAhead = Upgrade::isSchemaAhead();
 	$pending = Upgrade::getPending();
 	$upToDate = Upgrade::isUpToDate();
 	$changelog = Upgrade::parseChangelogBetween($installed, $code);
@@ -78,6 +95,9 @@
 		'updateRemoteAvailable' => $remoteAvailable,
 		'updateCanZip' => $canZip,
 		'updateCanHttp' => $canHttp,
+		'upgradeSchemaAhead' => $schemaAhead,
+		'updateLastError' => (string) Settings::get(UpdateChecker::KEY_LAST_ERROR),
+		'updateChannel' => FShop::CHANNEL,
 	]);
 
 	AdminPage::add('upgrade', 'System update');
