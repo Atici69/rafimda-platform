@@ -37,7 +37,7 @@ if ($git('git status --porcelain --untracked-files=no') !== '') {
 
 // deploy/: yalnızca canlı bakım araçları kalır (salt-okunur ön kontrol, dry-run migration, doğrulama; web'e kapalı, yalnızca CLI)
 const EXCLUDE = [
-	'docs', 'tools', 'deploy/preview', 'deploy/staging/bin', 'deploy/staging/conf', 'deploy/staging/lib/StagingSeed.php', 'deploy/staging/lib/StagingGuard.php',
+	'docs', 'tools', 'tests', 'deploy/preview', 'deploy/staging/bin', 'deploy/staging/conf', 'deploy/staging/lib/StagingSeed.php', 'deploy/staging/lib/StagingGuard.php',
 	'deploy/live/build-release.php', 'deploy/live/build-public-html.php', 'AGENTS.md', 'AI_CONTEXT.md', 'CLAUDE.md', 'README.md', '.gitignore', 'nginx.conf.example',
 	'cache/admin_dash_error.html', 'cache/google_shopping_feed.xml',
 ];
