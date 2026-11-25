@@ -12,41 +12,69 @@ function toggleSearch() {
 	}
 }
 
+// Tembel görsel yükleme: data-src → src. Sonradan eklenen kartlar (filtre, "daha fazla", karusel kopyaları) da izlenir.
+var rfImageObserver = null;
+
+function observeLazyImages(root) {
+	var imgs = (root || document).querySelectorAll ? (root || document).querySelectorAll('img.lazy[data-src]') : [];
+	imgs.forEach(function (img) {
+		if (img.dataset.lazyBound) return;
+		img.dataset.lazyBound = '1';
+		if (rfImageObserver) {
+			rfImageObserver.observe(img);
+		} else {
+			loadImage(img);
+		}
+	});
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 	if ('IntersectionObserver' in window) {
-		const imageObserver = new IntersectionObserver((entries, observer) => {
-			entries.forEach(entry => {
+		rfImageObserver = new IntersectionObserver(function (entries, observer) {
+			entries.forEach(function (entry) {
 				if (entry.isIntersecting) {
-					const img = entry.target;
-					loadImage(img);
-					observer.unobserve(img);
+					loadImage(entry.target);
+					observer.unobserve(entry.target);
 				}
 			});
 		}, {
-			rootMargin: '100px',
+			rootMargin: '200px',
 			threshold: 0.01
 		});
+	}
 
-		document.querySelectorAll('img.lazy').forEach(img => {
-			imageObserver.observe(img);
-		});
-	} else {
-		loadImagesOnScroll();
+	observeLazyImages(document);
+
+	if ('MutationObserver' in window) {
+		new MutationObserver(function (mutations) {
+			mutations.forEach(function (m) {
+				m.addedNodes.forEach(function (n) {
+					if (n.nodeType !== 1) return;
+					if (n.matches && n.matches('img.lazy[data-src]')) {
+						observeLazyImages(n.parentNode);
+					} else {
+						observeLazyImages(n);
+					}
+				});
+			});
+		}).observe(document.body, { childList: true, subtree: true });
 	}
 });
 
 function loadImage(img) {
-	const src = img.getAttribute('data-src');
+	var src = img.getAttribute('data-src');
 	if (!src) return;
 
-	const newImg = new Image();
+	var newImg = new Image();
 	newImg.onload = function () {
 		img.src = src;
 		img.classList.add('loaded');
 		img.classList.remove('lazy');
 	};
 	newImg.onerror = function () {
-		img.src = '/images/placeholder-error.jpg';
+		// Görsel alınamazsa sitede gerçekten bulunan yer tutucu (eski /images/placeholder-error.jpg yoktu → kırık görsel)
+		img.src = window.location.origin + '/img/default.jpg';
+		img.classList.remove('lazy');
 		img.classList.add('error');
 	};
 	newImg.src = src;

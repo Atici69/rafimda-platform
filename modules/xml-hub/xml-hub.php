@@ -109,7 +109,7 @@ class XmlHubModule extends ModuleBase
 					$msg = ['type' => $r['success'] ? 'success' : 'danger', 'message' => $r['message']];
 				} elseif ($cmAction === 'image_repair') {
 					$r = XhImageRepair::repair(30);
-					$msg = ['type' => $r['failed'] > 0 && $r['fixed'] === 0 ? 'danger' : 'success', 'message' => $r['fixed'] . ' görsel yeniden indirildi (' . $r['products'] . ' ürün)' . ($r['failed'] ? ', ' . $r['failed'] . ' görsel alınamadı: ' . implode(' | ', array_slice($r['errors'], 0, 3)) : '') . '. Kalan varsa düğmeye tekrar basın.'];
+					$msg = ['type' => $r['fixed'] === 0 && $r['covers'] === 0 && $r['errors'] !== [] ? 'danger' : 'success', 'message' => $r['products'] . ' ürün incelendi: ' . $r['fixed'] . ' görsel indirildi, ' . $r['covers'] . ' ürünün kapak görseli düzeltildi' . ($r['failed'] ? ', ' . $r['failed'] . ' görsel alınamadı' : '') . ($r['no_source'] ? ', ' . $r['no_source'] . ' üründe XML görsel adresi yok (elle yükleyin)' : '') . ($r['errors'] ? ' — ' . implode(' | ', array_slice($r['errors'], 0, 3)) : '') . '. Kalan varsa düğmeye tekrar basın.'];
 				} elseif ($cmAction === 'review_all') {
 					$msg['message'] = CategoryMatchStore::confirmAllMedium(0) . ' ürünün önerilen kategorisi onaylandı.';
 				}

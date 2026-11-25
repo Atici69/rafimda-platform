@@ -1696,40 +1696,13 @@ class Product
 	 */
 	public static function writeImageFile(int $idImage, string $binary): array
 	{
-		$dest = dirname(__DIR__) . '/img/products/' . $idImage . '.jpg';
-		$dir = dirname($dest);
-
-		if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
-			return ['success' => false, 'message' => 'Görsel klasörü (img/products) oluşturulamadı'];
+		if (!class_exists('ImageWriter', false)) {
+			require_once __DIR__ . '/ImageWriter.php';
 		}
 
-		if (!is_writable($dir)) {
-			return ['success' => false, 'message' => 'Görsel klasörüne (img/products) yazılamıyor: klasör izinlerini kontrol edin (755, sahibi site kullanıcısı)'];
-		}
+		$r = ImageWriter::write(dirname(__DIR__) . '/img/products/' . $idImage . '.jpg', $binary);
 
-		$source = @imagecreatefromstring($binary);
-
-		if (!$source) {
-			return ['success' => false, 'message' => 'Görsel işlenemedi'];
-		}
-
-		$w = imagesx($source);
-		$h = imagesy($source);
-		$canvas = imagecreatetruecolor($w, $h);
-		imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
-		imagecopy($canvas, $source, 0, 0, 0, 0, $w, $h);
-		imagedestroy($source);
-		$tmp = $dest . '.tmp' . bin2hex(random_bytes(3));
-		$ok = @imagejpeg($canvas, $tmp, 88);
-		imagedestroy($canvas);
-
-		if (!$ok || !is_file($tmp) || filesize($tmp) === 0 || !@rename($tmp, $dest)) {
-			@unlink($tmp);
-
-			return ['success' => false, 'message' => 'Görsel dosyası yazılamadı (img/products izinleri veya disk kotası)'];
-		}
-
-		return ['success' => true, 'message' => ''];
+		return ['success' => $r['success'], 'message' => $r['message']];
 	}
 
 	public static function importImageFromUrl(int $idProduct, string $url): array

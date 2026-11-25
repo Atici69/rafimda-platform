@@ -24,6 +24,11 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 - Görsel dosyası olmayan ürünlerde yer tutucu adresi kurulumda olmayan `templates/default/img/favicon.png` idi → sitede kırık görsel. Artık mevcut `img/default.jpg` ("Görsel hazırlanıyor").
 - `importImageBinary` dosya yazılamasa da (izin/kota) "başarılı" dönüyor ve dosyasız görsel kaydı bırakıyordu → yazım doğrulanır, başarısızsa kayıt geri alınır ve açık hata verilir; şeffaf PNG/WEBP beyaz zemine oturtulur.
 - XML Hub yönetiminde görsel sağlık uyarısı (img/products yazılabilir mi, dosyası eksik görsel sayısı) ve XML kaynağından "Eksik görselleri yeniden indir" onarımı (kayıt silmez, aynı görsel numarasına yazar).
+- Canlı sitede doğrulandı: ürün sayfası ve kartlar kurulumda olmayan `templates/default/img/favicon.png` adresine gidiyordu → görsel dosyaları sunucuya hiç yazılmamış.
+- Kök neden kapatıldı (`core/ImageWriter`): GD görseli çözemezse (sunucuda WEBP desteği yok, bellek yetmiyor) Imagick, o da yoksa görsel olduğu gibi yazılır; eskiden kayıt açılıp dosya yazılmadan çıkılıyordu. Büyük görselde bellek önceden hesaplanır (PHP'nin ölümcül bellek hatası önlenir); JPEG için gereksiz ikinci tuval kaldırıldı.
+- Onarım genişletildi: eski akışta görsel adresleri kaydedilmemiş ürünler için adresler XML'in saklanan ham satırından (eşlemedeki tüm görsel alanları: image1, image2…) alınır; hiç görsel kaydı olmayan XML ürünlerine görsel eklenir; kapak dosyası yoksa sağlam görsel kapak yapılır; adresi olmayan ürünler onarımı tıkamaz. Yönetim ekranında sunucu tanılaması (GD, WEBP, Imagick, bellek sınırı).
+- Tema (rafimda, theme4): tembel yükleme sonradan eklenen kartları da izler; görsel alınamazsa var olmayan `/images/placeholder-error.jpg` yerine `img/default.jpg`; tanımsız `loadImagesOnScroll` çağrısı kaldırıldı.
+- Testler: `modules/xml-hub/tests/run_images.php` (23 test).
 
 ### Yönetim paneli testinde bulunan ve düzeltilen hatalar
 - Yönetim Excel içe aktarma: Türkçe büyük harfli başlıklar ("Ürün Adı", "KATEGORİ") tanınmıyordu → dosya tamamen reddediliyordu (çok baytlı küçültme).

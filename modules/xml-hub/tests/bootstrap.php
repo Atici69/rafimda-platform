@@ -109,7 +109,8 @@ class Product { // TAKLİT
 	public static function getImageUrl(int $id) { return '/img/products/' . $id . '.jpg'; }
 	public static function uploadImage(int $id, array $f) { return ['success' => true]; }
 	public static function deleteImage(int $id) { DB::execute('DELETE FROM images WHERE id_image = ?', [$id]); return ['success' => true]; }
-	public static function setCover(int $id) { return ['success' => true]; }
+	public static function setCover(int $id) { $r = DB::getRowSafe('images', 'id_image = ?', [$id]); if ($r) { DB::execute('UPDATE images SET cover = 0 WHERE id_product = ?', [(int) $r['id_product']]); DB::execute('UPDATE images SET cover = 1 WHERE id_image = ?', [$id]); } return ['success' => true]; }
+	public static function writeImageFile(int $idImage, string $bin) { if (!class_exists('ImageWriter', false)) { require_once dirname(__DIR__, 3) . '/core/ImageWriter.php'; } $r = ImageWriter::write(XhImageRepair::dir() . '/' . $idImage . '.jpg', $bin); return ['success' => $r['success'], 'message' => $r['message']]; }
 	public static function importImageBinary(int $id, string $bin) { if (strncmp($bin, 'IMG', 3) !== 0) { return ['success' => false, 'message' => 'görsel değil']; } DB::execute('INSERT INTO images (id_product, cover) VALUES (?, 0)', [$id]); return ['success' => true]; }
 }
 
