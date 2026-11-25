@@ -21,7 +21,7 @@ class RvPanel
 		'finance'      => ['Finans', '▣', true, ''],
 		'invoices'     => ['Faturalar', '☰', false, 'Fatura entegrasyonu sonraki aşamada.'],
 		'staff'        => ['Personel', '☻', true, ''],
-		'subscription' => ['Abonelik', '★', true, ''],
+		'subscription' => ['Mağaza Planı', '★', true, ''],
 		'store'        => ['Mağaza Yönetimi', '⚑', true, ''],
 		'storefront'   => ['Mağaza Vitrini', '❖', true, ''],
 		'questions'    => ['Soru-Cevap', '❓', true, ''],
@@ -318,7 +318,7 @@ class RvPanel
 
 		$eff = RvPlans::effective($idVendor);
 
-		return ['panel_subscription', ['eff' => $eff, 'usage' => RvPlans::usage($idVendor), 'plans' => RvPlans::all(true), 'camp' => class_exists('RcCampaign', false) ? RcCampaign::forVendor($idVendor) : null]];
+		return ['panel_subscription', ['eff' => $eff, 'freeMode' => RvPlans::freeMode(), 'usage' => RvPlans::usage($idVendor), 'plans' => RvPlans::all(true), 'camp' => class_exists('RcCampaign', false) ? RcCampaign::forVendor($idVendor) : null]];
 	}
 
 	/** @return array{0:string,1:array<string,mixed>} */
@@ -580,7 +580,14 @@ class RvPanel
 		$idVendor = (int) $vendor['id_vendor'];
 		$page = max(1, (int) Tools::getValue('page', 1));
 
+		$days = (int) Tools::getValue('days', 30);
+		$days = in_array($days, [7, 30, 90, 365], true) ? $days : 30;
+
 		return ['panel_finance', [
+			'days' => $days,
+			'st' => RvCommission::vendorStatement($idVendor, $days),
+			'catRules' => RvCommission::publicCategoryRules(),
+			'vendorRate' => RvOrders::baseCommissionFor($vendor),
 			'balances' => RvLedger::balances($idVendor),
 			'entries' => RvLedger::entries($idVendor, 30, ($page - 1) * 30),
 			'payouts' => RvLedger::payouts($idVendor, 10),
@@ -660,7 +667,7 @@ class RvPanel
 			$out[] = ['label' => 'Yeni ürün ekle', 'url' => RvView::panelUrl('products', ['a' => 'new'])];
 		}
 
-		foreach (['orders' => 'Siparişleri gör', 'stock' => 'Stok güncelle', 'pricing' => 'Fiyat güncelle', 'finance' => 'Kazançlarım', 'reports' => 'Satış raporu', 'subscription' => 'Paketim ve kampanyalar'] as $k => $l) {
+		foreach (['orders' => 'Siparişleri gör', 'stock' => 'Stok güncelle', 'pricing' => 'Fiyat güncelle', 'finance' => 'Kazançlarım', 'reports' => 'Satış raporu', 'subscription' => 'Limitler ve kampanyalar'] as $k => $l) {
 			if (RvContext::can(RvPerm::SECTION_PERMS[$k])) {
 				$out[] = ['label' => $l, 'url' => RvView::panelUrl($k)];
 			}

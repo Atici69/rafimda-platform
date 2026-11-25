@@ -6,7 +6,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication', 'RvPrivacy', 'RvStorefront', 'RvQA', 'RvReviews', 'RvTickets', 'RvEngageAdmin', 'RvPanel'] as $rvClass) {
+foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProducts', 'RvInventory', 'RvCustomers', 'RvPlans', 'RvLedger', 'RvOrders', 'RvCommission', 'RvView', 'RvAuthFlow', 'RvPrefs', 'RvReports', 'RvNotify', 'RvApplication', 'RvPrivacy', 'RvStorefront', 'RvQA', 'RvReviews', 'RvTickets', 'RvEngageAdmin', 'RvPanel'] as $rvClass) {
 	require_once __DIR__ . '/lib/' . $rvClass . '.php';
 }
 
@@ -16,7 +16,7 @@ foreach (['RvMigrator', 'RvPerm', 'RvAudit', 'RvVendor', 'RvContext', 'RvProduct
  */
 class RafimdaVendorModule extends ModuleBase
 {
-	public const VERSION = '0.3.0';
+	public const VERSION = '0.4.0';
 
 	public string $name = 'rafimda-vendor';
 	public string $title = 'Rafımda Satıcı Sistemi';
@@ -116,7 +116,7 @@ class RafimdaVendorModule extends ModuleBase
 		$adminId = Admin::getId();
 		$tab = (string) Tools::getValue('tab', 'applications');
 
-		if (!in_array($tab, ['applications', 'vendors', 'products', 'orders', 'finance', 'plans', 'engage', 'settings'], true)) {
+		if (!in_array($tab, ['applications', 'vendors', 'products', 'orders', 'finance', 'commission', 'plans', 'engage', 'settings'], true)) {
 			$tab = 'applications';
 		}
 
@@ -202,6 +202,15 @@ class RafimdaVendorModule extends ModuleBase
 						RvAudit::log((int) Tools::getValue('id_vendor'), 'vendor.commission', 'vendor', (int) Tools::getValue('id_vendor'), ['rate' => $rate], $adminId);
 					}
 					break;
+				case 'commission_rule':
+					$r = RvCommission::saveRule($_POST, $adminId);
+					$ok = $r['success'];
+					$msg = $r['message'];
+					break;
+				case 'commission_rule_toggle':
+					$ok = RvCommission::setActive((int) Tools::getValue('id_rule'), Tools::getValue('to') === '1', $adminId);
+					$msg = $ok ? 'Kural durumu güncellendi (yalnızca yeni siparişlere uygulanır).' : 'Kural bulunamadı.';
+					break;
 				case 'plan_save':
 					$r = RvPlans::save($_POST);
 					$ok = $r['success'];
@@ -230,6 +239,8 @@ class RafimdaVendorModule extends ModuleBase
 			$flashType = $ok ? 'success' : 'danger';
 		}
 
+		$commDays = (int) Tools::getValue('days', 30);
+		$commDays = in_array($commDays, [7, 30, 90, 365], true) ? $commDays : 30;
 		$status = (string) Tools::getValue('status', '');
 		$q = trim((string) Tools::getValue('q', ''));
 		$vendors = RvVendor::adminList($status, $q, 100, 0);
@@ -254,6 +265,13 @@ class RafimdaVendorModule extends ModuleBase
 			'rvFilterStatus' => $status,
 			'rvQuery' => $q,
 			'rvPlans' => $tab === 'plans' ? RvPlans::all() : [],
+			'rvFreeMode' => RvPlans::freeMode(),
+			'rvCommDays' => $commDays,
+			'rvCommReport' => $tab === 'commission' ? RvCommission::platformReport($commDays) : null,
+			'rvCommRules' => $tab === 'commission' ? RvCommission::rules() : [],
+			'rvCommReady' => RvCommission::tableReady(),
+			'rvCommSources' => RvCommission::SOURCES,
+			'rvCategories' => $tab === 'commission' ? (DB::execute('SELECT id_category, category_name FROM categories ORDER BY category_name ASC LIMIT 1000') ?: []) : [],
 			'rvPending' => RvMigrator::pending(),
 			'rvModerationQueue' => $tab === 'products' ? RvProducts::moderationQueue((string) Tools::getValue('mod', 'pending')) : [],
 			'rvModState' => (string) Tools::getValue('mod', 'pending'),

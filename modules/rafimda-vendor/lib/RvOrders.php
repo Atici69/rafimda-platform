@@ -77,8 +77,9 @@ class RvOrders
 		}
 
 		$lines = DB::execute(
-			'SELECT od.id_order_detail, od.id_product, od.product_name, od.qty, od.price, od.total, vp.id_vendor
+			'SELECT od.id_order_detail, od.id_product, od.product_name, od.qty, od.price, od.total, vp.id_vendor, p.id_category
 			FROM order_detail od INNER JOIN rafimda_vendor_products vp ON vp.id_product = od.id_product
+			LEFT JOIN products p ON p.id_product = od.id_product
 			WHERE od.id_order = ? ORDER BY od.id_order_detail ASC',
 			[$idOrder]
 		) ?: [];
@@ -102,13 +103,17 @@ class RvOrders
 				continue;
 			}
 
-			$subtotal = RvLedger::money(array_sum(array_map(static fn(array $l): float => (float) $l['total'], $vLines)));
-			$rate = self::commissionRateFor($vendor, true);
-			$commission = RvLedger::money($subtotal * $rate / 100);
-			$earning = RvLedger::money($subtotal - $commission);
+			// Kalem bazlı komisyon: ürün → kategori → satıcıya özel → genel oran; kampanya üstüne (bkz. RvCommission)
+			$calc = RvCommission::forLines($vendor, $vLines, true);
+			$subtotal = $calc['subtotal'];
+			$rate = $calc['rate'];
+			$commission = $calc['commission'];
+			$earning = $calc['earning'];
+			// 008 migration'ı uygulanmadıysa kalem komisyon kolonları yoktur: eski şemayla yazmaya devam et (sipariş bölünmesi aksamasın)
+			$itemCols = RvCommission::tableReady();
 
 			try {
-				RvLedger::tx(static function () use ($idOrder, $idVendor, $vLines, $subtotal, $rate, $commission, $earning): void {
+				RvLedger::tx(static function () use ($idOrder, $idVendor, $vLines, $subtotal, $rate, $commission, $earning, $calc, $itemCols): void {
 					$idVo = RvLedger::must(DB::insert('rafimda_vendor_orders', [
 						'id_order' => $idOrder,
 						'id_vendor' => $idVendor,
@@ -118,8 +123,8 @@ class RvOrders
 						'vendor_earning' => $earning,
 					]), 'satıcı siparişi');
 
-					foreach ($vLines as $l) {
-						RvLedger::must(DB::insert('rafimda_vendor_order_items', [
+					foreach ($vLines as $i => $l) {
+						$item = [
 							'id_vendor_order' => $idVo,
 							'id_order_detail' => (int) $l['id_order_detail'],
 							'id_product' => (int) $l['id_product'],
@@ -127,10 +132,18 @@ class RvOrders
 							'qty' => (float) $l['qty'],
 							'unit_price' => RvLedger::money($l['price']),
 							'total' => RvLedger::money($l['total']),
-						]), 'sipariş kalemi');
+						];
+
+						if ($itemCols) {
+							$item['commission_rate'] = $calc['lines'][$i]['rate'];
+							$item['commission_amount'] = $calc['lines'][$i]['amount'];
+							$item['commission_source'] = $calc['lines'][$i]['source'];
+						}
+
+						RvLedger::must(DB::insert('rafimda_vendor_order_items', $item), 'sipariş kalemi');
 					}
 
-					RvLedger::add($idVendor, (int) $idVo, 'sale', $earning, null, 'sale:vo' . $idVo, 'Sipariş #' . $idOrder . ' (komisyon %' . $rate . ')');
+					RvLedger::add($idVendor, (int) $idVo, 'sale', $earning, null, 'sale:vo' . $idVo, 'Sipariş #' . $idOrder . ' (komisyon ' . number_format($commission, 2, ',', '.') . ' ₺, ort. %' . $rate . ')');
 					RvAudit::log($idVendor, 'order.split', 'vendor_order', (int) $idVo, ['id_order' => $idOrder, 'earning' => $earning]);
 				});
 				$created++;

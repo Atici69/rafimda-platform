@@ -60,6 +60,15 @@ if (!empty($cfg['pending_app'])) {
 	$ap = RvApplication::submit(1, $vA, ['person_type' => 'company', 'contact_name' => 'Kişi 1', 'address' => 'Moda Cad. No:1', 'district' => 'Kadıköy', 'categories' => [1 => 'Giyim']], true);
 	RvApplication::transition($ap['id_application'], 'docs_required', 1, 'Vergi levhası eksik');
 }
+if (!empty($cfg['rules'])) {
+	// Kural tohumla ve kuraldan SONRA yeni bir sipariş oluştur (önceki siparişler eski oranla kalır)
+	RvCommission::saveRule(['scope' => 'category', 'id_target' => 1, 'rate' => '15', 'include_children' => 1, 'note' => '<b>Lansman</b>'], 1);
+	RvCommission::saveRule(['scope' => 'product', 'id_target' => $p2, 'rate' => '5'], 1);
+	$o = (int) DB::insert('orders', ['id_user' => 3, 'reference' => 'RK', 'status' => 1, 'date_add' => date('Y-m-d H:i:s'), 'customer_name' => 'Ayşe Müşteri']);
+	DB::insert('order_detail', ['id_order' => $o, 'id_product' => $p1, 'product_name' => 'Pamuklu Tişört', 'qty' => 1, 'price' => 100, 'total' => 100]);
+	DB::insert('order_detail', ['id_order' => $o, 'id_product' => $p2, 'product_name' => 'Kot Pantolon', 'qty' => 1, 'price' => 300, 'total' => 300]);
+	RvOrders::splitOrder(['id_order' => $o]);
+}
 if (!empty($cfg['activate'])) { $GLOBALS['RV_TEST_ACTIVATE'] = true; }
 Customer::as((int) ($cfg['user'] ?? 1));
 $_SERVER['REQUEST_METHOD'] = $cfg['method'] ?? 'GET'; $_GET = $cfg['get'] ?? []; $_POST = ($cfg['post'] ?? []) + (($cfg['method'] ?? 'GET') === 'POST' ? ['token' => 'csrf-test'] : []);
@@ -71,6 +80,10 @@ register_shutdown_function(static function () use ($cfg) {
 if (!empty($cfg['register'])) { RvAuthFlow::register(); } elseif (!empty($cfg['admin'])) {
 	// Not: bootstrap gerçek modül sınıfını taklit ettiği için yönetici sekmesi, adminPage'in kullandığı AYNI RvApplication::adminVars ile çizilir.
 	$atab = (string) ($cfg['atab'] ?? 'applications');
-	$smarty->setEscapeHtml(false); $smarty->assign(RvApplication::adminVars($atab === 'applications', $_GET) + RvEngageAdmin::vars($atab === 'engage', $_GET) + ['adminToken' => 'admintok', 'flash' => '', 'flashType' => 'info', 'rvTab' => $atab, 'rvPending' => [], 'rvQuery' => (string) ($_GET['q'] ?? '')]);
+	$smarty->setEscapeHtml(false); $smarty->assign(RvApplication::adminVars($atab === 'applications', $_GET) + RvEngageAdmin::vars($atab === 'engage', $_GET) + ['adminToken' => 'admintok', 'flash' => '', 'flashType' => 'info', 'rvTab' => $atab, 'rvPending' => [], 'rvQuery' => (string) ($_GET['q'] ?? ''),
+		// Komisyon ve paket sekmeleri: adminPage ile aynı kaynak metotlar
+		'rvFreeMode' => RvPlans::freeMode(), 'rvPlans' => $atab === 'plans' ? RvPlans::all() : [], 'rvVendors' => RvVendor::adminList('', '', 100, 0), 'rvDefaultCommission' => RvOrders::defaultCommission(),
+		'rvCommDays' => 30, 'rvCommReport' => $atab === 'commission' ? RvCommission::platformReport(30) : null, 'rvCommRules' => $atab === 'commission' ? RvCommission::rules() : [], 'rvCommReady' => RvCommission::tableReady(),
+		'rvCommSources' => RvCommission::SOURCES, 'rvCategories' => DB::execute('SELECT id_category, category_name FROM categories ORDER BY category_name ASC') ?: []]);
 	echo $smarty->fetch('file:' . dirname(__DIR__) . '/assets/templates/admin/admin.tpl');
 } else { RvPanel::handle(); }

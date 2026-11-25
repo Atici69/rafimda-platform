@@ -9,7 +9,7 @@
 {/if}
 
 <ul class="nav nav-tabs mb-3">
-	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'plans' => 'Paketler', 'engage' => 'Soru · Yorum · Destek', 'settings' => 'Ayarlar'] as $k => $l}
+	{foreach ['applications' => 'Başvurular', 'vendors' => 'Satıcılar', 'products' => 'Ürün Onayı', 'orders' => 'Satıcı Siparişleri', 'finance' => 'Finans & Ödemeler', 'commission' => 'Komisyon', 'plans' => 'Paketler / Limitler', 'engage' => 'Soru · Yorum · Destek', 'settings' => 'Ayarlar'] as $k => $l}
 	<li class="nav-item"><a class="nav-link{if $rvTab == $k} active{/if}" href="?tab={$k}">{$l}{if $k == 'applications' && $rvAppOpen|default:0 > 0} <span class="badge text-bg-warning">{$rvAppOpen}</span>{/if}{if $k == 'engage' && $rvEngTicketOpen|default:0 > 0} <span class="badge text-bg-info">{$rvEngTicketOpen}</span>{/if}</a></li>
 	{/foreach}
 </ul>
@@ -197,14 +197,61 @@
 </tbody></table></div>
 {/if}
 
+{if $rvTab == 'commission'}
+{if !$rvCommReady}<div class="alert alert-warning">Komisyon kuralları için bekleyen migration'ı (008_commission_rules) çalıştırın. Çalıştırılana kadar siparişler satıcıya özel / genel oranla hesaplanmaya devam eder.</div>{/if}
+<div class="alert alert-info small mb-3">Satıcılar mağazayı <strong>ücretsiz</strong> açar; tek gelir kalemi gerçekleşen satışların komisyonudur. Öncelik: <strong>ürün kuralı → kategori kuralı → satıcıya özel oran → genel oran (%{$rvDefaultCommission|escape})</strong>; kampanya oranı yalnızca düşürebilir. Oran sipariş anında kaleme yazılır: değişiklikler <strong>yalnızca yeni siparişlere</strong> uygulanır. İptal/iadede komisyon kesilmez.</div>
+{if $rvCommReport}{assign var=cr value=$rvCommReport}
+<div class="admin-panel p-3 mb-3">
+	<div class="d-flex flex-wrap gap-2 align-items-center mb-3"><h2 class="h6 m-0 me-auto">Komisyon geliri</h2>
+		{foreach [7, 30, 90, 365] as $d}<a class="btn btn-sm {if $rvCommDays == $d}btn-dark{else}btn-outline-secondary{/if}" href="?tab=commission&amp;days={$d}">Son {$d} gün</a>{/foreach}</div>
+	<div class="row g-3 text-center">
+		<div class="col-6 col-md-3"><div class="border rounded p-2"><div class="h5 m-0">{$cr.commission|string_format:"%.2f"} ₺</div><small class="text-muted">Komisyon geliri</small></div></div>
+		<div class="col-6 col-md-3"><div class="border rounded p-2"><div class="h5 m-0">{$cr.gross|string_format:"%.2f"} ₺</div><small class="text-muted">Satıcı brüt satış ({$cr.orders|escape} sipariş)</small></div></div>
+		<div class="col-6 col-md-3"><div class="border rounded p-2"><div class="h5 m-0">%{$cr.effective_rate|string_format:"%.2f"}</div><small class="text-muted">Ortalama oran</small></div></div>
+		<div class="col-6 col-md-3"><div class="border rounded p-2"><div class="h5 m-0">{$cr.cancelled_commission|string_format:"%.2f"} ₺</div><small class="text-muted">İptal/iade nedeniyle alınmayan ({$cr.cancelled_orders|escape})</small></div></div>
+	</div>
+	<div class="row g-3 mt-1">
+		<div class="col-lg-5"><h3 class="h6 mt-2">Satıcıya göre</h3><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Mağaza</th><th>Sipariş</th><th>Brüt</th><th>Komisyon</th></tr></thead><tbody>
+			{foreach $cr.by_vendor as $r}<tr><td>{$r.store_name|escape}</td><td>{$r.orders|escape}</td><td>{$r.gross|string_format:"%.2f"} ₺</td><td><strong>{$r.commission|string_format:"%.2f"} ₺</strong></td></tr>{foreachelse}<tr><td colspan="4" class="text-muted">Kayıt yok.</td></tr>{/foreach}</tbody></table></div></div>
+		<div class="col-lg-4"><h3 class="h6 mt-2">Kategoriye göre</h3><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Kategori</th><th>Brüt</th><th>Komisyon</th></tr></thead><tbody>
+			{foreach $cr.by_category as $r}<tr><td>{$r.category_name|escape}</td><td>{$r.gross|string_format:"%.2f"} ₺</td><td>{$r.commission|string_format:"%.2f"} ₺</td></tr>{foreachelse}<tr><td colspan="3" class="text-muted">Kayıt yok.</td></tr>{/foreach}</tbody></table></div></div>
+		<div class="col-lg-3"><h3 class="h6 mt-2">Oran kaynağı</h3><table class="table table-sm"><tbody>
+			{foreach $cr.by_source as $r}<tr><td>{$r.label|escape}</td><td class="text-end">{$r.commission|string_format:"%.2f"} ₺</td></tr>{foreachelse}<tr><td class="text-muted">Kayıt yok.</td></tr>{/foreach}</tbody></table></div>
+	</div>
+</div>
+{/if}
+<div class="admin-panel p-3 mb-3"><h2 class="h6">Kural ekle / güncelle</h2>
+	<form method="post" class="row g-2 align-items-end"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="commission_rule"><input type="hidden" name="active" value="1">
+		<div class="col-auto"><label class="form-label small">Tür</label><select name="scope" class="form-select form-select-sm" id="rvCommScope"><option value="category">Kategori</option><option value="product">Ürün</option></select></div>
+		<div class="col-auto"><label class="form-label small">Kategori</label><select name="id_target" class="form-select form-select-sm" id="rvCommCat">{foreach $rvCategories as $c}<option value="{$c.id_category|escape}">{$c.category_name|escape} (#{$c.id_category|escape})</option>{/foreach}</select></div>
+		<div class="col-auto"><label class="form-label small">veya Ürün no</label><input type="number" min="1" class="form-control form-control-sm" style="width:110px" id="rvCommProd" placeholder="#" disabled></div>
+		<div class="col-auto"><label class="form-label small">Oran (%)</label><input name="rate" class="form-control form-control-sm" style="width:90px" required placeholder="örn. 12,5"></div>
+		<div class="col-auto"><div class="form-check"><input type="checkbox" class="form-check-input" id="rvCommKids" name="include_children" value="1" checked><label class="form-check-label small" for="rvCommKids">Alt kategorileri kapsa</label></div></div>
+		<div class="col-auto"><label class="form-label small">Not</label><input name="note" class="form-control form-control-sm" style="width:180px" maxlength="255"></div>
+		<div class="col-auto"><button class="btn btn-sm btn-dark" type="submit"{if !$rvCommReady} disabled{/if}>Kaydet</button></div>
+	</form>
+	<p class="small text-muted mt-2 mb-0">Aynı kategori veya ürün için tekrar kaydetmek mevcut kuralı günceller. Kurallar silinmez; pasifleştirilir.</p>
+	<script>(function(){ var s=document.getElementById('rvCommScope'),c=document.getElementById('rvCommCat'),p=document.getElementById('rvCommProd'),k=document.getElementById('rvCommKids'); if(!s){ return; } function u(){ var prod=s.value==='product'; c.disabled=prod; c.name=prod?'':'id_target'; p.disabled=!prod; p.name=prod?'id_target':''; p.required=prod; k.disabled=prod; } s.addEventListener('change',u); u(); })();</script>
+</div>
+<div class="admin-panel p-3"><h2 class="h6">Kurallar</h2><div class="table-responsive"><table class="table table-sm align-middle">
+	<thead><tr><th>Tür</th><th>Hedef</th><th>Oran</th><th>Kapsam</th><th>Not</th><th>Güncelleme</th><th>Durum</th></tr></thead><tbody>
+	{foreach $rvCommRules as $r}<tr{if !$r.active} class="text-muted"{/if}><td>{if $r.scope == 'product'}Ürün{else}Kategori{/if}</td><td>{$r.target_name|default:'(silinmiş)'|escape} <small class="text-muted">#{$r.id_target|escape}</small></td><td><strong>%{$r.rate|string_format:"%.2f"}</strong></td>
+		<td>{if $r.scope == 'category'}{if $r.include_children}Alt kategoriler dahil{else}Yalnızca bu kategori{/if}{else}—{/if}</td><td>{$r.note|escape}</td><td><small>{$r.date_upd|escape}</small></td>
+		<td><form method="post" class="d-inline"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="commission_rule_toggle"><input type="hidden" name="id_rule" value="{$r.id_rule|escape}"><input type="hidden" name="to" value="{if $r.active}0{else}1{/if}">
+			<button class="btn btn-sm {if $r.active}btn-success{else}btn-outline-secondary{/if}" type="submit" title="Durumu değiştir">{if $r.active}Etkin{else}Pasif{/if}</button></form></td></tr>
+	{foreachelse}<tr><td colspan="7" class="text-center text-muted py-4">Kural yok: tüm siparişlere satıcıya özel oran veya genel oran uygulanır.</td></tr>{/foreach}
+</tbody></table></div></div>
+{/if}
+
 {if $rvTab == 'plans'}
-<div class="admin-panel p-3 mb-3"><h5>Paketler</h5>
+{if $rvFreeMode}<div class="alert alert-success small"><strong>Ücretsiz mağaza modu açık.</strong> Satıcılardan abonelik/paket ücreti alınmaz; buradaki kayıtlar yalnızca ücretsiz <strong>limit gruplarıdır</strong> (ürün, XML, pazaryeri hesabı). Aylık ücret alanı kilitlidir; eski ücretli kayıtlar silinmedi, 0 ₺ olarak uygulanır.</div>{/if}
+<div class="admin-panel p-3 mb-3"><h5>{if $rvFreeMode}Limit grupları{else}Paketler{/if}</h5>
 	<p class="text-muted small">Ödeme otomasyonu yoktur: paketi elle atarsınız. Limit boşsa sınırsızdır. Süresi dolan paket okuma anında "free" paketine düşer (veri silinmez).</p>
 	{foreach $rvPlans as $p}
 	<form method="post" class="row g-2 align-items-center mb-2 border-bottom pb-2"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_save"><input type="hidden" name="code" value="{$p.code|escape}"><input type="hidden" name="sort_order" value="{$p.sort_order|escape}">
 		<div class="col-auto" style="min-width:90px"><code>{$p.code|escape}</code></div>
 		<div class="col-auto"><input class="form-control form-control-sm" name="name" value="{$p.name|escape}" aria-label="Ad"></div>
-		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="price_monthly" value="{$p.price_monthly|escape}" aria-label="Aylık ücret"></div>
+		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="price_monthly" value="{$p.price_monthly|escape}" aria-label="Aylık ücret"{if $rvFreeMode} readonly title="Ücretsiz mağaza modu: ücret alınmaz"{/if}></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_products" value="{$p.max_products|escape}" placeholder="ürün ∞" aria-label="Ürün limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_xml_connections" value="{$p.max_xml_connections|escape}" placeholder="XML ∞" aria-label="XML limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" style="width:90px" name="max_marketplace_accounts" value="{$p.max_marketplace_accounts|escape}" placeholder="pazaryeri ∞" aria-label="Pazaryeri limiti"></div>
@@ -214,11 +261,11 @@
 	{/foreach}
 	<form method="post" class="row g-2 mt-2"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_save">
 		<div class="col-auto"><input class="form-control form-control-sm" name="code" placeholder="kod (örn. pro)" required></div><div class="col-auto"><input class="form-control form-control-sm" name="name" placeholder="Ad" required></div>
-		<div class="col-auto"><input class="form-control form-control-sm" name="price_monthly" placeholder="Aylık ₺" value="0"></div><div class="col-auto"><input class="form-control form-control-sm" name="max_products" placeholder="Ürün limiti"></div>
+		<div class="col-auto"><input class="form-control form-control-sm" name="price_monthly" placeholder="Aylık ₺" value="0"{if $rvFreeMode} readonly{/if}></div><div class="col-auto"><input class="form-control form-control-sm" name="max_products" placeholder="Ürün limiti"></div>
 		<div class="col-auto"><input class="form-control form-control-sm" name="max_xml_connections" placeholder="XML limiti"></div><div class="col-auto"><input class="form-control form-control-sm" name="max_marketplace_accounts" placeholder="Pazaryeri limiti"></div>
-		<input type="hidden" name="active" value="1"><div class="col-auto"><button class="btn btn-sm btn-outline-dark" type="submit">Yeni paket</button></div></form>
+		<input type="hidden" name="active" value="1"><div class="col-auto"><button class="btn btn-sm btn-outline-dark" type="submit">{if $rvFreeMode}Yeni limit grubu{else}Yeni paket{/if}</button></div></form>
 </div>
-<div class="admin-panel p-3"><h5>Satıcıya paket ata</h5>
+<div class="admin-panel p-3"><h5>{if $rvFreeMode}Satıcıya limit grubu ata{else}Satıcıya paket ata{/if}</h5>
 	<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Satıcı</th><th>Mevcut</th><th>Ata</th></tr></thead><tbody>
 	{foreach $rvVendors as $v}<tr><td>{$v.store_name|escape} <span class="text-muted">#{$v.id_vendor|escape}</span></td><td><code>{$v.plan_code|escape}</code>{if $v.plan_expires_at} <small class="text-muted">→ {$v.plan_expires_at|escape}</small>{/if}</td>
 		<td><form method="post" class="d-flex gap-1 flex-wrap"><input type="hidden" name="token" value="{$adminToken}"><input type="hidden" name="rvAction" value="plan_assign"><input type="hidden" name="id_vendor" value="{$v.id_vendor|escape}">

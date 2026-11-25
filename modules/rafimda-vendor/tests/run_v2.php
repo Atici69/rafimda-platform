@@ -109,6 +109,8 @@ ok(DB::execute("SELECT name FROM sqlite_master WHERE name = 'rafimda_plans'") !=
 DB::insert('rafimda_vendors', ['owner_user_id' => 1, 'store_name' => 'M1', 'store_slug' => 'm1', 'status' => 'active']); DB::insert('rafimda_vendors', ['owner_user_id' => 2, 'store_name' => 'M2', 'store_slug' => 'm2', 'status' => 'active']);
 $pl = RvPlans::all(); ok(count($pl) === 1 && $pl[0]['code'] === 'free' && $pl[0]['max_products'] === null, "varsayılan 'free' paketi sınırsız tohumlanır (mevcut davranış değişmez)");
 RvPlans::all(); ok(count(RvPlans::all()) === 1, 'ensureDefaults idempotent');
+ok(!RvPlans::save(['code' => 'mini', 'name' => 'Mini', 'price_monthly' => '99,90', 'active' => 1])['success'], 'ücretsiz mağaza modunda (varsayılan) ücretli paket oluşturulamaz');
+Settings::set('RAFIMDA_PAID_PLANS', '1'); // aşağıdaki eski ücretli paket davranışı, yalnızca anahtar açıkken test edilir
 ok(RvPlans::save(['code' => 'mini', 'name' => 'Mini', 'price_monthly' => '99,90', 'max_products' => '2', 'max_xml_connections' => '1', 'max_marketplace_accounts' => '', 'active' => 1])['success'], 'paket oluşturulur');
 $m = RvPlans::get('mini'); ok((float) $m['price_monthly'] === 99.9 && (int) $m['max_products'] === 2 && $m['max_marketplace_accounts'] === null, 'virgüllü fiyat, limitler, boş = sınırsız');
 foreach ([['code' => 'A', 'name' => 'xx'], ['code' => 'ok', 'name' => 'x'], ['code' => 'ok2', 'name' => 'Ok', 'max_products' => '-1'], ['code' => 'ok3', 'name' => 'Ok', 'max_products' => 'abc'], ['code' => 'ok4', 'name' => 'Ok', 'price_monthly' => '-5'], ['code' => 'ok5', 'name' => 'Ok', 'price_monthly' => 'x']] as $bad) { ok(!RvPlans::save($bad)['success'], 'geçersiz paket reddedilir: ' . json_encode($bad, JSON_UNESCAPED_UNICODE)); }
@@ -125,6 +127,7 @@ $e = RvPlans::effective(2); ok($e['expired'] === true && $e['plan']['code'] === 
 RvPlans::save(['code' => 'kapali', 'name' => 'Kapalı', 'active' => 0]); ok(!RvPlans::assign(1, 'kapali', '', 7)['success'], 'pasif pakete atama yapılamaz');
 RvPlans::assign(1, 'free', '', 7); ok(RvPlans::effective(1)['plan']['code'] === 'free', "'free'e geri dönülür");
 
+Settings::set('RAFIMDA_PAID_PLANS', '0');
 section('Paket kotaları (ürün oluşturma)');
 RvPlans::assign(1, 'mini', '', 7);
 $mk = fn(string $n) => ['product_name' => $n, 'id_category' => 1, 'id_brand' => 1, 'price' => '10', 'stock' => '1', 'stock_code' => 'Q-' . $n, 'description' => 'd'];

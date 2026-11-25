@@ -12,7 +12,7 @@ final class RvNotify
 		'order' => 'Sipariş',
 		'question' => 'Soru-cevap',
 		'review' => 'Değerlendirme',
-		'subscription' => 'Abonelik',
+		'subscription' => 'Mağaza planı',
 		'social' => 'Sosyal medya',
 		'invoice' => 'Fatura',
 		'support' => 'Destek',

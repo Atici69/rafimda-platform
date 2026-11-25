@@ -107,6 +107,13 @@ SSH yoksa: cPanel Cron'a komutu "... > /home/KULLANICI/cikti.txt 2>&1" ile bir k
 - Banner/slider: Modüller → Slider (ana sayfa büyük görsel), Rafımda Vitrin (öne çıkan ürünler, kampanyalı ürünler, reklam alanı).
 - Hukuki Belgeler ve KVKK: şirket bilgilerini doldurun; belgeler TASLAKTIR, avukat incelemesi olmadan yayınlamayın.
 - Rafi Asistanı: Modüller → Rafi Asistanı. Aç/kapat, ana sayfa karşılaması, deneme sorusu. Ücretsizdir, dış servis kullanmaz.
+- Komisyon: Satıcılar (Rafımda) → Komisyon. Mağaza açmak ÜCRETSİZDİR; abonelik/paket ücreti alınmaz, yalnızca gerçekleşen
+  satışlardan komisyon kesilir. Öncelik: ürün kuralı → kategori kuralı → satıcıya özel oran → genel oran (Ayarlar sekmesi);
+  kampanya oranı yalnızca düşürebilir. Oran sipariş anında kaleme yazılır, değişiklikler yalnızca yeni siparişlere uygulanır.
+  İptal/iadede komisyon kesilmez. Mevcut kurulumda önce Satıcılar ekranındaki "Migration çalıştır" ile 008'i uygulayın
+  (yalnızca yeni tablo + 3 yeni kolon; mevcut veriye dokunmaz). Uygulanana kadar siparişler eski yöntemle hesaplanır.
+- Paketler / Limitler: ücretsiz mağaza modu varsayılan AÇIK; paketler yalnızca ücretsiz limit gruplarıdır, aylık ücret kilitlidir.
+  Ücretli paketler yalnızca yazılı onayınızla RAFIMDA_PAID_PLANS = 1 ayarıyla açılabilir (kod/veri silinmedi).
 - Satıcı başvurusu: /satici-kayit (aktif). Başvurular yönetici panelinde "Satıcılar (Rafımda) → Başvurular" sekmesindedir.
 - Bayilik: KAPALI (PASİF). Açmak yazılı onayınız ve "BAYILIGI ETKINLESTIR" onay ifadesini gerektirir.
 - Fatura (e-Fatura/e-Arşiv): canlı gönderim KAPALI; yalnızca test bağdaştırıcısı. Entegratör sözleşmesi ve onayınız gerekir.

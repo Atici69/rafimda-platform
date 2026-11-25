@@ -9,7 +9,7 @@ function section(string $t): void { echo "\n== $t ==\n"; }
 section('Migration');
 rv_fresh_db();
 $files = RvMigrator::files();
-ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications', '007_engagement'], 'yedi migration dosyası bulundu ve sıralı');
+ok($files === ['001_init', '002_moderation', '003_orders_finance', '004_plans', '005_prefs', '006_applications', '007_engagement', '008_commission_rules'], 'sekiz migration dosyası bulundu ve sıralı');
 ok(RvMigrator::pending() === $files, 'başlangıçta hepsi bekliyor');
 // Çalıştırıcı, MySQL DDL'ini SQLite'a çevirmeden çalışamaz: çeviri sonrası çalıştır
 rv_apply_migrations();
@@ -298,13 +298,18 @@ foreach ($contents as $tpl => $vars) {
 
 // Yönetici şablonu: motor düzeyinde otomatik kaçış KAPALI iken bile XSS payload'ı ham çıkmamalı (şablon kendi kaçışını yapar)
 $vrow = ['id_vendor' => 1, 'store_name' => $xss, 'store_slug' => 's', 'status' => 'active', 'email' => $xss, 'phone' => '', 'city' => $xss, 'commission_rate' => 10, 'product_count' => 2, 'plan_code' => 'free', 'owner_name' => $xss, 'owner_email' => $xss, 'date_add' => 'd', 'rejection_reason' => $xss];
-foreach (['vendors', 'products', 'orders', 'finance', 'settings'] as $tab) {
+foreach (['vendors', 'products', 'orders', 'finance', 'commission', 'plans', 'settings'] as $tab) {
 	$smarty->setEscapeHtml(false);
 	$smarty->assign(['pageTitle' => 'Satıcılar', 'flash' => $xss, 'flashType' => 'success', 'rvTab' => $tab, 'rvVendors' => [$vrow], 'rvCounts' => ['active' => 1, 'pending' => 0], 'rvStatuses' => RvVendor::STATUSES, 'rvFilterStatus' => '', 'rvQuery' => $xss, 'rvPending' => ['003_orders_finance'],
 		'rvModerationQueue' => [['id_product' => 1, 'product_name' => $xss, 'price' => 1, 'stock' => 1, 'id_vendor' => 1, 'store_name' => $xss, 'moderation' => 'pending', 'moderation_note' => $xss, 'date_add' => 'd']], 'rvModState' => 'pending',
 		'rvVendorOrders' => [['id_vendor_order' => 1, 'reference' => $xss, 'id_order' => 1, 'store_name' => $xss, 'status' => 'pending', 'subtotal' => 5, 'commission_rate' => 10, 'commission_amount' => 1, 'vendor_earning' => 4, 'cargo_company' => '', 'tracking_number' => '', 'date_add' => 'd']], 'rvOrderStatuses' => RvOrders::STATUSES, 'rvTotals' => ['orders' => 1, 'gross' => 5, 'commission' => 1, 'earning' => 4],
 		'rvBalances' => [1 => ['pending' => 1, 'available' => 2, 'earned' => 3, 'paid_out' => 0]], 'rvPayouts' => [['id_payout' => 1, 'date_add' => 'd', 'store_name' => $xss, 'amount' => 1, 'reference' => $xss]],
-		'rvAutoApprove' => false, 'rvModeration' => true, 'rvDefaultCommission' => 10, 'rvHoldDays' => 7, 'rvPanelUrl' => '/p', 'adminToken' => 'tok']);
+		'rvAutoApprove' => false, 'rvModeration' => true, 'rvDefaultCommission' => 10, 'rvHoldDays' => 7, 'rvPanelUrl' => '/p', 'adminToken' => 'tok',
+		'rvFreeMode' => true, 'rvPlans' => [['code' => 'free', 'name' => $xss, 'price_monthly' => 0, 'max_products' => null, 'max_xml_connections' => null, 'max_marketplace_accounts' => null, 'active' => 1, 'sort_order' => 0]],
+		'rvCommDays' => 30, 'rvCommReady' => true, 'rvCommSources' => RvCommission::SOURCES, 'rvCategories' => [['id_category' => 1, 'category_name' => $xss]],
+		'rvCommRules' => [['id_rule' => 1, 'scope' => 'category', 'id_target' => 1, 'target_name' => $xss, 'rate' => 12.5, 'include_children' => 1, 'active' => 1, 'note' => $xss, 'date_upd' => 'd']],
+		'rvCommReport' => ['days' => 30, 'orders' => 1, 'gross' => 10, 'commission' => 1, 'vendor_earning' => 9, 'effective_rate' => 10, 'cancelled_orders' => 0, 'cancelled_commission' => 0,
+			'by_vendor' => [['store_name' => $xss, 'orders' => 1, 'gross' => 10, 'commission' => 1]], 'by_category' => [['category_name' => $xss, 'gross' => 10, 'commission' => 1]], 'by_source' => [['label' => $xss, 'commission' => 1]]]]);
 	try { $html = $smarty->fetch('file:' . dirname(__DIR__) . '/assets/templates/admin/admin.tpl'); $okR = true; } catch (Throwable $e) { $html = $e->getMessage(); $okR = false; }
 	ok($okR && strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 300, "admin sekmesi '$tab' render + XSS kaçışı" . ($okR ? '' : " ($html)"));
 }

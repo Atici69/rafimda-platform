@@ -15,7 +15,7 @@ $o = drive(['user' => 0, 'get' => ['s' => 'dashboard']]); ok(redirect($o) === 'h
 $o = drive(['user' => 3, 'get' => ['s' => 'dashboard']]); ok(redirect($o) === 'https://test.local/satici-kayit', 'mağazası olmayan müşteri → satıcı kaydı');
 
 echo "\n== 13 ekran: açılır, hatasız, kendi verisini gösterir\n";
-$screens = ['dashboard' => 'Hızlı işlemler', 'products' => 'Pamuklu Tişört', 'orders' => 'R1', 'stock' => 'Kot Pantolon', 'pricing' => 'Kot Pantolon', 'finance' => 'bakiye', 'store' => 'Moda Evi', 'customers' => 'Ayşe', 'staff' => 'personel@x.com', 'subscription' => 'Paketiniz', 'reports' => 'Satış raporu', 'settings' => 'Düşük stok eşiği', 'campaigns' => 'Vitrin'];
+$screens = ['dashboard' => 'Hızlı işlemler', 'products' => 'Pamuklu Tişört', 'orders' => 'R1', 'stock' => 'Kot Pantolon', 'pricing' => 'Kot Pantolon', 'finance' => 'bakiye', 'store' => 'Moda Evi', 'customers' => 'Ayşe', 'staff' => 'personel@x.com', 'subscription' => 'Mağaza planınız', 'reports' => 'Satış raporu', 'settings' => 'Düşük stok eşiği', 'campaigns' => 'Vitrin'];
 foreach ($screens as $s => $needle) {
 	$o = drive(['get' => ['s' => $s], 'campaign' => 1]);
 	ok(has($o, $needle) && clean($o) && has($o, '<main class="rv-content">') && !has($o, 'Başkasının') && !has($o, 'Gizli Müşteri') && redirect($o) === '', "ekran '$s' açılır, '$needle' görünür, başka satıcı verisi yok" . (clean($o) ? '' : ' [UYARI/HATA]'));
@@ -107,5 +107,25 @@ ok(probe($o, 0) == 0, 'başkasının ürünü için vitrin talebi açılamaz');
 
 echo "\n== Komisyon kampanyası sipariş akışında\n";
 $o = drive(['get' => ['s' => 'finance'], 'campaign' => 1]); ok(has($o, '10') && clean($o), 'finans ekranı kampanya modülü varken açılır (gösterim yan etkisiz)');
+echo "\n== Komisyon kuralları ve kazanç dökümü\n";
+$o = drive(['get' => ['s' => 'finance'], 'rules' => 1]);
+// Tohum: 200 + 300 ₺ eski siparişler %10 (genel) = 50 ₺; kural sonrası sipariş: 100×%15 + 300×%5 = 30 ₺ → brüt 900, komisyon 80, net 820
+ok(clean($o) && has($o, '900.00 ₺') && has($o, '80.00 ₺') && has($o, '820.00 ₺'), 'finans: brüt / komisyon / net kalem bazlı kurallarla doğru');
+ok(has($o, 'Kategori kuralı') && has($o, 'Ürün kuralı') && has($o, 'Genel oran'), 'finans: oran kaynaklarına göre kırılım');
+ok(has($o, 'Giyim') && has($o, '%15.00') && has($o, 'alt kategoriler dahil'), 'finans: satıcı kategori oranlarını görür');
+ok(has($o, 'abonelik veya paket ücreti alınmaz'), 'finans: ücretsiz mağaza açıklaması');
+ok(!has($o, '<b>Lansman</b>') && !has($o, 'Lansman'), 'kural notu (iç not) satıcıya gösterilmez');
+$o = drive(['get' => ['s' => 'finance', 'days' => 7]]); ok(clean($o) && has($o, 'rv-btn sm navy" href="?s=finance&amp;days=7"'), 'finans: dönem seçimi');
+$o = drive(['get' => ['s' => 'subscription']]);
+ok(clean($o) && has($o, 'Mağazanız ücretsizdir') && !has($o, '<th>Aylık</th>') && has($o, 'Limit grupları'), 'mağaza planı: ücretsiz mod, aylık ücret sütunu yok');
+$o = drive(['get' => ['s' => 'dashboard']]); ok(has($o, 'Mağaza Planı') && !has($o, '>Abonelik<'), 'menüde "Abonelik" yerine "Mağaza Planı"');
+$o = drive(['admin' => 1, 'atab' => 'commission', 'rules' => 1]);
+ok(clean($o) && has($o, 'Komisyon geliri') && has($o, '80.00 ₺') && has($o, 'Moda Evi'), 'yönetici: komisyon geliri ve satıcıya göre döküm');
+ok(has($o, 'name="rvAction" value="commission_rule"') && has($o, 'value="commission_rule_toggle"') && has($o, '%15.00') && has($o, 'Alt kategoriler dahil'), 'yönetici: kural formu, listesi ve durum düğmesi');
+ok(has($o, '&lt;b&gt;Lansman&lt;/b&gt;') === false && has($o, 'Lansman') && !has($o, '<b>Lansman</b>'), 'yönetici: kural notu kaçışlı (temizlenmiş) gösterilir');
+ok(!has($o, "bekleyen migration'ı (008"), 'migration uygulanmışken uyarı yok');
+$o = drive(['admin' => 1, 'atab' => 'plans']);
+ok(clean($o) && has($o, 'Ücretsiz mağaza modu açık') && has($o, 'readonly title="Ücretsiz mağaza modu') && has($o, 'Yeni limit grubu'), 'yönetici: paket sekmesi ücretsiz modda, ücret alanı kilitli');
+
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 exit($fail ? 1 : 0);

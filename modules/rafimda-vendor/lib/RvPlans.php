@@ -9,6 +9,16 @@ class RvPlans
 {
 	public const DEFAULT_CODE = 'free';
 
+	/**
+	 * Ücretsiz mağaza modu (varsayılan AÇIK): satıcılardan mağaza/abonelik/paket ücreti alınmaz; tek gelir satış komisyonudur.
+	 * Paketler yalnızca yöneticinin atadığı ücretsiz LİMİT gruplarıdır. Eski ücretli kayıtlar silinmez, 0 ₺ gösterilir.
+	 * Ücretli paketler yalnızca RAFIMDA_PAID_PLANS = '1' ile (yazılı onayla) yeniden açılabilir.
+	 */
+	public static function freeMode(): bool
+	{
+		return Settings::get('RAFIMDA_PAID_PLANS') !== '1';
+	}
+
 	/** Varsayılan paketleri (yoksa) oluşturur. Taşınabilir SQL için PHP'de yapılır. */
 	public static function ensureDefaults(): void
 	{
@@ -22,7 +32,17 @@ class RvPlans
 	{
 		self::ensureDefaults();
 
-		return DB::execute('SELECT * FROM rafimda_plans' . ($onlyActive ? ' WHERE active = 1' : '') . ' ORDER BY sort_order ASC, id_plan ASC') ?: [];
+		$rows = DB::execute('SELECT * FROM rafimda_plans' . ($onlyActive ? ' WHERE active = 1' : '') . ' ORDER BY sort_order ASC, id_plan ASC') ?: [];
+
+		return self::freeMode() ? array_map([self::class, 'asFree'], $rows) : $rows;
+	}
+
+	/** @param array<string,mixed> $p @return array<string,mixed> */
+	private static function asFree(array $p): array
+	{
+		$p['price_monthly'] = 0;
+
+		return $p;
 	}
 
 	/** @return array<string,mixed>|null */
@@ -30,7 +50,7 @@ class RvPlans
 	{
 		$r = DB::getRowSafe('rafimda_plans', 'code = ?', [$code]);
 
-		return $r ?: null;
+		return $r ? (self::freeMode() ? self::asFree($r) : $r) : null;
 	}
 
 	/** @param array<string,mixed> $d @return array{success:bool, message:string} */
@@ -51,6 +71,10 @@ class RvPlans
 
 		if ($price === null || $price < 0 || $price > 1000000) {
 			return ['success' => false, 'message' => 'Geçersiz aylık ücret.'];
+		}
+
+		if ($price > 0 && self::freeMode()) {
+			return ['success' => false, 'message' => 'Ücretsiz mağaza modu açık: satıcılardan paket/abonelik ücreti alınmaz, aylık ücret 0 olmalı. Satıcılar yalnızca gerçekleşen satışlardan komisyon öder.'];
 		}
 
 		$row = ['name' => $name, 'price_monthly' => round($price, 2), 'active' => !empty($d['active']) ? 1 : 0, 'sort_order' => max(0, min(999, (int) ($d['sort_order'] ?? 0)))];
@@ -156,7 +180,9 @@ class RvPlans
 
 		$u = self::usage($idVendor)['products'];
 
-		return $u + $adding <= (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Paketinizin ürün limitine ulaştınız (' . (int) $max . '). Daha yüksek paket için mağaza yönetimiyle iletişime geçin.'];
+		return $u + $adding <= (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => (self::freeMode()
+			? 'Mağazanızın ürün limitine ulaştınız (' . (int) $max . '). Limit artırımı ücretsizdir: Destek bölümünden talep oluşturun.'
+			: 'Paketinizin ürün limitine ulaştınız (' . (int) $max . '). Daha yüksek paket için mağaza yönetimiyle iletişime geçin.')];
 	}
 
 	/** XML bağlantısı / pazaryeri hesabı kotası. $kind: xml | marketplaces. @return array{ok:bool, message:string} */
@@ -169,6 +195,6 @@ class RvPlans
 			return ['ok' => true, 'message' => ''];
 		}
 
-		return self::usage($idVendor)[$kind] < (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => 'Paketinizin ' . ($kind === 'xml' ? 'XML bağlantı' : 'pazaryeri hesabı') . ' limitine ulaştınız (' . (int) $max . ').'];
+		return self::usage($idVendor)[$kind] < (int) $max ? ['ok' => true, 'message' => ''] : ['ok' => false, 'message' => (self::freeMode() ? 'Mağazanızın ' : 'Paketinizin ') . ($kind === 'xml' ? 'XML bağlantı' : 'pazaryeri hesabı') . ' limitine ulaştınız (' . (int) $max . ').' . (self::freeMode() ? ' Limit artırımı ücretsizdir: Destek bölümünden talep oluşturun.' : '')];
 	}
 }

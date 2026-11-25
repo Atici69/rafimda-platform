@@ -12,6 +12,17 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 3.0.0 sonrası geliştirmeler **3.0.2** altında toplandı.
 
 ---
+## [Yayınlanmadı] — Rafımda satıcı sistemi 0.4.0
+
+### Komisyon sistemi ve kazanç yönetimi (madde 14)
+- Satıcılar mağazayı **ücretsiz** açar: abonelik/paket ücreti alınmaz (ücretsiz mağaza modu varsayılan açık; paketler ücretsiz limit gruplarına dönüştü, veri silinmedi).
+- Kategori ve ürün bazlı komisyon kuralları; öncelik ürün → kategori (alt kategorileri kapsayabilir) → satıcıya özel → genel oran; kampanya üstüne.
+- Komisyon kalem bazında hesaplanır ve kaleme yazılır (oran, tutar, kaynak); kural değişiklikleri yalnızca yeni siparişlere uygulanır.
+- Satıcı Finans ekranı: brüt satış, komisyon, kesinti, net kazanç, iptal/iade dökümü, oran kaynakları, kategori oranları.
+- Yönetici "Komisyon" sekmesi: dönemsel komisyon geliri (satıcı/kategori/kaynak), kural yönetimi (pasifleştirme; silme yok), denetim kaydı.
+- Migration 008 (yalnızca ekleme). Uygulanmadan önce de sipariş bölme çalışmaya devam eder.
+
+---
 ## [3.0.3] — 2026-11-25
 
 ### Güncelleme sistemi (hata düzeltmesi)
