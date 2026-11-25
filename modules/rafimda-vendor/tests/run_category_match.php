@@ -1,7 +1,7 @@
 <?php
 /**
  * Otomatik kategori eşleştirme testi (SQLite, ağ yok).
- * Çalıştırma: php tests/category_match_test.php
+ * Çalıştırma: php modules/rafimda-vendor/tests/run_category_match.php
  */
 error_reporting(E_ALL);
 define('IN_SCRIPT', true);
@@ -35,8 +35,8 @@ class Settings
 	public static function set($k, $v) { self::$d[$k] = (string) $v; }
 }
 
-require dirname(__DIR__) . '/core/CategoryMatchStore.php';
-require dirname(__DIR__) . '/modules/rafimda-theme/lib/RtCategoryTree.php';
+require dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+require dirname(__DIR__, 3) . '/modules/rafimda-theme/lib/RtCategoryTree.php';
 
 $pass = 0;
 $fail = 0;
@@ -124,8 +124,8 @@ ok(CategoryMatchStore::brandId('')['id'] === 1, 'marka boşsa yedek marka kullan
 
 echo "== XML Hub entegrasyonu ==\n";
 Settings::set('RAFIMDA_IMPORT_CREATE_BRANDS', '1');
-require dirname(__DIR__) . '/modules/xml-hub/lib/XhMapper.php';
-require dirname(__DIR__) . '/modules/xml-hub/lib/XhImporter.php';
+require dirname(__DIR__, 3) . '/modules/xml-hub/lib/XhMapper.php';
+require dirname(__DIR__, 3) . '/modules/xml-hub/lib/XhImporter.php';
 $map = ['fields' => ['name' => 'Ad', 'price' => 'Fiyat', 'brand' => 'Marka', 'category' => 'Kategori'], 'category_map' => [], 'brand_map' => []];
 $row = XhMapper::apply(['Ad' => 'Kadın Keten Gömlek', 'Fiyat' => '450', 'Marka' => 'Yeni Tedarikçi Markası', 'Kategori' => 'Bayan Giyim > Gömlek'], $map, [], XhImporter::lookupFor(3, []));
 ok($row['errors'] === [] && $row['id_category'] === $ids['Kadın > Giyim'] && $row['id_brand'] > 0, 'XML: eşleme tablosunda olmayan tedarikçi kategorisi otomatik bulunur, marka açılır');

@@ -1,4 +1,4 @@
-# Pazaryeri Hub (v0.1.0)
+# Pazaryeri Hub (v0.3.0)
 
 Trendyol, Hepsiburada, N11, Amazon, Pazarama ve Ozon için **bağımsız bağdaştırıcı mimarisi**.
 
@@ -40,3 +40,14 @@ mh_migrations, mh_accounts, mh_category_map, mh_listings, mh_errors. Kaldırma v
 - HB/N11 bağlantı testi, var olmayan bir SKU sorgular: 401/403 = kimlik reddedildi; 404 = "kimlik reddedilmedi" (dürüst uyarıyla). Bu çıkarım canlı hesapla doğrulanmalıdır.
 - Testler: `tests/run_v2.php` (sahte istemciler + gerçek sınıf imza/ad alanı denetimi; ağ çağrısı yok).
 - Amazon, Pazarama, Ozon: yalnızca kimlik alanı; API belgesi ve erişim bekleniyor.
+
+## v0.3.0 — Trendyol ürün oluşturma ve otomatik eşleştirme
+- **Gerçek durum:** Trendyol için kategori ağacı, kategori özellikleri, marka arama, ürün oluşturma (v2 `createProduct`) ve toplu istek (batch) sonucu sorgulama kodlandı; **canlı hesapla uçtan uca doğrulanmadı** (sahte istemciyle test edildi). Hepsiburada/N11: bağlantı testi + stok/fiyat. Amazon/Pazarama/Ozon: API yok.
+- **Canlı gönderim kilidi:** `MARKETPLACE_HUB_LIVE_SUBMIT` (varsayılan kapalı; yönetim ekranından açılır). Kapalıyken ürünler hazırlanır, doğrulanır, önizlemesi saklanır ve durum "Gönderime hazır" olur; pazaryerine istek gitmez.
+- **Tek tıkla kategori eşleme:** Kategori eşleme sekmesindeki "Otomatik eşle", site kategorilerini pazaryerinin en alt kategorilerine `core/CategoryMatcher` ile bağlar (yalnızca yüksek/orta güven). Gönderimde her ürün ayrıca kendi adına göre eşleştirilir; elle (onaylı) eşleme her zaman önceliklidir ve hatırlanır.
+- **Özellikler:** zorunlu özellikler ürün adı/açıklaması/kategori yolundan otomatik doldurulur (Renk, Cinsiyet, Yaş grubu, Menşei=TR ve listede adı geçen değerler); sabit değerler "Özellikler & marka" sekmesinden girilir. Eksik zorunlu özellik varsa gönderilmez ve adı yazılır.
+- **Marka:** pazaryeri listesinde birebir adla bulunursa otomatik eşlenir, yoksa kod elle girilir.
+- **Doğrulama:** barkodsuz ürün gönderilmez (uydurma barkod üretilmez); yalnızca herkese açık görsel adresleri; en alt kategori zorunlu.
+- Migration `002_catalog.sql` (yalnızca ekleme): `mh_attribute_map`, `mh_brand_map`, `mh_listings.preview`. Kurulumdan sonra yönetim ekranında "Çalıştır" ile uygulanır.
+- Önbellek: `cache/marketplace-hub/` (24 saat; web erişimine kapalı).
+- Testler: `tests/run_v3.php` (29).

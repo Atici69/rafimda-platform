@@ -328,10 +328,13 @@ class CategoryMatcher
 			return 0.0;
 		}
 
-		$leafHit = 0;
+		$leafHit = 0.0;
 
 		foreach ($c['leaf'] as $t) {
-			$leafHit += self::has($src, $t) ? 1 : 0;
+			if (self::has($src, $t)) {
+				// Üst kategoride zaten geçen kelime (ör. "Ayakkabı > Spor Ayakkabı"daki "ayakkabı") yaprağı ayırt etmez.
+				$leafHit += in_array($t, $c['parent'], true) ? 0.3 : 1.0;
+			}
 		}
 
 		$leafFrac = $leafHit / count($c['leaf']);

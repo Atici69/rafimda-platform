@@ -18,9 +18,30 @@ class MhPayload
 		$p = $r[0];
 		$map = MhRepo::categoryMap($idAccount);
 		$cat = $map[(int) ($p['id_category'] ?? 0)] ?? null;
+		$sitePath = '';
+		$acc = MhRepo::account($idAccount, null);
+
+		// Ürün bazında otomatik kategori: ürün adı + site kategori yolu pazaryeri ağacında aranır.
+		// Elle (onaylı) yapılmış kategori eşlemesi her zaman önceliklidir; otomatik eşlemeyi yalnızca yüksek güvenli ürün önerisi geçer.
+		if ($acc && class_exists('MhCatalog') && MhCatalog::supported((string) $acc['marketplace'])) {
+			if (!class_exists('CategoryMatchStore')) {
+				require_once dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+			}
+
+			$sitePath = CategoryMatchStore::sitePath((int) ($p['id_category'] ?? 0));
+			$mem = $sitePath !== '' ? CategoryMatchStore::recall('mh:' . $acc['marketplace'], (int) $acc['id_vendor'], $sitePath) : null;
+
+			if (!($cat && $mem && $mem['confirmed'])) {
+				$s = MhCatalog::suggestRemote($idAccount, null, $sitePath, (string) $p['product_name']);
+
+				if ($s['id'] !== '' && ($s['confidence'] === 'high' || (!$cat && $s['confidence'] === 'medium'))) {
+					$cat = ['remote_category_id' => $s['id'], 'remote_category_name' => mb_substr($s['path'], 0, 190), 'auto' => true, 'confidence' => $s['confidence']];
+				}
+			}
+		}
 
 		if (!$cat) {
-			return ['ok' => false, 'error' => 'Ürünün kategorisi bu pazaryeri için eşleştirilmemiş.', 'payload' => []];
+			return ['ok' => false, 'error' => 'Ürünün kategorisi bu pazaryeri için eşleştirilemedi (otomatik eşleşme bulunamadı). Kategori eşleme sekmesinden "Otomatik eşle" ya da elle seçin.', 'payload' => []];
 		}
 
 		if ((float) $p['price'] <= 0 || trim((string) $p['product_name']) === '') {
@@ -45,11 +66,16 @@ class MhPayload
 		$meta = class_exists('XhMeta', false) ? XhMeta::get($idProduct) : null;
 		$payload = [
 			'id_product' => $idProduct,
+			'id_account' => $idAccount,
+			'id_brand' => (int) ($p['id_brand'] ?? 0),
+			'site_category_path' => $sitePath,
 			'name' => (string) $p['product_name'],
 			'description' => (string) ($p['description'] ?? ''),
 			'sku' => (string) ($p['stock_code'] ?? ''),
 			'barcode' => (string) ($p['barcode'] ?? ''),
 			'price' => (float) $p['price'],
+			'old_price' => (float) ($p['old_price'] ?? 0),
+			'vat' => isset($p['vat']) ? (float) $p['vat'] : 20.0,
 			'stock' => (float) $p['stock'],
 			'brand' => $brand && isset($brand[0]) ? (string) $brand[0]['brand_name'] : '',
 			'category' => $cat,

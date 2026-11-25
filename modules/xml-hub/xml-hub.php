@@ -89,6 +89,35 @@ class XmlHubModule extends ModuleBase
 			exit;
 		}
 
+		if (!class_exists('CategoryMatchStore')) {
+			require_once dirname(__DIR__, 2) . '/core/CategoryMatchStore.php';
+		}
+
+		$cmAction = (string) ($_POST['cmAction'] ?? '');
+
+		if ($isPost && $cmAction !== '') {
+			if ($tokenOk && !$demo) {
+				$msg = ['type' => 'success', 'message' => 'Kaydedildi.'];
+
+				if ($cmAction === 'settings') {
+					Settings::set('RAFIMDA_FALLBACK_CATEGORY', (string) max(0, (int) ($_POST['fallback_category'] ?? 0)));
+					Settings::set('RAFIMDA_FALLBACK_BRAND', (string) max(0, (int) ($_POST['fallback_brand'] ?? 0)));
+					Settings::set('RAFIMDA_IMPORT_CREATE_BRANDS', !empty($_POST['create_brands']) ? '1' : '0');
+					$msg['message'] = 'Otomatik eşleştirme ayarları kaydedildi.';
+				} elseif ($cmAction === 'review_save') {
+					$r = CategoryMatchStore::resolveReview(0, (int) ($_POST['id_product'] ?? 0), (int) ($_POST['id_category'] ?? 0), true);
+					$msg = ['type' => $r['success'] ? 'success' : 'danger', 'message' => $r['message']];
+				} elseif ($cmAction === 'review_all') {
+					$msg['message'] = CategoryMatchStore::confirmAllMedium(0) . ' ürünün önerilen kategorisi onaylandı.';
+				}
+
+				$_SESSION['xh_flash'] = $msg;
+			}
+
+			header('Location: ' . strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?') . '?cm=1');
+			exit;
+		}
+
 		if ($isPost && !$tokenOk) {
 			$flash = ['type' => 'danger', 'message' => 'Geçersiz istek.'];
 		} elseif ($isPost && $demo) {
@@ -114,6 +143,13 @@ class XmlHubModule extends ModuleBase
 			'xhPending' => $pending,
 			'xhCronUrl' => $key !== '' ? XhRunner::cronUrl((string) $domain, $key) : '',
 			'pageTitle' => $this->title,
+			'cmOpen' => !empty($_GET['cm']),
+			'cmPending' => $pending === [] ? CategoryMatchStore::pending(0, 200) : [],
+			'cmFallbackCategory' => (int) Settings::get('RAFIMDA_FALLBACK_CATEGORY'),
+			'cmFallbackBrand' => (int) Settings::get('RAFIMDA_FALLBACK_BRAND'),
+			'cmCreateBrands' => (string) Settings::get('RAFIMDA_IMPORT_CREATE_BRANDS') !== '0',
+			'cmCategories' => class_exists('Category') ? Category::getProductSelectOptions() : [],
+			'cmBrands' => DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1 ORDER BY brand_name ASC') ?: [],
 		]);
 	}
 }

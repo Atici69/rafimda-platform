@@ -88,13 +88,44 @@ class MhPanel
 				$this->go([], 'danger', 'Hesap bulunamadı.');
 			}
 
-			$tab = in_array($_GET['tab'] ?? '', ['general', 'categories', 'products', 'listings', 'errors'], true) ? (string) $_GET['tab'] : 'general';
+			$tab = in_array($_GET['tab'] ?? '', ['general', 'categories', 'attributes', 'products', 'listings', 'errors'], true) ? (string) $_GET['tab'] : 'general';
 			$a = MhRegistry::get((string) $acc['marketplace']);
-			$vars = ['acc' => $acc, 'tab' => $tab, 'adapter' => ['title' => $a ? $a->title() : '', 'implemented' => $a ? $a->implemented() : false, 'stock_price' => $a instanceof MhCoreAdapter, 'fields' => $a ? $a->credentialFields() : []], 'credStatus' => MhRepo::credentialStatus($id), 'counts' => MhRepo::listingCounts($id), 'catMap' => [], 'categories' => [], 'products' => [], 'listings' => [], 'errors' => []];
+			$vars = ['acc' => $acc, 'tab' => $tab, 'adapter' => ['title' => $a ? $a->title() : '', 'implemented' => $a ? $a->implemented() : false, 'stock_price' => $a instanceof MhCoreAdapter, 'fields' => $a ? $a->credentialFields() : []], 'credStatus' => MhRepo::credentialStatus($id), 'counts' => MhRepo::listingCounts($id), 'catMap' => [], 'categories' => [], 'products' => [], 'listings' => [], 'errors' => [], 'catalog' => MhCatalog::supported((string) $acc['marketplace']), 'liveSubmit' => MhCoreAdapter::liveSubmitEnabled(), 'search' => null, 'q' => '', 'attrCats' => [], 'rc' => '', 'attrs' => null, 'attrMap' => [], 'brands' => [], 'brandMap' => []];
 
 			if ($tab === 'categories') {
-				$vars['categories'] = DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name ASC LIMIT 500') ?: [];
+				$vars['categories'] = [];
+
+				foreach (CategoryMatchStore::siteTargets() as $t) {
+					$vars['categories'][] = ['id_category' => (int) $t['id'], 'category_name' => implode(' › ', $t['path'])];
+				}
+
+				usort($vars['categories'], static fn(array $a, array $b): int => strcmp($a['category_name'], $b['category_name']));
 				$vars['catMap'] = MhRepo::categoryMap($id);
+				$vars['q'] = mb_substr(trim((string) ($_GET['q'] ?? '')), 0, 80);
+
+				if ($vars['q'] !== '' && $vars['catalog']) {
+					$vars['search'] = MhCatalog::searchCategories($id, $this->scope(), $vars['q']);
+				}
+			} elseif ($tab === 'attributes') {
+				$cm = MhRepo::categoryMap($id);
+				$seen = [];
+
+				foreach ($cm as $m) {
+					$seen[$m['remote_category_id']] = $m['remote_category_name'];
+				}
+
+				$vars['attrCats'] = $seen;
+				$vars['rc'] = preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($_GET['rc'] ?? '')) ?? '';
+
+				if ($vars['rc'] !== '' && $vars['catalog']) {
+					$vars['attrs'] = MhCatalog::attributes($id, $this->scope(), $vars['rc']);
+					$vars['attrMap'] = MhCatalog::attributeMap($id, $vars['rc']);
+				}
+
+				$owner = (int) $acc['id_vendor'];
+				$ids = array_values(array_unique(array_map(static fn(array $p): int => (int) ($p['id_brand'] ?? 0), $this->ownProducts($owner))));
+				$vars['brands'] = $ids === [] ? [] : (DB::execute('SELECT id_brand, brand_name FROM brands WHERE id_brand IN (' . implode(',', array_map('intval', $ids)) . ') ORDER BY brand_name ASC') ?: []);
+				$vars['brandMap'] = MhCatalog::brandMap($id);
 			} elseif ($tab === 'products') {
 				$vars['products'] = $this->ownProducts((int) $acc['id_vendor']);
 				$vars['catMap'] = MhRepo::categoryMap($id);
@@ -122,10 +153,10 @@ class MhPanel
 	private function ownProducts(int $owner): array
 	{
 		if ($owner > 0) {
-			return DB::execute('SELECT p.id_product, p.product_name, p.stock_code, p.price, p.stock, p.id_category FROM products p INNER JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? ORDER BY p.id_product DESC LIMIT 200', [$owner]) ?: [];
+			return DB::execute('SELECT p.id_product, p.product_name, p.stock_code, p.price, p.stock, p.id_category, p.id_brand FROM products p INNER JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? ORDER BY p.id_product DESC LIMIT 200', [$owner]) ?: [];
 		}
 
-		return DB::execute('SELECT p.id_product, p.product_name, p.stock_code, p.price, p.stock, p.id_category FROM products p' . (MhOwner::vendorTableExists() ? ' WHERE NOT EXISTS (SELECT 1 FROM rafimda_vendor_products vp WHERE vp.id_product = p.id_product)' : '') . ' ORDER BY p.id_product DESC LIMIT 200') ?: [];
+		return DB::execute('SELECT p.id_product, p.product_name, p.stock_code, p.price, p.stock, p.id_category, p.id_brand FROM products p' . (MhOwner::vendorTableExists() ? ' WHERE NOT EXISTS (SELECT 1 FROM rafimda_vendor_products vp WHERE vp.id_product = p.id_product)' : '') . ' ORDER BY p.id_product DESC LIMIT 200') ?: [];
 	}
 
 	private function postAction(): void
@@ -174,13 +205,111 @@ class MhPanel
 				$n = 0;
 				$err = '';
 
+				$before = MhRepo::categoryMap($id);
+
 				foreach ((array) ($_POST['remote'] ?? []) as $cid => $remote) {
-					$r = MhRepo::setCategoryMap($id, $this->scope(), (int) $cid, (string) $remote, (string) (($_POST['remote_name'] ?? [])[$cid] ?? ''));
+					$remote = trim((string) $remote);
+					$name = (string) (($_POST['remote_name'] ?? [])[$cid] ?? '');
+					$old = $before[(int) $cid]['remote_category_id'] ?? '';
+
+					if ($remote !== '' && $remote !== $old && MhCatalog::supported((string) $acc['marketplace'])) {
+						$path = MhCatalog::categoryPath($id, $this->scope(), $remote);
+
+						if ($path === '' && MhCatalog::categories($id, $this->scope())['ok']) {
+							$err = 'Kategori kodu ' . mb_substr($remote, 0, 20) . ' pazaryeri listesinde yok.';
+							continue;
+						}
+
+						$name = $path !== '' ? $path : $name;
+					}
+
+					$r = MhRepo::setCategoryMap($id, $this->scope(), (int) $cid, $remote, $name);
 					$n += $r['success'] ? 1 : 0;
 					$err = $r['success'] ? $err : $r['message'];
+
+					if ($r['success'] && $remote !== '' && $remote !== $old) {
+						MhCatalog::rememberManual($id, $this->scope(), (int) $cid, $remote, $name);
+					}
 				}
 
 				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'categories'], $err === '' ? 'success' : 'danger', $err === '' ? 'Kategori eşlemeleri kaydedildi.' : $err);
+				break;
+
+			case 'category_auto_map':
+				if (!$acc) {
+					$this->go([], 'danger', 'Hesap bulunamadı.');
+				}
+
+				$r = MhCatalog::autoMapCategories($id, $this->scope(), self::post('overwrite') === '1');
+				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'categories'], $r['ok'] ? 'success' : 'danger', $r['message']);
+				break;
+
+			case 'catalog_refresh':
+				if ($acc) {
+					MhCatalog::clearCache((string) $acc['marketplace']);
+					MhCatalog::resetPrepared();
+					$r = MhCatalog::categories($id, $this->scope(), true);
+					$this->go(['view' => 'account', 'id' => $id, 'tab' => 'categories'], $r['ok'] ? 'success' : 'danger', $r['ok'] ? count($r['items']) . ' pazaryeri kategorisi yenilendi.' : $r['message']);
+				}
+
+				$this->go([], 'danger', 'Hesap bulunamadı.');
+				break;
+
+			case 'attribute_map_save':
+				if (!$acc) {
+					$this->go([], 'danger', 'Hesap bulunamadı.');
+				}
+
+				$rc = preg_replace('/[^0-9A-Za-z_-]/', '', self::post('rc')) ?? '';
+				$r = MhCatalog::saveAttributeMap($id, $this->scope(), $rc, array_map('strval', (array) ($_POST['val'] ?? [])), array_map('strval', (array) ($_POST['custom'] ?? [])));
+				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'attributes', 'rc' => $rc], $r['success'] ? 'success' : 'warning', $r['message']);
+				break;
+
+			case 'brand_map_save':
+				if (!$acc) {
+					$this->go([], 'danger', 'Hesap bulunamadı.');
+				}
+
+				$err = '';
+
+				foreach ((array) ($_POST['brand_remote'] ?? []) as $bid => $remote) {
+					$r = MhCatalog::setBrandMap($id, $this->scope(), (int) $bid, (string) $remote, (string) (($_POST['brand_remote_name'] ?? [])[$bid] ?? ''));
+					$err = $r['success'] ? $err : $r['message'];
+				}
+
+				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'attributes'], $err === '' ? 'success' : 'danger', $err === '' ? 'Marka eşlemeleri kaydedildi.' : $err);
+				break;
+
+			case 'brand_auto':
+				if (!$acc) {
+					$this->go([], 'danger', 'Hesap bulunamadı.');
+				}
+
+				$ad = MhRegistry::get((string) $acc['marketplace']);
+				$found = 0;
+				$miss = [];
+
+				if ($ad instanceof MhCoreAdapter && $ad->supportsCatalog()) {
+					$creds = MhRepo::credentials($id);
+					$map = MhCatalog::brandMap($id);
+					$ids = array_values(array_unique(array_map(static fn(array $p): int => (int) ($p['id_brand'] ?? 0), $this->ownProducts((int) $acc['id_vendor']))));
+
+					foreach (array_slice($ids, 0, 100) as $bid) {
+						if ($bid <= 0 || isset($map[$bid])) {
+							continue;
+						}
+
+						$name = (string) DB::getValue('SELECT brand_name FROM brands WHERE id_brand = ?', [$bid]);
+						$r = MhCatalog::resolveBrand($id, $bid, $name, $ad, $creds);
+						$found += $r['ok'] ? 1 : 0;
+
+						if (!$r['ok']) {
+							$miss[] = $name;
+						}
+					}
+				}
+
+				$this->go(['view' => 'account', 'id' => $id, 'tab' => 'attributes'], $found > 0 ? 'success' : 'warning', $found . ' marka otomatik eşlendi.' . ($miss ? ' Bulunamayan: ' . implode(', ', array_slice($miss, 0, 10)) . ' (kodu elle girin).' : ''));
 				break;
 
 			case 'queue_products':

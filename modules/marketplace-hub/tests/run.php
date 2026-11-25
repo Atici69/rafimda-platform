@@ -14,7 +14,7 @@ ok(MhMigrator::pending() === [], 'migration tekrar çalışınca hata yok, bekle
 DB::execute("INSERT INTO mh_accounts (id_vendor, marketplace, label) VALUES (1,'ozon','x')");
 foreach (['mh_errors', 'mh_listings', 'mh_category_map', 'mh_accounts'] as $t) { DB::execute("DROP TABLE $t"); }
 DB::execute("DELETE FROM mh_migrations");
-ok(MhMigrator::pending() === ['001_init'] && DB::execute("SELECT name FROM sqlite_master WHERE name = 'products'") !== [] && (int) DB::getValue('SELECT COUNT(*) FROM categories') === 2, 'geri alma: modül tabloları kalkınca çekirdek tablolar ve veriler sağlam');
+ok(MhMigrator::pending() === ['001_init', '002_catalog'] && DB::execute("SELECT name FROM sqlite_master WHERE name = 'products'") !== [] && (int) DB::getValue('SELECT COUNT(*) FROM categories') === 2, 'geri alma: modül tabloları kalkınca çekirdek tablolar ve veriler sağlam');
 mh_fresh_db(); // geri alma testinden sonra şemayı yeniden kur
 foreach (['install.sql', 'uninstall.sql', 'migrations/001_init.sql'] as $f) {
 	$stm = array_filter(array_map('trim', preg_split('/;\s*[\r\n]+/', file_get_contents(dirname(__DIR__) . '/' . $f))));
@@ -35,6 +35,7 @@ $all = MhRegistry::all();
 ok(array_keys($all) === ['trendyol', 'hepsiburada', 'n11', 'amazon', 'pazarama', 'ozon'], '6 pazaryeri kayıtlı');
 foreach ($all as $k => $a) {
 	$t = $a->testConnection(['x' => 'y']); $s = $a->submit([], ['id_product' => 1]);
+	if ($k === 'trendyol') { ok($a->implemented() && !$t['success'] && !$s['success'] && $s['remote_id'] === '' && $s['retryable'] === false, 'trendyol: ürün oluşturma uygulandı; kimliksiz test ve kategorisiz gönderim BAŞARISIZ döner (sahte başarı yok)'); continue; }
 	ok(!$a->implemented() && !$t['success'] && !$s['success'] && $s['remote_id'] === '' && $s['retryable'] === false && $a->credentialFields() !== [], "$k: implemented=false, test/gönderim BAŞARISIZ döner (sahte başarı yok)");
 }
 
@@ -43,13 +44,13 @@ DB::execute("INSERT INTO rafimda_vendors (owner_user_id, store_name, store_slug,
 $vA = 1; $vB = 2;
 $r = MhRepo::createAccount($vA, 'trendyol', 'Trendyol Ana', ['supplier_id' => '1234', 'api_key' => 'KEY-ABC', 'api_secret' => 'SECRET-XYZ']);
 $acc = $r['id'];
-ok($r['success'] && strpos($r['message'], 'henüz yapılmadı') !== false, 'hesap eklendi; API yok uyarısı verildi');
+ok($r['success'] && strpos($r['message'], 'henüz yapılmadı') === false, 'Trendyol hesabı eklendi (ürün oluşturma uygulandığı için uyarı yok)');
 $dump = json_encode(DB::execute('SELECT * FROM mh_accounts'));
 ok(strpos($dump, 'KEY-ABC') === false && strpos($dump, 'SECRET-XYZ') === false && strpos($dump, '1234') === false, 'veritabanında API anahtarı/secret düz metin değil');
 ok(MhRepo::credentials($acc) === ['supplier_id' => '1234', 'api_key' => 'KEY-ABC', 'api_secret' => 'SECRET-XYZ'], 'gönderim anında çözülür');
 $list = json_encode(MhRepo::accounts($vA)) . json_encode(MhRepo::account($acc, $vA)) . json_encode(MhRepo::credentialStatus($acc));
 ok(strpos($list, 'KEY-ABC') === false && strpos($list, 'SECRET-XYZ') === false && strpos($list, 'credentials_enc') === false, 'liste/ayrıntı/durum çıktılarında kimlik bilgisi veya şifreli sütun yok');
-ok(MhRepo::credentialStatus($acc) === ['supplier_id' => true, 'api_key' => true, 'api_secret' => true], 'yalnızca dolu/boş bilgisi döner');
+ok(MhRepo::credentialStatus($acc) === ['supplier_id' => true, 'api_key' => true, 'api_secret' => true, 'cargo_company_id' => false], 'yalnızca dolu/boş bilgisi döner');
 ok(!MhRepo::createAccount($vA, 'trendyol', 'Eksik', ['supplier_id' => '1'])['success'] && !MhRepo::createAccount($vA, 'yok', 'Yok', [])['success'] && !MhRepo::createAccount($vA, 'ozon', 'X', ['client_id' => "a\nb", 'api_key' => 'k'])['success'] && !MhRepo::createAccount($vA, 'ozon', 'Çok', ['client_id' => str_repeat('a', 100), 'api_key' => 'k'])['success'], 'eksik/bilinmeyen/denetim karakterli/çok uzun kimlik reddedilir');
 $u = MhRepo::updateCredentials($acc, $vA, ['supplier_id' => '9999', 'api_key' => '', 'api_secret' => '']);
 ok($u['success'] && MhRepo::credentials($acc) === ['supplier_id' => '9999', 'api_key' => 'KEY-ABC', 'api_secret' => 'SECRET-XYZ'], 'boş bırakılan gizli alan eski değeri korur');
@@ -62,19 +63,20 @@ ok(!MhRepo::setCategoryMap($acc, $vB, 2, 'X')['success'] && !MhRepo::setCategory
 ok(MhRepo::setCategoryMap($acc, $vA, 2, 'TY-5')['success'] && MhRepo::setCategoryMap($acc, $vA, 2, '')['success'] && !isset(MhRepo::categoryMap($acc)[2]), 'eşleme kaldırılabilir');
 
 section('Kuyruk: gerçek API yokken gönderilmiş gibi davranılmaz');
+$accQ = MhRepo::createAccount($vA, 'amazon', 'Amazon', ['seller_id' => 'S1', 'marketplace_id' => 'M1', 'refresh_token' => 'RT', 'client_id' => 'C', 'client_secret' => 'CS'])['id']; MhRepo::setCategoryMap($accQ, $vA, 1, 'TY-999');
 Settings::set('RAFIMDA_PRODUCT_MODERATION', '0');
 $mkP = function (int $vendor, string $sku, int $cat = 1, string $price = '50') { $_SERVER['REQUEST_METHOD'] = 'GET'; $r = RvProducts::create($vendor, ['product_name' => 'Ürün ' . $sku, 'id_category' => $cat, 'id_brand' => 1, 'price' => $price, 'stock' => 5, 'stock_code' => $sku, 'barcode' => '', 'description' => 'd', 'active' => 1]); return (int) ($r['id'] ?? 0); };
 $pA1 = $mkP($vA, 'A1'); $pA2 = $mkP($vA, 'A2', 2); $pB1 = $mkP($vB, 'B1');
 ok($pA1 > 0 && $pA2 > 0 && $pB1 > 0, 'test ürünleri oluşturuldu');
-$q = MhDispatcher::queue($acc, $vA, [$pA1, $pA2, $pB1]);
+$q = MhDispatcher::queue($accQ, $vA, [$pA1, $pA2, $pB1]);
 ok($q['rejected'] === 1 && $q['blocked'] === 2 && $q['queued'] === 0, 'B\'nin ürünü reddedildi; uygulanmamış API nedeniyle A ürünleri "blocked" (kuyruğa/gönderime ALINMADI)');
 ok((int) DB::getValue("SELECT COUNT(*) FROM mh_listings WHERE state = 'sent'") === 0 && (int) DB::getValue('SELECT COUNT(*) FROM mh_listings WHERE id_product = ?', [$pB1]) === 0, 'hiçbir ürün "sent" değil, B ürünü kayıt bile edilmedi');
 ok(MhDispatcher::tick(20)['processed'] === 0, 'tick: engellenenler işlenmez');
 ok(strpos((string) DB::getValue('SELECT error FROM mh_listings WHERE id_product = ?', [$pA1]), 'henüz yapılmadı') !== false, 'engel nedeni kullanıcıya görünür');
-$pl = MhPayload::build($pA1, $acc);
+$pl = MhPayload::build($pA1, $accQ);
 ok($pl['ok'] && $pl['payload']['category']['remote_category_id'] === 'TY-999' && $pl['payload']['sku'] === 'A1' && $pl['payload']['source'] === ['type' => 'manual'], 'payload: eşlenmiş kategori, SKU, kaynak=manual');
-$pl2 = MhPayload::build($pA2, $acc);
-ok(!$pl2['ok'] && strpos($pl2['error'], 'eşleştirilmemiş') !== false, 'kategorisi eşlenmeyen ürün için payload kurulamaz');
+$pl2 = MhPayload::build($pA2, $accQ);
+ok(!$pl2['ok'] && strpos($pl2['error'], 'eşleştirileme') !== false, 'kategorisi eşlenmeyen ürün için payload kurulamaz');
 
 section('Kuyruk: bağdaştırıcı çalışırken (test bağdaştırıcısı)');
 $ta = new MhTestAdapter(); MhRegistry::register($ta);
@@ -100,7 +102,7 @@ DB::execute('UPDATE mh_listings SET next_attempt_at = ? WHERE id_account = ?', [
 DB::execute('UPDATE mh_listings SET next_attempt_at = ? WHERE id_account = ?', [date('Y-m-d H:i:s', time() - 5), $ac2]); $t = MhDispatcher::tick(20);
 $row = DB::execute('SELECT * FROM mh_listings WHERE id_account = ? AND id_product = ?', [$ac2, $pA1])[0];
 ok($t['failed'] === 1 && $row['state'] === 'failed' && (int) $row['attempts'] === MhDispatcher::MAX_ATTEMPTS, 'en fazla ' . MhDispatcher::MAX_ATTEMPTS . ' deneme, sonra failed (sonsuz döngü yok)');
-ok(MhDispatcher::retryFailed($ac2, $vB) === 0 && MhDispatcher::retryFailed($ac2, $vA) === 1 && DB::getValue('SELECT state FROM mh_listings WHERE id_account = ? AND id_product = ?', [$ac2, $pA1]) === 'queued', 'başarısızlar yalnızca sahibi tarafından yeniden kuyruğa alınır');
+ok(MhDispatcher::retryFailed($ac2, $vB) === 0 && MhDispatcher::retryFailed($ac2, $vA) === 2 && DB::getValue('SELECT state FROM mh_listings WHERE id_account = ? AND id_product = ?', [$ac2, $pA1]) === 'queued', 'başarısızlar yalnızca sahibi tarafından yeniden kuyruğa alınır');
 $ta->script = [['success' => false, 'error' => 'Geçersiz barkod', 'retryable' => false]]; MhDispatcher::tick(20);
 ok(DB::getValue('SELECT state FROM mh_listings WHERE id_account = ? AND id_product = ?', [$ac2, $pA1]) === 'failed' && DB::getValue('SELECT attempts FROM mh_listings WHERE id_account = ? AND id_product = ?', [$ac2, $pA1]) == 1, 'kalıcı hata: tekrar denenmez');
 MhDispatcher::retryFailed($ac2, $vA); $ta->script = [['throw' => true]]; MhDispatcher::tick(20);
@@ -166,7 +168,7 @@ foreach ([false, true] as $auto) {
 }
 $smarty->setEscapeHtml(false); $smarty->assign(array_merge($base, $views['list'], ['view' => 'list']));
 $html = $smarty->fetch('file:' . $tplDir . 'admin/admin.tpl');
-ok(strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 200 && strpos($html, 'gerçek API entegrasyonu yoktur') !== false, 'admin şablonu render: XSS kaçışı ve "gerçek API yok" uyarısı görünür');
+ok(strpos($html, '<script>alert(1)</script>') === false && strlen($html) > 200 && strpos($html, 'API henüz yoktur') !== false && strpos($html, 'Canlı ürün gönderimi') !== false, 'admin şablonu render: XSS kaçışı, uygulanmamış pazaryeri uyarısı ve canlı gönderim kilidi görünür');
 
 section('Gerçek RvContext/RvPerm ile oturum/RBAC kapıları (Pazaryeri Hub)');
 $rbac = fn(string $args): string => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=0 ' . escapeshellarg(dirname(__DIR__, 2) . '/xml-hub/tests/rbac_probe.php') . ' ' . $args . ' 2>/dev/null'));

@@ -38,8 +38,49 @@ abstract class MhCoreAdapter extends MhAbstractAdapter
 		return true;
 	}
 
+	/** Uzak kategori/özellik/marka okuma desteği (salt-okunur çağrılar). */
+	public function supportsCatalog(): bool
+	{
+		return false;
+	}
+
+	/** @param array<string,string> $c @return array{ok:bool, message:string, items:list<array{id:string,name:string,path:string,leaf:bool}>} */
+	public function remoteCategories(array $c): array
+	{
+		return ['ok' => false, 'message' => $this->title() . ' kategori listesi desteklenmiyor.', 'items' => []];
+	}
+
+	/** @param array<string,string> $c @return array{ok:bool, message:string, items:list<array<string,mixed>>} */
+	public function remoteAttributes(array $c, string $remoteCategoryId): array
+	{
+		return ['ok' => false, 'message' => $this->title() . ' özellik listesi desteklenmiyor.', 'items' => []];
+	}
+
+	/** @param array<string,string> $c @return array{ok:bool, message:string, items:list<array{id:string,name:string}>} */
+	public function remoteBrands(array $c, string $name): array
+	{
+		return ['ok' => false, 'message' => $this->title() . ' marka arama desteklenmiyor.', 'items' => []];
+	}
+
+	/**
+	 * Toplu gönderim isteğinin sonucu (pazaryeri ürünü asenkron onaylıyorsa).
+	 *
+	 * @param array<string,string> $c
+	 * @return array{done:bool, ok:bool, message:string, remote_id:string}
+	 */
+	public function batchStatus(array $c, string $batchId): array
+	{
+		return ['done' => true, 'ok' => false, 'message' => 'Durum sorgusu desteklenmiyor.', 'remote_id' => ''];
+	}
+
+	/** Canlı ürün gönderimi açık mı? Yönetici açana kadar KAPALI: gönderim yalnızca hazırlanır ve önizlemesi saklanır. */
+	public static function liveSubmitEnabled(): bool
+	{
+		return class_exists('Settings') && (string) Settings::get('MARKETPLACE_HUB_LIVE_SUBMIT') === '1';
+	}
+
 	/** @param array<string,string> $c @return array{0:?object,1:string} */
-	private function client(array $c): array
+	protected function client(array $c): array
 	{
 		foreach ($this->credentialFields() as $k => $f) {
 			if ($f['required'] && trim((string) ($c[$k] ?? '')) === '') {
@@ -83,13 +124,13 @@ abstract class MhCoreAdapter extends MhAbstractAdapter
 	}
 
 	/** Mesajda anahtar/parola sızıntısına karşı: uzunluk sınırı, etiket temizliği. */
-	private static function clean(string $m): string
+	protected static function clean(string $m): string
 	{
 		return mb_substr(trim(strip_tags($m)), 0, 200);
 	}
 
 	/** Hata metnindeki kimlik değerlerini maskeler (istisna mesajları anahtar içerebilir). @param array<string,string> $c */
-	private static function scrub(string $m, array $c): string
+	protected static function scrub(string $m, array $c): string
 	{
 		foreach ($c as $v) {
 			if (is_string($v) && strlen($v) >= 4) {

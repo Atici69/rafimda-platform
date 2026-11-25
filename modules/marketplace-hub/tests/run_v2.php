@@ -27,7 +27,7 @@ $cred = ['trendyol' => ['supplier_id' => '123', 'api_key' => 'KEY-SECRET-1', 'ap
 
 section('Yetenek bayrakları (sahte iddia yok)');
 mh_fresh_db(); MhRegistry::reset();
-foreach (['trendyol', 'hepsiburada', 'n11'] as $k) { $a = MhRegistry::get($k); ok($a instanceof MhCoreAdapter && $a->supportsStockPrice() && !$a->implemented(), "$k: stok/fiyat yeteneği var, ürün oluşturma (implemented) YOK"); $s = $a->submit($cred[$k], ['id_product' => 1]); ok(!$s['success'] && $s['remote_id'] === '', "$k: submit hâlâ başarısız (oluşturma yapılmadı)"); }
+foreach (['trendyol', 'hepsiburada', 'n11'] as $k) { $a = MhRegistry::get($k); ok($a instanceof MhCoreAdapter && $a->supportsStockPrice() && ($k === 'trendyol' ? $a->implemented() : !$a->implemented()), "$k: stok/fiyat yeteneği var" . ($k === 'trendyol' ? ', ürün oluşturma uygulandı' : ', ürün oluşturma (implemented) YOK')); $s = $a->submit($cred[$k], ['id_product' => 1]); ok(!$s['success'] && $s['remote_id'] === '', "$k: submit hâlâ başarısız (oluşturma yapılmadı)"); }
 foreach (['amazon', 'pazarama', 'ozon'] as $k) { ok(!(MhRegistry::get($k) instanceof MhCoreAdapter) && !MhRegistry::get($k)->implemented(), "$k: hiçbir yetenek yok (API belgesi/erişim bekleniyor)"); }
 
 section('Bağlantı testi');
@@ -107,7 +107,7 @@ foreach ($sigs as $cls => $methods) {
 	foreach ($methods as $m => $n) { $ok = class_exists($fq, false) && method_exists($fq, $m) && (new ReflectionMethod($fq, $m))->getNumberOfParameters() === $n; ok($ok, "$fq::$m($n parametre) çekirdekte mevcut ve imza uyumlu"); }
 }
 ok((new ReflectionClass('Trendyol\\TrendyolApi'))->getConstructor()->getNumberOfParameters() === 3 && (new ReflectionClass('Hepsiburada\\HepsiburadaApi'))->getConstructor()->getNumberOfParameters() === 3 && (new ReflectionClass('N11\\N11Api'))->getConstructor()->getNumberOfParameters() === 2, 'yapıcı imzaları (supplier/key/secret) uyumlu');
-ok(strpos(file_get_contents(dirname(__DIR__) . '/lib/MhCoreAdapter.php'), 'Settings::get') === false, 'sarmalayıcı çekirdeğin Settings tabanlı tek mağaza ayarlarını KULLANMAZ (satıcı kimlikleriyle çalışır)');
+ok(!preg_match('/Settings::get\\(\'(TRENDYOL|HEPSIBURADA|N11)/', file_get_contents(dirname(__DIR__) . '/lib/MhCoreAdapter.php') . file_get_contents(dirname(__DIR__) . '/adapters/MhAdapterTrendyol.php')), 'sarmalayıcı çekirdeğin Settings tabanlı tek mağaza ayarlarını KULLANMAZ (satıcı kimlikleriyle çalışır)');
 
 section('Gerçek sınıf bağlama (fabrikasız, ağ çağrısı yok)');
 $saved = MhCoreAdapter::$factories; MhCoreAdapter::$factories = [];

@@ -74,3 +74,4 @@ backups/*
 # Rafımda çalışma zamanı yüklemeleri (satıcı başvuru belgeleri vb.) — repoya/ZIP'e girmez
 storage/rafimda/
 img/rafimda/
+cache/marketplace-hub/

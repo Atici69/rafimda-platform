@@ -71,10 +71,51 @@ class MhDispatcher
 		return MhRepo::now();
 	}
 
+	/**
+	 * Toplu (asenkron) gönderimlerin sonucunu sorgular: kabul → 'live', red → 'failed' (+ hata nedeni).
+	 *
+	 * @return array{checked:int, live:int, failed:int}
+	 */
+	public static function checkBatches(int $limit = 20): array
+	{
+		$out = ['checked' => 0, 'live' => 0, 'failed' => 0];
+		$rows = DB::execute("SELECT * FROM mh_listings WHERE state = 'sent' AND remote_id LIKE 'batch:%' AND (next_attempt_at IS NULL OR next_attempt_at <= ?) ORDER BY id_listing ASC LIMIT " . max(1, min(100, $limit)), [self::now()]) ?: [];
+
+		foreach ($rows as $l) {
+			$acc = MhRepo::account((int) $l['id_account'], null);
+			$a = $acc ? MhRegistry::get((string) $acc['marketplace']) : null;
+
+			if (!$a instanceof MhCoreAdapter) {
+				continue;
+			}
+
+			$out['checked']++;
+			$st = $a->batchStatus(MhRepo::credentials((int) $l['id_account']), substr((string) $l['remote_id'], 6));
+			$id = (int) $l['id_listing'];
+
+			if (!$st['done']) {
+				DB::update('mh_listings', ['next_attempt_at' => date('Y-m-d H:i:s', time() + 300), 'date_upd' => self::now()], 'id_listing = :i', ['i' => $id]);
+				continue;
+			}
+
+			if ($st['ok']) {
+				DB::update('mh_listings', ['state' => 'live', 'remote_id' => mb_substr($st['remote_id'] !== '' ? $st['remote_id'] : (string) $l['remote_id'], 0, 100), 'error' => '', 'date_upd' => self::now()], 'id_listing = :i', ['i' => $id]);
+				$out['live']++;
+			} else {
+				DB::update('mh_listings', ['state' => 'failed', 'error' => mb_substr($st['message'], 0, 255), 'date_upd' => self::now()], 'id_listing = :i', ['i' => $id]);
+				MhRepo::logError((int) $l['id_account'], (int) $l['id_product'], 'rejected', $st['message']);
+				$out['failed']++;
+			}
+		}
+
+		return $out;
+	}
+
 	/** @return array{processed:int, sent:int, failed:int, retried:int} */
 	public static function tick(int $limit = 20): array
 	{
 		$res = ['processed' => 0, 'sent' => 0, 'failed' => 0, 'retried' => 0];
+		self::checkBatches($limit);
 		DB::execute("UPDATE mh_listings SET state = 'queued', error = '' WHERE state = 'sending' AND date_upd < ?", [date('Y-m-d H:i:s', time() - self::STALE_SECONDS)]);
 		$due = DB::execute("SELECT id_listing FROM mh_listings WHERE state = 'queued' AND (next_attempt_at IS NULL OR next_attempt_at <= ?) ORDER BY id_listing ASC LIMIT " . max(1, min(200, $limit)), [self::now()]) ?: [];
 
@@ -136,10 +177,19 @@ class MhDispatcher
 			$r = ['success' => false, 'remote_id' => '', 'error' => 'Beklenmeyen hata: ' . mb_substr($e->getMessage(), 0, 150), 'retryable' => true];
 		}
 
+		$preview = isset($r['preview']) ? mb_substr((string) json_encode($r['preview'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 60000) : null;
+
 		if (!empty($r['success'])) {
-			$set(['state' => 'sent', 'remote_id' => mb_substr((string) $r['remote_id'], 0, 100), 'payload_hash' => MhPayload::hash($b['payload']), 'error' => '', 'attempts' => 0]);
+			$set(['state' => 'sent', 'remote_id' => mb_substr((string) $r['remote_id'], 0, 100), 'payload_hash' => MhPayload::hash($b['payload']), 'error' => strpos((string) $r['remote_id'], 'batch:') === 0 ? 'Pazaryeri onayı bekleniyor.' : '', 'attempts' => 0, 'preview' => $preview]);
 
 			return 'sent';
+		}
+
+		// Canlı gönderim kilidi kapalı: kalemler hazır ve doğrulandı, istek gönderilmedi. Gönderilmiş gibi gösterilmez.
+		if (!empty($r['dry_run'])) {
+			$set(['state' => 'ready', 'error' => mb_substr((string) $r['error'], 0, 255), 'payload_hash' => MhPayload::hash($b['payload']), 'attempts' => 0, 'preview' => $preview]);
+
+			return 'retried';
 		}
 
 		$attempts = (int) $l['attempts'] + 1;
@@ -225,8 +275,8 @@ class MhDispatcher
 			return 0;
 		}
 
-		$n = (int) DB::getValue("SELECT COUNT(*) FROM mh_listings WHERE id_account = ? AND state = 'failed'", [$idAccount]);
-		DB::execute("UPDATE mh_listings SET state = 'queued', attempts = 0, error = '', next_attempt_at = ? WHERE id_account = ? AND state = 'failed'", [self::now(), $idAccount]);
+		$n = (int) DB::getValue("SELECT COUNT(*) FROM mh_listings WHERE id_account = ? AND state IN ('failed', 'ready', 'blocked')", [$idAccount]);
+		DB::execute("UPDATE mh_listings SET state = 'queued', attempts = 0, error = '', next_attempt_at = ? WHERE id_account = ? AND state IN ('failed', 'ready', 'blocked')", [self::now(), $idAccount]);
 
 		return $n;
 	}

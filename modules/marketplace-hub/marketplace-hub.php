@@ -6,7 +6,11 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
 
-foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhCoreAdapter', 'MhRegistry', 'MhRepo', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $mhClass) {
+if (!class_exists('CategoryMatchStore')) {
+	require_once dirname(__DIR__, 2) . '/core/CategoryMatchStore.php';
+}
+
+foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 'MhCoreAdapter', 'MhRegistry', 'MhRepo', 'MhCatalog', 'MhAttributeFill', 'MhTrendyolBuilder', 'MhPayload', 'MhDispatcher', 'MhPanel'] as $mhClass) {
 	require_once __DIR__ . '/lib/' . $mhClass . '.php';
 }
 
@@ -19,7 +23,7 @@ foreach (['MhMigrator', 'MhCrypt', 'MhOwner', 'MhAdapter', 'MhAbstractAdapter', 
  */
 class MarketplaceHubModule extends ModuleBase
 {
-	public const VERSION = '0.2.0';
+	public const VERSION = '0.3.0';
 
 	public string $name = 'marketplace-hub';
 	public string $title = 'Pazaryeri Hub';
@@ -88,6 +92,17 @@ class MarketplaceHubModule extends ModuleBase
 			exit;
 		}
 
+		if ($isPost && (string) ($_POST['mhAction'] ?? '') === 'live_toggle') {
+			if ($tokenOk && !$demo) {
+				$on = (string) ($_POST['live'] ?? '') === '1';
+				Settings::set('MARKETPLACE_HUB_LIVE_SUBMIT', $on ? '1' : '0');
+				$_SESSION['mh_flash'] = ['type' => $on ? 'warning' : 'success', 'message' => $on ? 'Canlı ürün gönderimi AÇILDI: kuyruktaki ürünler pazaryerine gerçekten gönderilecek.' : 'Canlı ürün gönderimi kapatıldı: ürünler yalnızca hazırlanır.'];
+			}
+
+			header('Location: ' . strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?'));
+			exit;
+		}
+
 		if ($isPost && !$tokenOk) {
 			$flash = ['type' => 'danger', 'message' => 'Geçersiz istek.'];
 		} elseif ($isPost && $demo) {
@@ -111,6 +126,7 @@ class MarketplaceHubModule extends ModuleBase
 			'mhTplDir' => __DIR__ . '/assets/templates/front/',
 			'mhCss' => rtrim((string) $domain, '/') . '/modules/marketplace-hub/assets/css/mh.css?v=' . self::VERSION,
 			'mhPending' => $pending,
+			'mhLive' => MhCoreAdapter::liveSubmitEnabled(),
 			'mhCronUrl' => $key !== '' ? rtrim((string) $domain, '/') . '/pazaryeri-cron?q=cron&key=' . $key : '',
 			'pageTitle' => $this->title,
 		]);

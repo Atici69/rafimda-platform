@@ -14,6 +14,19 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 ---
 ## [Yayınlanmadı] — Rafımda satıcı sistemi 0.4.0
 
+### Otomatik kategori eşleştirme ve tek tıkla aktarım (Excel / XML / pazaryeri)
+- Ortak eşleştirme motoru (`core/CategoryMatcher`, `core/CategoryMatchStore`): Türkçe duyarlı, eş anlamlılar ve ürün türü sözlüğü, kitle/cinsiyet çatışma cezası, güven seviyesi; düzeltmeler hatırlanır (satıcıya özel), emin olunamayanlar "Kategori kontrolü" listesine düşer.
+- Excel/CSV: yalnızca ürün adı ve fiyat zorunlu; kategori adı/yolu ya da ürün adından kategori, marka adından marka (yoksa açılır).
+- XML Hub: eşleme tablosunda olmayan tedarikçi kategorisi otomatik bulunur; yönetici yedek kategori/marka ve marka açma ayarı.
+- Pazaryeri: "Otomatik eşle" ile tek tıkla kategori eşleme, ürün bazında kategori, özellik ve marka otomatik doldurma.
+
+### Satıcı paneli Excel (.xlsx)
+- Excel şablonu (4 sayfa), Excel ile yükleme (güvenlik denetimli), ürünleri Excel'e aktarma ve geri yükleyerek toplu fiyat/stok güncelleme.
+
+### Pazaryeri Hub 0.3.0 — Trendyol ürün oluşturma
+- Kategori ağacı/özellik/marka okuma, ürün oluşturma, toplu istek sonucu takibi ("Onay bekliyor" → "Yayında"/"Başarısız"). Canlı gönderim kilidi varsayılan KAPALI. Canlı hesapla doğrulanmadı.
+- Migration 002 (yalnızca ekleme).
+
 ### Komisyon sistemi ve kazanç yönetimi (madde 14)
 - Satıcılar mağazayı **ücretsiz** açar: abonelik/paket ücreti alınmaz (ücretsiz mağaza modu varsayılan açık; paketler ücretsiz limit gruplarına dönüştü, veri silinmedi).
 - Kategori ve ürün bazlı komisyon kuralları; öncelik ürün → kategori (alt kategorileri kapsayabilir) → satıcıya özel → genel oran; kampanya üstüne.
