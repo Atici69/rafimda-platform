@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Publish zip: dist/frisay-{VERSION}.zip
+ * Publish zip: dist/rafimda-{VERSION}.zip
  * CLI only: php tools/build-release.php
  */
 
@@ -15,7 +15,7 @@ require_once $root . '/core/FShop.php';
 
 $version = FShop::VERSION;
 $distDir = $root . DIRECTORY_SEPARATOR . 'dist';
-$zipPath = $distDir . DIRECTORY_SEPARATOR . 'frisay-' . $version . '.zip';
+$zipPath = $distDir . DIRECTORY_SEPARATOR . 'rafimda-' . $version . '.zip';
 
 if (!is_dir($distDir) && !mkdir($distDir, 0755, true)) {
 	fwrite(STDERR, "dist/ oluşturulamadı\n");
@@ -149,6 +149,8 @@ if ($hasEnv) {
 }
 
 $mb = round(filesize($zipPath) / 1048576, 1);
+file_put_contents($zipPath . '.sha256', hash_file('sha256', $zipPath) . '  ' . basename($zipPath) . "\n");
 echo "OK  {$zipPath}\n";
+echo "SHA-256: " . hash_file('sha256', $zipPath) . "\n";
 echo "{$added} dosya, {$mb} MB, sürüm {$version}\n";
 exit(0);

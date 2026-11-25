@@ -5,10 +5,18 @@ class Upgrade
 	public const SETTING_KEY = 'FS_VERSION';
 	public const LEGACY_DEFAULT = '2.4.0';
 
+	/** Yalnızca testler için: farklı bir kök dizin (core/, upgrade/ burada aranır). */
+	public static ?string $rootOverride = null;
+
+	public static function rootDir(): string
+	{
+		return self::$rootOverride !== null ? rtrim(self::$rootOverride, '/\\') : dirname(__DIR__);
+	}
+
 	/** @return string */
 	public static function migrationsDir(): string
 	{
-		return dirname(__DIR__) . '/upgrade/migrations';
+		return self::rootDir() . '/upgrade/migrations';
 	}
 
 	public static function getCodeVersion(): string
@@ -25,7 +33,7 @@ class Upgrade
 	/** Prefer on-disk VERSION so one-click updates see the new package without a PHP restart. */
 	public static function readCodeVersionFromDisk(): string
 	{
-		$file = dirname(__DIR__) . '/core/FShop.php';
+		$file = self::rootDir() . '/core/FShop.php';
 
 		if (!is_file($file)) {
 			return '';
@@ -69,6 +77,54 @@ class Upgrade
 	public static function isUpToDate(): bool
 	{
 		return version_compare(self::getInstalledVersion(), self::getCodeVersion(), '>=');
+	}
+
+	/**
+	 * Veritabanı şema sürümü (FS_VERSION) dosya sürümünden YENİ mi? Bu durum, dosyaların
+	 * başka bir paketten/sürümden geri alındığını ya da farklı bir paketle güncellendiğini gösterir.
+	 */
+	public static function isSchemaAhead(): bool
+	{
+		return version_compare(self::getInstalledVersion(), self::getCodeVersion(), '>');
+	}
+
+	/**
+	 * Admin ekranı ve güncelleyici için tek sürüm durumu özeti.
+	 *
+	 * @return array{installed:string,code:string,schema_ahead:bool,pending:int,up_to_date:bool}
+	 */
+	public static function getVersionState(): array
+	{
+		return [
+			'installed' => self::getInstalledVersion(),
+			'code' => self::getCodeVersion(),
+			'schema_ahead' => self::isSchemaAhead(),
+			'pending' => count(self::getPending()),
+			'up_to_date' => self::isUpToDate(),
+		];
+	}
+
+	/**
+	 * Şema sürümünü (FS_VERSION) dosya sürümüne ÇEKER. Yalnızca şema dosyalardan ilerideyse çalışır ve
+	 * veritabanına başka hiçbir şey yapmaz (tablo/veri silinmez). Yalnızca yönetici onayıyla çağrılmalıdır.
+	 *
+	 * @return array{success:bool,message:string}
+	 */
+	public static function reconcileSchemaVersion(): array
+	{
+		if (!self::isSchemaAhead()) {
+			return ['success' => false, 'message' => 'Şema sürümü dosya sürümünden ileride değil; işlem gerekmiyor.'];
+		}
+
+		$from = self::getInstalledVersion();
+		$to = self::getCodeVersion();
+		self::setInstalledVersion($to);
+
+		if (class_exists('UpdateInstaller', false)) {
+			UpdateInstaller::log('Şema sürümü elle eşitlendi: ' . $from . ' → ' . $to . ' (yönetici onayıyla; veri değişmedi)');
+		}
+
+		return ['success' => true, 'message' => 'Şema sürümü ' . $from . ' → ' . $to . ' olarak eşitlendi. Veritabanı içeriğine dokunulmadı.'];
 	}
 
 	public static function isValidVersion(string $version): bool
@@ -160,6 +216,16 @@ class Upgrade
 		$logs = [];
 		$code = self::getCodeVersion();
 		$pending = self::getPending();
+
+		if (self::isSchemaAhead()) {
+			return [
+				'success' => false,
+				'message' => 'Veritabanı şema sürümü (' . self::getInstalledVersion() . ') dosya sürümünden (' . $code . ') yeni. Dosyalar geri alınmış veya farklı bir paketten güncellenmiş olabilir; migration çalıştırılmadı.',
+				'logs' => ['Şema ileride: kurulu=' . self::getInstalledVersion() . ' kod=' . $code],
+				'installed' => self::getInstalledVersion(),
+				'code' => $code,
+			];
+		}
 
 		if ($pending === []) {
 			if (!self::isUpToDate()) {

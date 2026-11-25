@@ -6,9 +6,22 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 | Durum | Sürüm |
 |--------|--------|
 | **Yayında (canlı)** | **3.0.2** |
+| **Hazır (yayın bekliyor)** | **3.0.3** |
 | **Önceki kararlı** | **3.0.0** |
 
 3.0.0 sonrası geliştirmeler **3.0.2** altında toplandı.
+
+---
+## [3.0.3] — 2026-11-25
+
+### Güncelleme sistemi (hata düzeltmesi)
+- Güncelleyici Rafımda deposuna (Atici69/rafimda-platform) bağlandı; yukarı akış FriSay sürümleri artık teklif edilmez.
+- Paket kanal doğrulaması (`FShop::CHANNEL`), SHA-256, sürüm ve PHP sözdizimi kontrolü.
+- Kopyalamadan önce yedek (`backups/update-*`), hatada tam geri alma, atomik dosya yazımı, dosya kilidi.
+- Bakım modu zaman aşımlı (15 dk); `logs/update.log`.
+- Şema sürümü dosya sürümünden ileride ise güncelleme engellenir; yönetici onaylı şema sürümü eşitleme.
+- Başarısız sürüm kontrolleri için geri çekilme; kök `.htaccess`, `storage/`, `backups/`, `logs/` korumalı.
+- Veritabanı migration'ı yok; mevcut veriye dokunulmaz.
 
 ---
 ## [3.0.2] — 2026-10-26

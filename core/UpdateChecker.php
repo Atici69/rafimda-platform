@@ -2,17 +2,28 @@
 
 /**
  * Remote update channel (WordPress-style version check).
- * Fixed official channel: GitHub Releases → bera65/frisay
+ * Fixed official channel: GitHub Releases → Rafımda'nın kendi deposu (Atici69/rafimda-platform).
+ * Yukarı akış FriSay deposu (bera65/frisay) KASITLI olarak kullanılmaz: aksi halde FriSay'ın daha yüksek
+ * sürüm numaralı paketi (ör. 3.1.0) Rafımda dosyalarının üzerine yazılır ve dosya/şema sürümleri ayrışır.
  */
 class UpdateChecker
 {
-	public const GITHUB_REPO = 'bera65/frisay';
+	public const GITHUB_REPO = 'Atici69/rafimda-platform';
 
 	public const KEY_LAST_CHECK = 'FS_UPDATE_LAST_CHECK';
 	public const KEY_LAST_OFFER = 'FS_UPDATE_LAST_OFFER';
+	public const KEY_LAST_FAIL = 'FS_UPDATE_LAST_FAIL';
+	public const KEY_LAST_ERROR = 'FS_UPDATE_LAST_ERROR';
 
 	/** Auto re-check while browsing admin (seconds). */
 	public const AUTO_CHECK_TTL = 43200;
+
+	/** Başarısız otomatik kontrolden sonra yeniden denemeden önce beklenecek süre (saniye). */
+	public const FAIL_BACKOFF = 1800;
+
+	/** HTTP zaman aşımları (saniye); arka plan kontrolünde kısaltılır ki yönetim sayfası takılmasın. */
+	private static int $connectTimeout = 15;
+	private static int $timeout = 60;
 
 	public static function ensureDefaults(): void
 	{
@@ -37,8 +48,28 @@ class UpdateChecker
 			}
 		}
 
+		// Başarısız kontrol sonrası geri çekilme: GitHub'a ulaşılamıyorsa her yönetim sayfası yüklemesinde
+		// 75 sn'ye varan bekleme yaşanmaz.
+		$lastFail = trim((string) Settings::get(self::KEY_LAST_FAIL));
+
+		if ($stale && $lastFail !== '') {
+			$failTs = strtotime($lastFail);
+
+			if ($failTs !== false && (time() - $failTs) < self::FAIL_BACKOFF) {
+				$stale = false;
+			}
+		}
+
 		if ($stale) {
-			self::check(true);
+			self::$connectTimeout = 4;
+			self::$timeout = 8;
+
+			try {
+				self::check(true);
+			} finally {
+				self::$connectTimeout = 15;
+				self::$timeout = 60;
+			}
 		}
 
 		$offer = self::getCachedOffer();
@@ -91,9 +122,13 @@ class UpdateChecker
 		$result = self::fetchGithubLatest(self::GITHUB_REPO);
 
 		if (empty($result['success']) || empty($result['offer'])) {
+			$failMsg = (string) ($result['message'] ?? 'Sürüm kontrolü başarısız');
+			Settings::set(self::KEY_LAST_FAIL, date('c'));
+			Settings::set(self::KEY_LAST_ERROR, mb_substr($failMsg, 0, 300));
+
 			return [
 				'success' => false,
-				'message' => (string) ($result['message'] ?? 'Sürüm kontrolü başarısız'),
+				'message' => $failMsg,
 				'offer' => null,
 				'update_available' => false,
 				'current' => $current,
@@ -145,6 +180,8 @@ class UpdateChecker
 	private static function storeCachedOffer(array $offer): void
 	{
 		Settings::set(self::KEY_LAST_CHECK, date('c'));
+		Settings::set(self::KEY_LAST_FAIL, '');
+		Settings::set(self::KEY_LAST_ERROR, '');
 		Settings::set(self::KEY_LAST_OFFER, (string) json_encode($offer, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 	}
 
@@ -157,7 +194,7 @@ class UpdateChecker
 		$url = 'https://api.github.com/repos/' . $repo . '/releases/latest';
 		$response = self::httpGetDetailed($url, [
 			'Accept: application/vnd.github+json',
-			'User-Agent: FriSay-UpdateChecker',
+			'User-Agent: Rafimda-UpdateChecker',
 		]);
 
 		if ($response['body'] === null) {
@@ -208,9 +245,10 @@ class UpdateChecker
 		}
 
 		$downloadUrl = self::pickGithubAssetUrl($data, $version);
+		$sha256 = self::pickGithubAssetDigest($data, $downloadUrl);
 
 		if ($downloadUrl === '' || !self::isHttpsUrl($downloadUrl)) {
-			return ['success' => false, 'message' => 'İndirilebilir HTTPS ZIP bulunamadı (frisay-x.y.z.zip veya fs-x.y.z.zip asset ekleyin)'];
+			return ['success' => false, 'message' => 'İndirilebilir HTTPS ZIP bulunamadı (rafimda-x.y.z.zip asset ekleyin; tools/build-release.php üretir)'];
 		}
 
 		$offer = [
@@ -218,11 +256,35 @@ class UpdateChecker
 			'download_url' => $downloadUrl,
 			'changelog_url' => (string) ($data['html_url'] ?? ''),
 			'min_php' => '7.4',
-			'title' => (string) ($data['name'] ?? ('FriSay ' . $version)),
+			'title' => (string) ($data['name'] ?? ('Rafımda ' . $version)),
 			'source' => 'github:' . $repo,
 		];
 
+		if ($sha256 !== '') {
+			$offer['sha256'] = $sha256;
+		}
+
 		return ['success' => true, 'message' => 'OK', 'offer' => $offer];
+	}
+
+	/**
+	 * GitHub varlık özeti ("digest": "sha256:…") varsa döner; indirilen paket bununla doğrulanır.
+	 *
+	 * @param array<string, mixed> $release
+	 */
+	private static function pickGithubAssetDigest(array $release, string $url): string
+	{
+		foreach (($release['assets'] ?? []) as $asset) {
+			if (is_array($asset) && (string) ($asset['browser_download_url'] ?? '') === $url) {
+				$d = strtolower(trim((string) ($asset['digest'] ?? '')));
+
+				if (preg_match('/^sha256:([a-f0-9]{64})$/', $d, $m)) {
+					return $m[1];
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -292,14 +354,21 @@ class UpdateChecker
 			return null;
 		}
 
-		return [
+		$offer = [
 			'version' => $version,
 			'download_url' => $download,
 			'changelog_url' => trim((string) ($data['changelog_url'] ?? '')),
 			'min_php' => trim((string) ($data['min_php'] ?? '7.4')) ?: '7.4',
-			'title' => trim((string) ($data['title'] ?? ('FriSay ' . $version))) ?: ('FriSay ' . $version),
+			'title' => trim((string) ($data['title'] ?? ('Rafımda ' . $version))) ?: ('Rafımda ' . $version),
 			'source' => $source,
 		];
+		$sha = strtolower(trim((string) ($data['sha256'] ?? '')));
+
+		if (preg_match('/^[a-f0-9]{64}$/', $sha)) {
+			$offer['sha256'] = $sha;
+		}
+
+		return $offer;
 	}
 
 	public static function normalizeVersionTag(string $tag): string
@@ -344,7 +413,7 @@ class UpdateChecker
 			return ['body' => null, 'code' => 0, 'error' => 'URL HTTPS değil'];
 		}
 
-		$defaultHeaders = $headers !== [] ? $headers : ['User-Agent: FriSay-UpdateChecker'];
+		$defaultHeaders = $headers !== [] ? $headers : ['User-Agent: Rafimda-UpdateChecker'];
 		$ca = self::caBundlePath();
 
 		if (function_exists('curl_init')) {
@@ -358,8 +427,8 @@ class UpdateChecker
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_FOLLOWLOCATION => true,
 				CURLOPT_MAXREDIRS => 5,
-				CURLOPT_CONNECTTIMEOUT => 15,
-				CURLOPT_TIMEOUT => 60,
+				CURLOPT_CONNECTTIMEOUT => self::$connectTimeout,
+				CURLOPT_TIMEOUT => self::$timeout,
 				CURLOPT_HTTPHEADER => $defaultHeaders,
 				CURLOPT_SSL_VERIFYPEER => true,
 				CURLOPT_SSL_VERIFYHOST => 2,
@@ -401,7 +470,7 @@ class UpdateChecker
 
 		$ctx = stream_context_create([
 			'http' => [
-				'timeout' => 60,
+				'timeout' => self::$timeout,
 				'header' => implode("\r\n", $defaultHeaders),
 				'ignore_errors' => true,
 			],
