@@ -216,7 +216,7 @@ class GoogleShoppingModule extends ModuleBase
     public static function generateXml(): string
     {
         $domain       = rtrim((string) Settings::get('DOMAIN'), '/');
-        $siteName     = Settings::get('SITE_NAME') ?: 'FShop';
+        $siteName     = Settings::get('SITE_NAME') ?: 'Rafımda';
         $currency     = Settings::get('GSF_CURRENCY')      ?: 'TRY';
         $condition    = Settings::get('GSF_CONDITION')     ?: 'new';
         $brandDefault = Settings::get('GSF_BRAND_FALLBACK') ?: $siteName;

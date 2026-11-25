@@ -656,7 +656,7 @@ class XmlImportService
 				CURLOPT_CONNECTTIMEOUT => 15,
 				CURLOPT_TIMEOUT => 60,
 				CURLOPT_SSL_VERIFYPEER => true,
-				CURLOPT_USERAGENT => 'FShop-XmlImport/1.0',
+				CURLOPT_USERAGENT => 'Rafimda-XmlImport/1.0',
 				CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
 				CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
 			]);
@@ -680,7 +680,7 @@ class XmlImportService
 		$ctx = stream_context_create([
 			'http' => [
 				'timeout' => 60,
-				'header' => "User-Agent: FShop-XmlImport/1.0\r\n",
+				'header' => "User-Agent: Rafimda-XmlImport/1.0\r\n",
 				'follow_location' => 0,
 			],
 		]);

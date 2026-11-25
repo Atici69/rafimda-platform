@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{$rvCss}"></head>
 <body class="rv"><div class="rv-shell">
 <aside class="rv-side" id="rv-side">
-	<div class="rv-brand">Rafımda <span>Satıcı</span><small>{$vendor.store_name}</small></div>
+	<div class="rv-brand"><a class="rv-brand__logo" href="{$rvDomain|default:'/'}"><img src="{$rvLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a><span>Satıcı Paneli</span><small>{$vendor.store_name}</small></div>
 	<ul class="rv-nav">
 	{foreach $menu as $m}
 		<li><a href="{$m.url}" class="{if $m.key == $section}is-active{/if}"><span class="ico">{$m.icon}</span>{$m.label}{if !$m.ready}<span class="soon">yakında</span>{/if}</a></li>

@@ -195,7 +195,7 @@ class CustomerNotifyModule extends ModuleBase
 				$result = CustomerNotifyPush::sendOneSignal(
 					$testUserId,
 					'OneSignal test',
-					'FShop test bildirimi — ' . date('H:i:s'),
+					'Rafımda test bildirimi — ' . date('H:i:s'),
 					rtrim((string) $domain, '/') . '/my-account#notifications'
 				);
 

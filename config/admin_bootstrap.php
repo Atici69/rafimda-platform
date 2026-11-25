@@ -136,7 +136,7 @@
 		'adminUseCharts' => false,
 		'adminUseOrderStatus' => false,
 		'adminUseEditor' => false,
-		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin'),
+		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin') . '?v=' . SiteAssets::logoVersion('admin'),
 		'adminLang' => $adminLang,
 		'adminLangSwitcher' => AdminLang::getSwitcherList(),
 		'adminUriIsDefault' => Admin::uri() === 'admin',

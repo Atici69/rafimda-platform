@@ -84,7 +84,7 @@ $provisionData = [
 	'Amount' => $amount,
 	'MD' => $md,
 	'IdentityTaxNumber' => '11111111111',
-	'Description' => 'FShop Order ' . $merchantOrderId,
+	'Description' => 'Rafimda Order ' . $merchantOrderId,
 ];
 
 $result = $helper->sendProvisionRequest($provisionData);

@@ -643,7 +643,7 @@ class ShipinkModule extends ModuleBase
 				'id' => 'fshop',
 				'order_id' => (string) $idOrder,
 				'order_number' => $reference,
-				'name' => $siteName !== '' ? $siteName : 'FShop',
+				'name' => $siteName !== '' ? $siteName : 'Rafımda',
 			],
 			'customer' => [
 				'name' => (string) ($order['customer_name'] ?? ''),

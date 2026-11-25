@@ -38,12 +38,8 @@ try {
 		<div class="sidebar-header">
 			<div class="sidebar-header__top">
 				<a href="{$adminUrl}dashboard" class="sidebar-brand">
-					<span class="sidebar-brand__logo">
+					<span class="sidebar-brand__logo sidebar-brand__logo--wide">
 						<img src="{$adminLogoUrl|escape}" alt="{$siteName|escape}" />
-					</span>
-					<span class="sidebar-brand__text">
-						<strong>{$siteName|escape}</strong>
-						<small>{'Admin Panel'|adminT}</small>
 					</span>
 				</a>
 				<button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="{'Toggle menu'|adminT}" title="{'Toggle menu'|adminT}">

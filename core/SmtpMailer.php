@@ -29,7 +29,7 @@ class SmtpMailer
 		}
 
 		$fromEmail = trim(Settings::get('SMTP_FROM_EMAIL')) ?: $user;
-		$fromName = trim(Settings::get('SMTP_FROM_NAME')) ?: (Settings::get('SITE_NAME') ?: 'FShop');
+		$fromName = trim(Settings::get('SMTP_FROM_NAME')) ?: (Settings::get('SITE_NAME') ?: 'Rafımda');
 
 		$socket = null;
 

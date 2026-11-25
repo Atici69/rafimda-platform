@@ -494,7 +494,7 @@ class WapioModule extends ModuleBase
 		}
 
 		if ($message === '') {
-			$message = 'Wapio test mesajı — ' . (Settings::get('SITE_NAME') ?: 'FShop');
+			$message = 'Wapio test mesajı — ' . (Settings::get('SITE_NAME') ?: 'Rafımda');
 		}
 
 		$phone = $this->normalizePhone($phone);

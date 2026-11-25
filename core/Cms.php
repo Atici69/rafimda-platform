@@ -491,7 +491,7 @@ class Cms
 		return [
 			'hakkimizda' => [
 				'title' => 'Hakkımızda',
-				'desc' => 'FShop hakkında bilgi',
+				'desc' => 'Rafımda hakkında bilgi',
 			],
 			'mesafeli-satis' => [
 				'title' => 'Mesafeli Satış Sözleşmesi',

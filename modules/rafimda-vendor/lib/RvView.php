@@ -73,6 +73,18 @@ class RvView
 	/**
 	 * @param array<string,mixed> $vars
 	 */
+	/** Mağaza logosu (Yönetim → Tema → Site logoları → Ana logo). Kurulumda SiteAssets yoksa varsayılan img/logo.png. */
+	public static function logoUrl(): string
+	{
+		global $domain;
+
+		if (class_exists('SiteAssets') && method_exists('SiteAssets', 'resolveLogoUrl')) {
+			return SiteAssets::resolveLogoUrl('header') . (method_exists('SiteAssets', 'logoVersion') ? '?v=' . SiteAssets::logoVersion('header') : '');
+		}
+
+		return rtrim((string) $domain, '/') . '/img/logo.png';
+	}
+
 	public static function display(string $template, array $vars = []): void
 	{
 		global $smarty, $domain;
@@ -85,6 +97,7 @@ class RvView
 			'rvJs' => self::assetUrl('js/panel.js') . '?v=' . RafimdaVendorModule::VERSION,
 			'rvToken' => Security::getCsrfToken('front'),
 			'rvSiteName' => (string) Settings::get('SITE_NAME'),
+			'rvLogoUrl' => self::logoUrl(),
 		]);
 		$smarty->display('file:' . self::tplDir() . $template . '.tpl');
 	}

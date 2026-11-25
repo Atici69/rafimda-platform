@@ -24,9 +24,8 @@
 		<div class="admin-login-card">
 			<div class="admin-login-card__top">
 				<div class="admin-login-brand">
-					<img src="{$adminLogoUrl|escape}?v={$smarty.now}" alt="{$siteName|escape}">
+					<img class="admin-login-brand__wide" src="{$adminLogoUrl|escape}" alt="{$siteName|escape}">
 					<div class="admin-login-brand__text">
-						<span class="admin-login-brand__name">{$siteName|escape}</span>
 						<span class="admin-login-brand__tag">{'Admin Panel'|adminT}</span>
 					</div>
 				</div>

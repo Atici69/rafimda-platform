@@ -5,7 +5,8 @@
 	{if $errors[$key]|default:''}<div class="err">{$errors[$key]}</div>{/if}
 {/function}
 <body class="rd"><div class="rd-guest wide"><div class="rd-card">
-	<h1>Rafımda <span class="tag">Bayi Başvurusu</span></h1>
+	<a class="rd-guest-logo" href="{$rdDomain|default:'/'}"><img src="{$rdLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a>
+	<h1><span class="tag">Bayi Başvurusu</span></h1>
 	{if $flash}<div class="rd-alert {$flash.type}">{$flash.message}</div>{/if}
 	{if $done && $notice}
 		<div class="rd-alert success">{$notice}</div>

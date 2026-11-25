@@ -1,6 +1,7 @@
 {include file="file:{$rvTplDir}guest_head.tpl"}
 <body class="rv"><div class="rv-guest"><div class="rv-card">
-	<h1>Rafımda <span class="tag">Satıcı</span> Girişi</h1>
+	<a class="rv-guest-logo" href="{$rvDomain|default:'/'}"><img src="{$rvLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a>
+	<h1><span class="tag">Satıcı</span> Girişi</h1>
 	<p style="color:var(--rv-muted)">Aradığınız Her Şey, Rafımda! Mevcut hesabınızla giriş yapın.</p>
 	{if $error}<div class="rv-alert danger">{$error}</div>{/if}
 	<form method="post" action="">

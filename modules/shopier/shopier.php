@@ -15,7 +15,7 @@ class ShopierModule extends ModuleBase
 	public string $name = 'shopier';
 	public string $title = 'Shopier Ürün Senkronizasyonu';
 	public string $version = '1.0.0';
-	public string $description = 'FShop ürünlerini Shopier API ile oluşturma, güncelleme ve silme';
+	public string $description = 'Rafımda ürünlerini Shopier API ile oluşturma, güncelleme ve silme';
 	public string $author = 'FShop';
 
 	public array $displayHooks = [

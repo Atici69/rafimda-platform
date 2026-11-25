@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{$rdCss}"></head>
 <body class="rd"><div class="rd-shell">
 <aside class="rd-side" id="rd-side">
-	<div class="rd-brand">Rafımda <span>{$levelLabel}</span><small>{$dealer.company_name}</small></div>
+	<div class="rd-brand"><a class="rd-brand__logo" href="{$rdDomain|default:'/'}"><img src="{$rdLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a><span>{$levelLabel}</span><small>{$dealer.company_name}</small></div>
 	<ul class="rd-nav">
 	{foreach $menu as $m}
 		<li><a href="{$m.url}" class="{if $m.key == $section}is-active{/if}"><span class="ico">{$m.icon}</span>{$m.label}</a></li>

@@ -694,13 +694,13 @@ class Performance
 		if (self::isGzipEnabled() && self::canUseGzip()) {
 			header('Content-Encoding: gzip');
 			header('Vary: Accept-Encoding', false);
-			header('X-FShop-Cache: HIT');
+			header('X-Rafimda-Cache: HIT');
 			echo gzencode($html, 6);
 
 			return;
 		}
 
-		header('X-FShop-Cache: HIT');
+		header('X-Rafimda-Cache: HIT');
 		echo $html;
 	}
 

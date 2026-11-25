@@ -32,7 +32,7 @@ try {
 
 	header('Content-Type: application/xml; charset=UTF-8');
 	header('Content-Disposition: inline; filename="fiyattrend-feed.xml"');
-	header('X-Feed-Generator: FShop FiyatTrend Module');
+	header('X-Feed-Generator: Rafimda FiyatTrend Module');
 	header('Cache-Control: public, max-age=' . (int) $info['remaining'] . ', must-revalidate');
 	if ($info['mtime'] > 0) {
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $info['mtime']) . ' GMT');

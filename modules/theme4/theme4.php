@@ -1049,7 +1049,7 @@ class Theme4Module extends ModuleBase
 		}
 
 		if ($siteName === '') {
-			$siteName = 'FShop';
+			$siteName = 'Rafımda';
 		}
 
 		$year = date('Y');

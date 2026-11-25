@@ -1,6 +1,7 @@
 {include file="file:{$rdTplDir}guest_head.tpl"}
 <body class="rd"><div class="rd-guest"><div class="rd-card">
-	<h1>Rafımda <span class="tag">Bayi</span></h1>
+	<a class="rd-guest-logo" href="{$rdDomain|default:'/'}"><img src="{$rdLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a>
+	<h1><span class="tag">Bayi</span></h1>
 	<h3>{$dealer.company_name}</h3>
 	<div class="rd-alert {if $dealer.status == 'pending'}warning{else}danger{/if}">Durum: <strong>{$statusLabel}</strong></div>
 	{if $dealer.status == 'pending'}<p>Başvurunuz yönetici tarafından değerlendiriliyor. Onaylandığında bu sayfadan panele erişebileceksiniz.</p>{/if}

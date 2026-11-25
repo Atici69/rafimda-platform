@@ -171,7 +171,7 @@ class ParamposModule extends ModuleBase
 		$bodyParams = [
 			'GUID' => $guid,
 			'Borclu_Kisi_TC' => '',
-			'Borclu_Aciklama' => 'r|FShop siparis ' . $reference,
+			'Borclu_Aciklama' => 'r|Rafimda siparis ' . $reference,
 			'Borclu_Tutar' => 'r|' . $amount,
 			'Borclu_GSM' => 'r|' . $phone,
 			'Borclu_Odeme_Tip' => 'r|Diger',
@@ -711,7 +711,7 @@ class ParamposModule extends ModuleBase
 			'Content-Type: text/xml; charset=utf-8',
 			'SOAPAction: "https://turkodeme.com.tr/TO_Pre_Encrypting_OOS"',
 			'Content-Length: ' . strlen($xml),
-			'User-Agent: FShop-ParamPOS/1.1',
+			'User-Agent: Rafimda-ParamPOS/1.1',
 		]);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 45);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);

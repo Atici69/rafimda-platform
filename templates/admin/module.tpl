@@ -21,7 +21,7 @@
 			<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
 				<div>
 					<h2 class="h5 mb-1">{$mod.title|escape}</h2>
-					<p class="text-muted small mb-0">{$mod.name|escape} · v{$mod.version|escape}{if $mod.author} · {$mod.author|escape}{/if}</p>
+					<p class="text-muted small mb-0">{$mod.name|escape} · v{$mod.version|escape}{if $mod.author && $mod.author != 'FShop'} · {$mod.author|escape}{/if}</p>
 				</div>
 				{if $mod.installed && $mod.active}
 				<span class="badge bg-success">{'Active'|adminT}</span>

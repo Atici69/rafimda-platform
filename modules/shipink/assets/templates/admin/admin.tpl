@@ -122,7 +122,7 @@
 			<ol class="small mb-0 ps-3">
 				<li><a href="https://app.shipink.io/signup" target="_blank" rel="noopener">Shipink</a> hesabı oluşturun (test için app.dev.shipink.io).</li>
 				<li>Kullanıcı / şifre ile token alınır; depo ve taşıyıcı hesap ID’lerini kaydedin.</li>
-				<li>Akış: FShop siparişi → Shipink <code>orders</code> → <code>shipments</code> → takip no siparişe yazılır.</li>
+				<li>Akış: Rafımda siparişi → Shipink <code>orders</code> → <code>shipments</code> → takip no siparişe yazılır.</li>
 				<li>Kapıda ödeme siparişlerinde gönderiye COD eklenir.</li>
 			</ol>
 		</div>

@@ -44,7 +44,7 @@ class MobilAppModule extends ModuleBase
 
 		MobilAppService::ensureSchema();
 
-		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'FShop';
+		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'Rafımda';
 		MobilAppService::saveSettings([
 			'enabled' => 1,
 			'app_name' => $siteName,

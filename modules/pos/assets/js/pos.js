@@ -48,7 +48,7 @@
 		var brand = app.querySelector('.pos-brand');
 		if (brand) return brand.textContent.trim();
 		var logo = app.querySelector('.pos-brand-logo');
-		return (logo && logo.getAttribute('alt')) || 'FShop';
+		return (logo && logo.getAttribute('alt')) || 'Rafımda';
 	})();
 
 	var state = {

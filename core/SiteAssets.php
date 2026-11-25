@@ -157,6 +157,15 @@ class SiteAssets
 		return self::LOGOS[$key]['file'];
 	}
 
+	/** Önbellek kırıcı: logo dosyası değişince URL değişir (yeni yüklenen logo eski önbellekten gösterilmez). */
+	public static function logoVersion(string $key): string
+	{
+		$path = self::imgDir() . '/' . self::resolveLogoFile($key);
+		$mtime = is_file($path) ? (int) @filemtime($path) : 0;
+
+		return $mtime > 0 ? (string) $mtime : '1';
+	}
+
 	public static function resolveLogoUrl(string $key): string
 	{
 		global $domain;

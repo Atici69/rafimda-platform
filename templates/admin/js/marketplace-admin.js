@@ -560,7 +560,7 @@
 			btn.dataset.tyBound = '1';
 			btn.addEventListener('click', function () {
 				var panel = btn.closest('.trendyol-product-panel');
-				var message = 'Trendyol bağlantısı silinecek. Ürün Trendyol mağazasında kalır; yalnızca FShop eşlemesi kaldırılır. Devam edilsin mi?';
+				var message = 'Trendyol bağlantısı silinecek. Ürün Trendyol mağazasında kalır; yalnızca Rafımda eşlemesi kaldırılır. Devam edilsin mi?';
 				var ask = window.AdminConfirm && AdminConfirm.ask
 					? AdminConfirm.ask({ message: message })
 					: Promise.resolve(false);
@@ -983,7 +983,7 @@
 				var marketplace = card ? (card.getAttribute('data-marketplace') || 'trendyol') : 'trendyol';
 				var url = window.trendyolUnlinkApiUrl || '';
 				if (!id || !url) return;
-				var message = 'Bağlantı silinecek. Ürün pazaryerinde kalır; yalnızca FShop eşlemesi kaldırılır.';
+				var message = 'Bağlantı silinecek. Ürün pazaryerinde kalır; yalnızca Rafımda eşlemesi kaldırılır.';
 				var ask = window.AdminConfirm && AdminConfirm.ask
 					? AdminConfirm.ask({ message: message })
 					: Promise.resolve(window.confirm(message));

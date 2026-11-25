@@ -168,7 +168,7 @@ class AiAssistantModule extends ModuleBase
 			} else {
 				$testResult = AiAssistantClient::chat(
 					'Sen kısa yardımcı bir asistansın. Türkçe cevap ver.',
-					'FShop AI Asistanı bağlantı testi. Tek cümleyle çalıştığını doğrula.',
+					'Rafımda AI Asistanı bağlantı testi. Tek cümleyle çalıştığını doğrula.',
 					['max_tokens' => 80, 'temperature' => 0.2]
 				);
 				$flash = !empty($testResult['success'])

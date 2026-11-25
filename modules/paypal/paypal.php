@@ -254,7 +254,7 @@ class PaypalModule extends ModuleBase
 
 		global $domain;
 		$base = rtrim((string) $domain, '/');
-		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'FShop';
+		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'Rafımda';
 
 		$body = [
 			'intent' => 'CAPTURE',

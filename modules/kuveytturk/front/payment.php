@@ -78,7 +78,7 @@ if (Tools::isSubmit('submitKuveytturk')) {
 			'CardExpireDateYear' => $expireYear,
 			'CardCVV2' => $cvv,
 			'IdentityTaxNumber' => '11111111111',
-			'Description' => 'FShop Sipariş ' . $reference,
+			'Description' => 'Rafimda Sipariş ' . $reference,
 			'OkUrl' => $callbackUrl,
 			'FailUrl' => $callbackUrl,
 		];

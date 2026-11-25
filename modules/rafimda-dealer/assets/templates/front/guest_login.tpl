@@ -1,6 +1,7 @@
 {include file="file:{$rdTplDir}guest_head.tpl"}
 <body class="rd"><div class="rd-guest"><div class="rd-card">
-	<h1>Rafımda <span class="tag">Bayi</span> Girişi</h1>
+	<a class="rd-guest-logo" href="{$rdDomain|default:'/'}"><img src="{$rdLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a>
+	<h1><span class="tag">Bayi</span> Girişi</h1>
 	<p style="color:var(--rd-muted)">Bayi kontrol panelinize güvenle giriş yapın. Aradığınız Her Şey, Rafımda!</p>
 	{if $flash}<div class="rd-alert {$flash.type}">{$flash.message}</div>{/if}
 	{if $error}<div class="rd-alert danger" role="alert">{$error}</div>{/if}

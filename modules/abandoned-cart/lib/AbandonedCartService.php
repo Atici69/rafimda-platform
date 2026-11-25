@@ -264,7 +264,7 @@ class AbandonedCartService
 			$finalCoupon = (string) ($result['code'] ?? '');
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$cartUrl = rtrim((string) ($GLOBALS['domain'] ?? ''), '/') . '/cart';
 		$body = '<p>' . nl2br(htmlspecialchars($message !== '' ? $message : 'Sepetinizde ürünler bekliyor.', ENT_QUOTES, 'UTF-8')) . '</p>';
 		$body .= '<p><a href="' . htmlspecialchars($cartUrl, ENT_QUOTES, 'UTF-8') . '">Sepetime dön</a></p>';

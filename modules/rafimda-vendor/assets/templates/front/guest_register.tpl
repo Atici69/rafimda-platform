@@ -5,6 +5,7 @@
 	{if $errors[$key]|default:''}<div class="err">{$errors[$key]}</div>{/if}
 {/function}
 <body class="rv"><div class="rv-guest wide"><div class="rv-card">
+	<a class="rv-guest-logo" href="{$rvDomain|default:'/'}"><img src="{$rvLogoUrl|default:'/img/logo.png'}" alt="Rafımda"></a>
 	<h1>Rafımda'da <span class="tag">Satıcı Ol</span></h1>
 	{if $done && $notice}
 		<div class="rv-alert success">{$notice}</div>

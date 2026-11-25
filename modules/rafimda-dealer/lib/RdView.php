@@ -74,6 +74,17 @@ class RdView
 	}
 
 	/** @param array<string,mixed> $vars */
+	public static function logoUrl(): string
+	{
+		global $domain;
+
+		if (class_exists('SiteAssets') && method_exists('SiteAssets', 'resolveLogoUrl')) {
+			return SiteAssets::resolveLogoUrl('header') . (method_exists('SiteAssets', 'logoVersion') ? '?v=' . SiteAssets::logoVersion('header') : '');
+		}
+
+		return rtrim((string) $domain, '/') . '/img/logo.png';
+	}
+
 	public static function display(string $template, array $vars = []): void
 	{
 		global $smarty, $domain;
@@ -86,6 +97,7 @@ class RdView
 			'rdJs' => self::assetUrl('js/panel.js') . '?v=' . RafimdaDealerModule::VERSION,
 			'rdToken' => Security::getCsrfToken('front'),
 			'rdSiteName' => (string) Settings::get('SITE_NAME'),
+			'rdLogoUrl' => self::logoUrl(),
 		]);
 		$smarty->display('file:' . self::tplDir() . $template . '.tpl');
 	}
