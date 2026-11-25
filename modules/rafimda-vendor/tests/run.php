@@ -158,7 +158,7 @@ $r = RvProducts::importCsv($vendA, $csv($h . "Ad;1;1;75;9;CSV-1;;\r\n"), 'b.csv'
 ok($r['updated'] === 1 && $r['created'] === 0 && abs((float) DB::getValue("SELECT price FROM products WHERE stock_code = 'CSV-1'") - 75) < 0.001, 'aynı stok kodu yeni ürün açmaz, fiyat/stok günceller');
 $r = RvProducts::importCsv($vendB, $csv($h . "B Ürün;1;1;5;1;CSV-1;;\r\n"), 'c.csv');
 ok($r['created'] === 1 && abs((float) DB::getValue("SELECT price FROM products WHERE stock_code = 'CSV-1' AND id_product IN (SELECT id_product FROM rafimda_vendor_products WHERE id_vendor = ?)", [$vendA]) - 75) < 0.001, 'B aynı stok koduyla A\'nın ürününü ezemez (yeni ürün olur)');
-$r = RvProducts::importCsv($vendA, $csv("urun_adi;fiyat\r\nX;1\r\n"), 'd.csv');
+$r = RvProducts::importCsv($vendA, $csv("urun_adi;stok\r\nX;1\r\n"), 'd.csv');
 ok(!$r['success'], 'eksik sütunlu dosya reddedilir');
 $r = RvProducts::importCsv($vendA, $csv("\xEF\xBB\xBF" . $h . "\xFF\xFE;1;1;1;1;;;\r\n"), 'e.csv');
 ok(!$r['success'], 'UTF-8 olmayan dosya reddedilir');
@@ -189,7 +189,7 @@ $r = RvExcel::import($vendB, $xl([['urun_id', 'fiyat'], [$xl1, 1]]), 'saldiri.xl
 ok($r['updated'] === 0 && $r['failed'] === 1 && abs((float) DB::getValue('SELECT price FROM products WHERE id_product = ?', [$xl1]) - 150) < 0.001, 'B, A\'nın ürününü urun_id ile güncelleyemez');
 $r = RvExcel::import($vendA, $xl([['stok_kodu', 'stok'], ['XL-2', 40], ['YOK-1', 5]]), 'stok.xlsx');
 ok($r['updated'] === 1 && $r['failed'] === 1 && $r['created'] === 0, 'yalnızca güncelleme dosyasında eşleşmeyen satır yeni ürün açmaz');
-$r = RvExcel::import($vendA, $xl([['urun_adi', 'fiyat'], ['X', 1]]), 'eksik.xlsx');
+$r = RvExcel::import($vendA, $xl([['urun_adi', 'stok'], ['X', 1]]), 'eksik.xlsx');
 ok(!$r['success'], 'xlsx: eksik sütunlu dosya reddedilir');
 $fake = tempnam(sys_get_temp_dir(), 'rvxl'); file_put_contents($fake, "urun_adi;fiyat\n");
 ok(!RvExcel::import($vendA, $fake, 'sahte.xlsx')['success'], 'xlsx uzantılı ama zip olmayan dosya reddedilir');
@@ -204,7 +204,24 @@ $r = RvExcel::import($vendA, $xl($big), 'buyuk.xlsx');
 ok($r['total'] === RvProducts::CSV_MAX_ROWS, 'xlsx: satır sınırı uygulanır (500)');
 $xlb = array_map('intval', array_column(DB::execute("SELECT id_product FROM products WHERE stock_code LIKE 'XLB-%'") ?: [], 'id_product'));
 foreach ($xlb as $id) { DB::execute('DELETE FROM rafimda_vendor_products WHERE id_product = ?', [$id]); DB::execute('DELETE FROM products WHERE id_product = ?', [$id]); }
-ok(RvProducts::normalizeHeader(' Ürün Adı ') === 'urun_adi' && RvProducts::normalizeHeader('KATEGORİ') === 'kategori_id' && RvProducts::normalizeHeader('SKU') === 'stok_kodu', 'başlık eşleştirme (Türkçe/büyük harf/eş anlamlı)');
+ok(RvProducts::normalizeHeader(' Ürün Adı ') === 'urun_adi' && RvProducts::normalizeHeader('KATEGORİ') === 'kategori' && RvProducts::normalizeHeader('Kategori ID') === 'kategori_id' && RvProducts::normalizeHeader('SKU') === 'stok_kodu', 'başlık eşleştirme (Türkçe/büyük harf/eş anlamlı)');
+// Otomatik kategori + marka (tek tıkla aktarım)
+$GLOBALS['db']->exec('ALTER TABLE categories ADD COLUMN id_parent INT DEFAULT 0');
+$GLOBALS['db']->exec('ALTER TABLE brands ADD COLUMN brand_link TEXT DEFAULT \'\'');
+$GLOBALS['db']->exec("INSERT INTO categories (id_category, category_name, active, id_parent) VALUES (50,'Kadın',1,0),(51,'Giyim',1,50),(52,'Ayakkabı',1,50),(60,'Elektronik',1,0),(61,'Kulaklık',1,60)");
+CategoryMatchStore::reset();
+$r = RvExcel::import($vendA, $xl([
+	['Ürün Adı', 'Kategori', 'Marka', 'Fiyat', 'Stok', 'Stok Kodu', 'Barkod'],
+	['Kadın Midi Elbise', 'Bayan > Elbiseler', 'MarkaA', 300, 2, 'AUTO-1', ''],
+	['Bluetooth Kablosuz Kulaklık', '', 'Yepyeni Marka', 500, 4, 'AUTO-2', ''],
+	['Kadın Deri Bot', 'Ayakkabı', 'markaa', 900, 1, 'AUTO-3', ''],
+]), 'otomatik.xlsx');
+$pc = fn(string $c) => (int) DB::getValue("SELECT p.id_category FROM products p INNER JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? AND p.stock_code = ?", [$vendA, $c]);
+ok($r['created'] === 3 && $r['failed'] === 0, "tek tık: kategori_id/marka_id olmadan 3 ürün açıldı => {$r['message']}");
+ok($pc('AUTO-1') === 51 && $pc('AUTO-2') === 61 && $pc('AUTO-3') === 52, 'kategori metninden ve ürün adından doğru kategori bulundu (Kadın>Giyim, Elektronik>Kulaklık, Kadın>Ayakkabı)');
+ok((int) DB::getValue("SELECT COUNT(*) FROM brands WHERE brand_name = 'Yepyeni Marka'") === 1 && (int) DB::getValue("SELECT COUNT(*) FROM brands WHERE LOWER(brand_name) = 'markaa'") === 1, 'olmayan marka açıldı, mevcut marka (küçük harfle yazılsa da) tekrar açılmadı');
+ok(strpos($r['message'], 'otomatik') !== false, 'sonuç mesajı otomatik eşleşme sayısını bildirir');
+
 $tpl = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx';
 RvExcel::template(Category::getProductSelectOptions(), [['id_brand' => 1, 'brand_name' => '=HYPERLINK("x")']])->saveAs($tpl);
 $tx = SimpleXLSX::parse($tpl);

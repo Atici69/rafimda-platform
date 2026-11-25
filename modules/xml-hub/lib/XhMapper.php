@@ -286,11 +286,26 @@ class XhMapper
 		}
 
 		if ($idCat <= 0 && $catTxt !== '' && $lookup) {
-			$idCat = (int) $lookup('category', $catTxt);
+			$idCat = (int) $lookup('category', $catTxt, $name);
+		}
+
+		// Tedarikçi kategori metni varsa otomatik eşleşme varsayılan kategoriden önce gelir (yedek kategoriye düşmeden).
+		if ($idCat <= 0 && $catTxt !== '' && $lookup) {
+			$idCat = (int) $lookup('category_text', $catTxt, $name);
 		}
 
 		$idBrand = $idBrand > 0 ? $idBrand : (int) ($opt['default_brand'] ?? 0);
 		$idCat = $idCat > 0 ? $idCat : (int) ($opt['default_category'] ?? 0);
+
+		// Otomatik eşleştirme (bağdaştırıcı destekliyorsa): kategori metni yoksa ürün adından; yine yoksa yedek kategori.
+		// Marka: birebir ad eşleşmesi yoksa (izinliyse) yeni marka açılır.
+		if ($idCat <= 0 && $lookup) {
+			$idCat = (int) $lookup('category_auto', $catTxt, $name);
+		}
+
+		if ($idBrand <= 0 && $lookup) {
+			$idBrand = (int) $lookup('brand_auto', $brandTxt, $name);
+		}
 
 		if ($idBrand <= 0) {
 			$errors[] = $brandTxt !== '' ? 'Marka eşleşmedi: "' . $brandTxt . '".' : 'Marka yok ve varsayılan marka seçilmedi.';

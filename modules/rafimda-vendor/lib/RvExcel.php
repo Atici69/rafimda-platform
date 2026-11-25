@@ -20,7 +20,7 @@ class RvExcel
 	public const MAX_ENTRIES = 200;
 	public const EXPORT_MAX = 20000;
 
-	public const COLUMNS = ['urun_id', 'urun_adi', 'kategori_id', 'marka_id', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'aciklama'];
+	public const COLUMNS = ['urun_id', 'urun_adi', 'kategori', 'marka', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'aciklama', 'kategori_id', 'marka_id'];
 
 	public static function loadLibs(): void
 	{
@@ -183,7 +183,7 @@ class RvExcel
 		$r = [SimpleXLSXGen::class, 'raw'];
 		$products = [
 			array_map(static fn($c) => '<b>' . $c . '</b>', self::COLUMNS),
-			['', $r('Örnek Tişört'), 1, 1, 99.90, 25, $r('TSH-001'), $r('8690000000001'), $r('Pamuklu tişört')],
+			['', $r('Örnek Kadın Basic Tişört'), $r('Kadın > Giyim'), $r('Örnek Marka'), 99.90, 25, $r('TSH-001'), $r('8690000000001'), $r('Pamuklu tişört'), '', ''],
 		];
 		$cats = [['<b>kategori_id</b>', '<b>Kategori</b>']];
 
@@ -200,11 +200,12 @@ class RvExcel
 		$help = [
 			['<b>Rafımda toplu ürün şablonu</b>'],
 			[$r('1. "Ürünler" sayfasını doldurun; ilk satırdaki sütun adlarını değiştirmeyin.')],
-			[$r('2. Yeni ürün: urun_id BOŞ bırakın; urun_adi, kategori_id, marka_id ve fiyat zorunludur.')],
-			[$r('3. Mevcut ürün: urun_id veya stok_kodu sizin ürününüzle eşleşirse yalnızca fiyat ve stok güncellenir.')],
-			[$r('4. Güncellemede boş bırakılan fiyat/stok hücresi mevcut değeri korur.')],
-			[$r('5. Kategori ve marka numaraları "Kategoriler" ve "Markalar" sayfalarındadır.')],
-			[$r('6. En fazla ' . RvProducts::CSV_MAX_ROWS . ' satır, dosya en fazla 5 MB.')],
+			[$r('2. Yeni ürün: urun_id BOŞ bırakın; yalnızca urun_adi ve fiyat zorunludur.')],
+			[$r('3. Kategori OTOMATİK bulunur: "kategori" sütununa kendi kategori adınızı ya da yolunu yazın (ör. "Kadın > Elbise") veya boş bırakın; boşsa ürün adından bulunur.')],
+			[$r('4. Emin olunamayan kategoriler "Kategori kontrolü" ekranında onayınıza sunulur; yaptığınız düzeltme sonraki yüklemelerde hatırlanır.')],
+			[$r('5. Marka: "marka" sütununa adını yazın; sitede yoksa yeni marka açılır. İsterseniz kategori_id / marka_id sütunlarına numara da yazabilirsiniz.')],
+			[$r('6. Mevcut ürün: urun_id veya stok_kodu sizin ürününüzle eşleşirse yalnızca fiyat ve stok güncellenir; boş hücre mevcut değeri korur.')],
+			[$r('7. En fazla ' . RvProducts::CSV_MAX_ROWS . ' satır, dosya en fazla 5 MB. Kategori ve marka numaraları ayrı sayfalardadır.')],
 		];
 
 		return SimpleXLSXGen::fromArray($products, 'Ürünler')
@@ -236,7 +237,16 @@ class RvExcel
 	{
 		self::loadLibs();
 		$r = [SimpleXLSXGen::class, 'raw'];
-		$head = ['urun_id', 'urun_adi', 'kategori_id', 'marka_id', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'durum', 'onay'];
+		$head = ['urun_id', 'urun_adi', 'kategori', 'marka', 'fiyat', 'stok', 'stok_kodu', 'barkod', 'kategori_id', 'marka_id', 'durum', 'onay'];
+		$brands = [];
+
+		foreach (DB::execute('SELECT id_brand, brand_name FROM brands') ?: [] as $b) {
+			$brands[(int) $b['id_brand']] = (string) $b['brand_name'];
+		}
+
+		if (!class_exists('CategoryMatchStore')) {
+			require_once dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+		}
 		$rows = [array_map(static fn($c) => '<b>' . $c . '</b>', $head)];
 		$mod = ['approved' => 'Onaylı', 'pending' => 'Onay bekliyor', 'rejected' => 'Reddedildi'];
 
@@ -244,12 +254,14 @@ class RvExcel
 			$rows[] = [
 				(int) $p['id_product'],
 				$r((string) $p['product_name']),
-				(int) $p['id_category'],
-				(int) $p['id_brand'],
+				$r(CategoryMatchStore::sitePath((int) $p['id_category'])),
+				$r($brands[(int) $p['id_brand']] ?? ''),
 				(float) $p['price'],
 				(float) $p['stock'],
 				$r((string) ($p['stock_code'] ?? '')),
 				$r((string) ($p['barcode'] ?? '')),
+				(int) $p['id_category'],
+				(int) $p['id_brand'],
 				$r((int) $p['active'] === 1 ? 'Yayında' : 'Pasif'),
 				$r($mod[(string) ($p['moderation'] ?? 'approved')] ?? (string) $p['moderation']),
 			];

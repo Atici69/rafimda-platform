@@ -646,9 +646,60 @@ class RvProducts
 		$h = strtr($h, ['ı' => 'i', 'ğ' => 'g', 'ü' => 'u', 'ş' => 's', 'ö' => 'o', 'ç' => 'c', 'i̇' => 'i']);
 		$h = preg_replace('/[^a-z0-9]+/', '_', $h) ?? '';
 		$h = trim($h, '_');
-		$alias = ['kategori' => 'kategori_id', 'marka' => 'marka_id', 'id' => 'urun_id', 'urun_no' => 'urun_id', 'sku' => 'stok_kodu', 'barcode' => 'barkod'];
+		$alias = ['kategori_adi' => 'kategori', 'kategori_yolu' => 'kategori', 'category' => 'kategori', 'marka_adi' => 'marka', 'brand' => 'marka', 'id' => 'urun_id', 'urun_no' => 'urun_id', 'sku' => 'stok_kodu', 'barcode' => 'barkod', 'urun_ismi' => 'urun_adi', 'baslik' => 'urun_adi', 'satis_fiyati' => 'fiyat', 'stok_adedi' => 'stok', 'miktar' => 'stok'];
 
 		return $alias[$h] ?? $h;
+	}
+
+	/**
+	 * İçe aktarma satırının kategorisi: geçerli kategori_id → (kategori metni ve/veya ürün adından) otomatik eşleştirme.
+	 * kategori_id hücresine sayı yerine ad yazılmışsa o da metin olarak değerlendirilir.
+	 *
+	 * @param array<string,string> $row
+	 * @return array{id_category:int, path:string, score:float, confidence:string, from:string, alternatives:list<array<string,mixed>>}
+	 */
+	public static function resolveImportCategory(int $idVendor, array $row): array
+	{
+		$rawId = trim((string) ($row['kategori_id'] ?? ''));
+		$text = trim((string) ($row['kategori'] ?? ''));
+
+		if ($rawId !== '' && ctype_digit($rawId)) {
+			if (DB::getRowSafe('categories', 'id_category = ? AND active = 1', [(int) $rawId])) {
+				return ['id_category' => (int) $rawId, 'path' => '', 'score' => 1.0, 'confidence' => 'confirmed', 'from' => 'given', 'alternatives' => []];
+			}
+		} elseif ($rawId !== '' && $text === '') {
+			$text = $rawId;
+		}
+
+		if (!class_exists('CategoryMatchStore')) {
+			require_once dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+		}
+
+		return CategoryMatchStore::resolveSite($idVendor, $text, (string) ($row['urun_adi'] ?? ''));
+	}
+
+	/**
+	 * @param array<string,string> $row
+	 * @return array{id:int, created:bool}
+	 */
+	public static function resolveImportBrand(array $row): array
+	{
+		$rawId = trim((string) ($row['marka_id'] ?? ''));
+		$text = trim((string) ($row['marka'] ?? ''));
+
+		if ($rawId !== '' && ctype_digit($rawId) && DB::getRowSafe('brands', 'id_brand = ? AND active = 1', [(int) $rawId])) {
+			return ['id' => (int) $rawId, 'created' => false];
+		}
+
+		if ($rawId !== '' && !ctype_digit($rawId) && $text === '') {
+			$text = $rawId;
+		}
+
+		if (!class_exists('CategoryMatchStore')) {
+			require_once dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+		}
+
+		return CategoryMatchStore::brandId($text);
 	}
 
 	/**
@@ -665,13 +716,14 @@ class RvProducts
 	{
 		$res = self::emptyImportResult();
 		$header = array_map([self::class, 'normalizeHeader'], $header);
-		$canCreate = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header) === [];
+		// Yeni ürün için yalnızca ad ve fiyat zorunlu: kategori (ad/yol ya da ürün adından) ve marka (adından) otomatik bulunur.
+		$canCreate = array_diff(['urun_adi', 'fiyat'], $header) === [];
 		$canUpdate = (in_array('urun_id', $header, true) || in_array('stok_kodu', $header, true))
 			&& (in_array('fiyat', $header, true) || in_array('stok', $header, true));
 
 		if (!$canCreate && !$canUpdate) {
-			$missing = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header);
-			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Yeni ürün için bu sütunlar, yalnızca fiyat/stok güncellemesi için urun_id veya stok_kodu ile fiyat/stok gerekir. Şablonu indirip kullanın.';
+			$missing = array_diff(['urun_adi', 'fiyat'], $header);
+			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Yeni ürün için urun_adi ve fiyat, yalnızca fiyat/stok güncellemesi için urun_id veya stok_kodu ile fiyat/stok gerekir. Şablonu indirip kullanın.';
 
 			return $res;
 		}
@@ -739,15 +791,32 @@ class RvProducts
 
 			if (!$canCreate) {
 				$res['failed']++;
-				$res['errors'][] = 'Satır ' . $line . ': eşleşen ürününüz yok (urun_id/stok_kodu); yeni ürün için urun_adi, kategori_id, marka_id, fiyat sütunları gerekir.';
+				$res['errors'][] = 'Satır ' . $line . ': eşleşen ürününüz yok (urun_id/stok_kodu); yeni ürün için urun_adi ve fiyat sütunları gerekir.';
+
+				continue;
+			}
+
+			$cat = self::resolveImportCategory($idVendor, $row);
+			$brand = self::resolveImportBrand($row);
+
+			if ($cat['id_category'] <= 0) {
+				$res['failed']++;
+				$res['errors'][] = 'Satır ' . $line . ': kategori bulunamadı (kategori sütununa ad yazın ya da yönetici yedek kategori tanımlasın).';
+
+				continue;
+			}
+
+			if ($brand['id'] <= 0) {
+				$res['failed']++;
+				$res['errors'][] = 'Satır ' . $line . ': marka yok (marka sütununa marka adını yazın).';
 
 				continue;
 			}
 
 			$c = self::create($idVendor, [
 				'product_name' => $row['urun_adi'] ?? '',
-				'id_category' => $row['kategori_id'] ?? 0,
-				'id_brand' => $row['marka_id'] ?? 0,
+				'id_category' => $cat['id_category'],
+				'id_brand' => $brand['id'],
 				'price' => $row['fiyat'] ?? 0,
 				'stock' => ($row['stok'] ?? '') !== '' ? $row['stok'] : 0,
 				'stock_code' => $code,
@@ -758,6 +827,16 @@ class RvProducts
 
 			if (!empty($c['success'])) {
 				$res['created']++;
+				$res['brands_created'] = ($res['brands_created'] ?? 0) + ($brand['created'] ? 1 : 0);
+
+				if ($cat['from'] !== 'given') {
+					$res['auto_category'] = ($res['auto_category'] ?? 0) + 1;
+
+					if (!in_array($cat['confidence'], ['high', 'confirmed'], true)) {
+						CategoryMatchStore::queueReview((int) $c['id'], $idVendor, $kind, (string) ($row['kategori'] ?? ''), (string) ($row['urun_adi'] ?? ''), $cat);
+						$res['review'] = ($res['review'] ?? 0) + 1;
+					}
+				}
 			} else {
 				$res['failed']++;
 				$detail = !empty($c['errors']) ? implode(' ', $c['errors']) : $c['message'];
@@ -766,7 +845,9 @@ class RvProducts
 		}
 
 		$res['success'] = true;
-		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.';
+		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.'
+			. (!empty($res['auto_category']) ? ' Kategorisi otomatik bulunan: ' . $res['auto_category'] . (!empty($res['review']) ? ' (' . $res['review'] . ' tanesi "Kategori kontrolü" listesinde onay bekliyor)' : '') . '.' : '')
+			. (!empty($res['brands_created']) ? ' Yeni açılan marka: ' . $res['brands_created'] . '.' : '');
 
 		$idUser = class_exists('Customer') && Customer::isLoggedIn() ? Customer::getId() : 0;
 		DB::insert('rafimda_import_log', [

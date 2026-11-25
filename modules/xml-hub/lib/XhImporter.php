@@ -3,6 +3,56 @@
 /** Tek ürün satırının işlenmesi: eşleştirme → yinelenen/değişiklik denetimi → ekleme/güncelleme → geçmiş ve hata kaydı. */
 class XhImporter
 {
+	/** Son otomatik kategori kararı (yeni ürün kaydedilince kontrol listesine yazmak için). @var array<string,mixed>|null */
+	public static ?array $lastAuto = null;
+
+	/** Otomatik eşleştirme açık mı? (bağlantı seçeneği; varsayılan açık) */
+	public static function autoEnabled(array $opt): bool
+	{
+		return !array_key_exists('auto_category', $opt) || !empty($opt['auto_category']);
+	}
+
+	/**
+	 * Bağlantıya özel eşleştirme geri çağrısı: tam ad → otomatik kategori (motor + hafıza + yedek) → marka açma.
+	 */
+	public static function lookupFor(int $idVendor, array $opt): callable
+	{
+		self::$lastAuto = null;
+		$auto = self::autoEnabled($opt);
+
+		return static function (string $kind, string $text, string $name = '') use ($idVendor, $auto): int {
+			if ($kind === 'category' || $kind === 'brand') {
+				return self::lookup($kind, $text);
+			}
+
+			if (!$auto) {
+				return 0;
+			}
+
+			if (!class_exists('CategoryMatchStore')) {
+				require_once dirname(__DIR__, 3) . '/core/CategoryMatchStore.php';
+			}
+
+			if ($kind === 'category_auto' || $kind === 'category_text') {
+				$r = CategoryMatchStore::resolveSite($idVendor, $text, $name);
+
+				if ($kind === 'category_text' && (in_array($r['from'], ['fallback', 'none'], true) || $r['confidence'] === 'low')) {
+					return 0;
+				}
+
+				self::$lastAuto = $r + ['source_text' => $text, 'product_name' => $name];
+
+				return (int) $r['id_category'];
+			}
+
+			if ($kind === 'brand_auto') {
+				return (int) CategoryMatchStore::brandId($text)['id'];
+			}
+
+			return 0;
+		};
+	}
+
 	/** @return int marka/kategori adına göre (büyük/küçük harf duyarsız, tam ad) aktif kayıt ID'si */
 	public static function lookup(string $kind, string $text): int
 	{
@@ -68,7 +118,8 @@ class XhImporter
 	public static function preview(array $conn, array $raw): array
 	{
 		$opt = XhRepo::options($conn);
-		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, self::lookupFor((int) $conn['id_vendor'], $opt));
+		$row['category_auto'] = self::$lastAuto;
 		$idVendor = (int) $conn['id_vendor'];
 		$existing = $row['errors'] === [] ? self::resolveExisting($conn, $row) : 0;
 		$row['action'] = $row['errors'] !== [] ? 'error' : ($existing > 0 ? 'update' : 'create');
@@ -102,7 +153,8 @@ class XhImporter
 		$idVendor = (int) $conn['id_vendor'];
 		$kind = (string) $run['kind'];
 		$opt = XhRepo::options($conn);
-		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, [self::class, 'lookup']);
+		$row = XhMapper::apply($raw, XhRepo::mapping($conn), $opt, self::lookupFor($idVendor, $opt));
+		$autoCat = self::$lastAuto;
 		$key = (string) $row['key'];
 
 		if ($key === '') {
@@ -194,6 +246,10 @@ class XhImporter
 			]);
 
 			XhRepo::saveItem($idConn, $key, ['id_product' => $res['id'], 'row_hash' => $row['hash'], 'data' => $rawJson, 'state' => 'imported', 'error' => '', 'attempts' => 0, 'last_run_id' => $idRun]);
+
+			if ($autoCat && (int) $autoCat['id_category'] === (int) $row['id_category'] && class_exists('CategoryMatchStore', false)) {
+				CategoryMatchStore::queueReview((int) $res['id'], $idVendor, 'xml', (string) $autoCat['source_text'], (string) $autoCat['product_name'], $autoCat);
+			}
 
 			return ['outcome' => 'created', 'key' => $key];
 		} catch (Throwable $e) {

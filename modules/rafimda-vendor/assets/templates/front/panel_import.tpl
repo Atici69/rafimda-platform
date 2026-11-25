@@ -2,10 +2,12 @@
 <div class="rv-card" style="max-width:820px"><h3>Excel / CSV ile toplu ürün yükleme</h3>
 	<p>Excel şablonunu indirin, doldurun ve yükleyin (.xlsx veya UTF-8 .csv; en fazla {$maxRows} satır, Excel 5 MB / CSV 2 MB).</p>
 	<ul style="margin:0 0 12px 18px;padding:0">
-		<li><strong>Yeni ürün:</strong> <code>urun_id</code> boş; <code>urun_adi</code>, <code>kategori_id</code>, <code>marka_id</code>, <code>fiyat</code> zorunlu (onay kuralına tabi).</li>
+		<li><strong>Tek tıkla yeni ürün:</strong> yalnızca <code>urun_adi</code> ve <code>fiyat</code> zorunlu. <strong>Kategori otomatik bulunur</strong>: <code>kategori</code> sütununa kendi kategori adınızı/yolunuzu yazın (ör. "Kadın &gt; Elbise") ya da boş bırakın, ürün adından bulunur. <code>marka</code> sütununa marka adını yazın; sitede yoksa açılır.</li>
+		<li>Sistemin emin olamadığı kategoriler <a href="{$reviewUrl}">Kategori kontrolü</a> ekranında onayınıza sunulur; düzeltmeniz sonraki yüklemelerde hatırlanır.</li>
 		<li><strong>Fiyat/stok güncelleme:</strong> <code>urun_id</code> veya <code>stok_kodu</code> sizin ürününüzle eşleşirse yalnızca fiyat ve stok güncellenir; boş hücre mevcut değeri korur.</li>
 		<li>Toplu güncelleme için önce <em>Ürünlerimi Excel'e aktar</em> ile dosyanızı indirin, fiyat/stok sütunlarını düzenleyip geri yükleyin. Tek seferde en fazla {$maxRows} satır işlenir; daha fazla ürününüz varsa dosyayı parçalara bölün.</li>
 	</ul>
+	{if $reviewCount > 0}<p class="rv-alert warning" style="padding:8px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fdba74"><strong>{$reviewCount}</strong> ürün kategori onayı bekliyor. <a href="{$reviewUrl}">Kategori kontrolüne git →</a></p>{/if}
 	<p style="display:flex;flex-wrap:wrap;gap:8px">
 		<a class="rv-btn ghost sm" href="{$templateXlsxUrl}">Excel şablonunu indir</a>
 		<a class="rv-btn ghost sm" href="{$exportXlsxUrl}">Ürünlerimi Excel'e aktar</a>

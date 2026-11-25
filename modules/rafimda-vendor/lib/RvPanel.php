@@ -433,6 +433,27 @@ class RvPanel
 					RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
 					break;
 
+				case 'category_review_save':
+					self::deny('products.edit');
+					$idCat = (int) RvView::post('id_category');
+
+					if (!RvProducts::owns($idVendor, $idProduct)) {
+						RvView::flash('danger', 'Ürün bulunamadı.');
+					} else {
+						$r = CategoryMatchStore::resolveReview($idVendor, $idProduct, $idCat, true);
+						RvView::flash($r['success'] ? 'success' : 'danger', $r['message'] . ($r['success'] ? ' Bu kategori adı bundan sonra hep buraya eşlenecek.' : ''));
+					}
+
+					RvView::redirect(RvView::panelUrl('products', ['a' => 'category_review']));
+					break;
+
+				case 'category_review_confirm_all':
+					self::deny('products.edit');
+					$n = CategoryMatchStore::confirmAllMedium($idVendor);
+					RvView::flash($n > 0 ? 'success' : 'warning', $n . ' ürünün önerilen kategorisi onaylandı.');
+					RvView::redirect(RvView::panelUrl('products', ['a' => 'category_review']));
+					break;
+
 				case 'delete_image':
 				case 'set_cover':
 					self::deny('products.edit');
@@ -471,6 +492,17 @@ class RvPanel
 			exit;
 		}
 
+		if ($a === 'category_review') {
+			self::deny('products.edit');
+
+			return ['panel_category_review', [
+				'listUrl' => RvView::panelUrl('products'),
+				'importUrl' => RvView::panelUrl('products', ['a' => 'import']),
+				'rows' => CategoryMatchStore::pending($idVendor, 200),
+				'categories' => Category::getProductSelectOptions(),
+			]];
+		}
+
 		if ($a === 'import') {
 			self::deny('products.create');
 
@@ -478,6 +510,8 @@ class RvPanel
 				'templateUrl' => RvView::panelUrl('products', ['a' => 'template']),
 				'templateXlsxUrl' => RvView::panelUrl('products', ['a' => 'template_xlsx']),
 				'exportXlsxUrl' => RvView::panelUrl('products', ['a' => 'export_xlsx']),
+				'reviewUrl' => RvView::panelUrl('products', ['a' => 'category_review']),
+				'reviewCount' => CategoryMatchStore::pendingCount($idVendor),
 				'listUrl' => RvView::panelUrl('products'),
 				'maxRows' => RvProducts::CSV_MAX_ROWS,
 				'categories' => Category::getProductSelectOptions(),
