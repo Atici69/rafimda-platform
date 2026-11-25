@@ -6,7 +6,7 @@
 			<select name="state" style="width:auto"><option value="">Tümü</option><option value="active"{if $state == 'active'} selected{/if}>Aktif</option><option value="passive"{if $state == 'passive'} selected{/if}>Pasif</option><option value="lowstock"{if $state == 'lowstock'} selected{/if}>Düşük stok</option></select>
 			<button class="rv-btn ghost sm" type="submit">Filtrele</button>
 		</form>
-		{if $can.create}<a class="rv-btn ghost" href="{$rvDomain}satici-panel?s=products&amp;a=import">CSV yükle</a> <a class="rv-btn" href="{$newUrl}">+ Yeni ürün</a>{/if}
+		{if $can.create}<a class="rv-btn ghost" href="{$rvDomain}satici-panel?s=products&amp;a=import">Excel / CSV yükle</a> <a class="rv-btn" href="{$newUrl}">+ Yeni ürün</a>{/if}
 	</div>
 	<form method="post" id="rv-bulk"><input type="hidden" name="token" value="{$rvToken}"><input type="hidden" name="action" value="bulk">
 	{if $can.edit || $can.delete}

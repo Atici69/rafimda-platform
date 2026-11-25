@@ -170,6 +170,55 @@ ok($r['created'] === 1, 'formül benzeri hücre metin olarak kaydedilir (çalı�
 ok((int) DB::getValue('SELECT COUNT(*) FROM rafimda_import_log WHERE id_vendor = ?', [$vendA]) >= 3, 'içe aktarma günlüğü yazıldı');
 ok(strpos(RvProducts::csvTemplate(), 'urun_adi;kategori_id') !== false, 'CSV şablonu üretilir');
 
+// ---------- 6c2. Excel (.xlsx) içe/dışa aktarma ----------
+section('Excel içe/dışa aktarma');
+RvExcel::loadLibs();
+$xl = function (array $rows): string { $f = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx'; SimpleXLSXGen::fromArray($rows)->saveAs($f); return $f; };
+$r = RvExcel::import($vendA, $xl([
+	['Ürün Adı', 'Kategori ID', 'Marka ID', 'Fiyat', 'Stok', 'Stok Kodu', 'Barkod', 'Açıklama'],
+	['XL Ürün 1', 1, 1, 120.5, 7, 'XL-1', SimpleXLSXGen::raw('8690000000099'), 'Excel ürünü'],
+	['XL Ürün 2', 1, 1, 80, 3, 'XL-2', '', ''],
+	['Kötü', 99, 1, 10, 1, 'XL-3', '', ''],
+]), 'urunler.xlsx');
+ok($r['success'] && $r['created'] === 2 && $r['failed'] === 1, "xlsx: Türkçe başlıklar tanınır, 2 yeni 1 hatalı => {$r['message']}");
+$xl1 = (int) DB::getValue("SELECT p.id_product FROM products p INNER JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ? AND p.stock_code = 'XL-1'", [$vendA]);
+ok($xl1 > 0 && DB::getValue('SELECT barcode FROM products WHERE id_product = ?', [$xl1]) === '8690000000099', 'xlsx: barkod bilimsel gösterime dönmeden kaydedildi');
+$r = RvExcel::import($vendA, $xl([['urun_id', 'fiyat', 'stok'], [$xl1, 150, '']]), 'guncelle.xlsx');
+ok($r['updated'] === 1 && abs((float) DB::getValue('SELECT price FROM products WHERE id_product = ?', [$xl1]) - 150) < 0.001 && (float) DB::getValue('SELECT stock FROM products WHERE id_product = ?', [$xl1]) == 7, 'urun_id ile fiyat güncellenir; boş stok hücresi mevcut stoğu korur');
+$r = RvExcel::import($vendB, $xl([['urun_id', 'fiyat'], [$xl1, 1]]), 'saldiri.xlsx');
+ok($r['updated'] === 0 && $r['failed'] === 1 && abs((float) DB::getValue('SELECT price FROM products WHERE id_product = ?', [$xl1]) - 150) < 0.001, 'B, A\'nın ürününü urun_id ile güncelleyemez');
+$r = RvExcel::import($vendA, $xl([['stok_kodu', 'stok'], ['XL-2', 40], ['YOK-1', 5]]), 'stok.xlsx');
+ok($r['updated'] === 1 && $r['failed'] === 1 && $r['created'] === 0, 'yalnızca güncelleme dosyasında eşleşmeyen satır yeni ürün açmaz');
+$r = RvExcel::import($vendA, $xl([['urun_adi', 'fiyat'], ['X', 1]]), 'eksik.xlsx');
+ok(!$r['success'], 'xlsx: eksik sütunlu dosya reddedilir');
+$fake = tempnam(sys_get_temp_dir(), 'rvxl'); file_put_contents($fake, "urun_adi;fiyat\n");
+ok(!RvExcel::import($vendA, $fake, 'sahte.xlsx')['success'], 'xlsx uzantılı ama zip olmayan dosya reddedilir');
+$evil = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx'; copy($xl([['a']]), $evil);
+$z = new ZipArchive(); $z->open($evil); $z->addFromString('xl/evil.xml', '<?xml version="1.0"?><!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><x>&e;</x>'); $z->close();
+ok(strpos(RvExcel::inspect($evil), 'güvenli olmayan') !== false, 'DOCTYPE/ENTITY içeren xlsx reddedilir (XXE)');
+$bomb = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx'; copy($xl([['a']]), $bomb);
+$z = new ZipArchive(); $z->open($bomb); $z->addFromString('xl/media/big.bin', str_repeat('0', RvExcel::MAX_UNPACKED + 10)); $z->close();
+ok(strpos(RvExcel::inspect($bomb), 'çok büyük') !== false, 'açılmış boyutu sınırı aşan xlsx reddedilir (zip bombası)');
+$big = [['urun_adi', 'kategori_id', 'marka_id', 'fiyat', 'stok_kodu']]; for ($i = 0; $i < 510; $i++) { $big[] = ["XL Toplu $i", 1, 1, 1, "XLB-$i"]; }
+$r = RvExcel::import($vendA, $xl($big), 'buyuk.xlsx');
+ok($r['total'] === RvProducts::CSV_MAX_ROWS, 'xlsx: satır sınırı uygulanır (500)');
+$xlb = array_map('intval', array_column(DB::execute("SELECT id_product FROM products WHERE stock_code LIKE 'XLB-%'") ?: [], 'id_product'));
+foreach ($xlb as $id) { DB::execute('DELETE FROM rafimda_vendor_products WHERE id_product = ?', [$id]); DB::execute('DELETE FROM products WHERE id_product = ?', [$id]); }
+ok(RvProducts::normalizeHeader(' Ürün Adı ') === 'urun_adi' && RvProducts::normalizeHeader('KATEGORİ') === 'kategori_id' && RvProducts::normalizeHeader('SKU') === 'stok_kodu', 'başlık eşleştirme (Türkçe/büyük harf/eş anlamlı)');
+$tpl = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx';
+RvExcel::template(Category::getProductSelectOptions(), [['id_brand' => 1, 'brand_name' => '=HYPERLINK("x")']])->saveAs($tpl);
+$tx = SimpleXLSX::parse($tpl);
+ok($tx && $tx->sheetNames() === ['Ürünler', 'Kategoriler', 'Markalar', 'Açıklama'] && $tx->rows(0)[0][0] === 'urun_id', 'Excel şablonu 4 sayfa ve doğru başlıklarla üretilir');
+ok(strpos((string) file_get_contents('zip://' . $tpl . '#xl/worksheets/sheet3.xml'), '<f>') === false, 'şablonda formül gibi görünen marka adı formül olarak yazılmaz');
+$ex = tempnam(sys_get_temp_dir(), 'rvxl') . '.xlsx';
+RvExcel::export($vendA)->saveAs($ex);
+$exRows = SimpleXLSX::parse($ex)->rows(0);
+$exIds = array_map('intval', array_column(array_slice($exRows, 1), 0));
+$bIds = array_map('intval', array_column(DB::execute('SELECT id_product FROM rafimda_vendor_products WHERE id_vendor = ?', [$vendB]) ?: [], 'id_product'));
+ok(in_array($xl1, $exIds, true) && array_intersect($exIds, $bIds) === [], 'dışa aktarma yalnızca satıcının kendi ürünlerini içerir');
+$r = RvExcel::import($vendA, $ex, 'geri.xlsx');
+ok($r['success'] && $r['created'] === 0 && $r['failed'] === 0 && $r['updated'] === min(RvProducts::CSV_MAX_ROWS, count($exIds)), 'dışa aktarılan dosya geri yüklenince kopya ürün açmadan günceller');
+
 // ---------- 6d. Sipariş bölme, komisyon, defter ----------
 section('Sipariş bölme ve komisyon');
 Settings::set('RAFIMDA_DEFAULT_COMMISSION', '10');

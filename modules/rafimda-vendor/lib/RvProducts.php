@@ -584,14 +584,13 @@ class RvProducts
 	}
 
 	/**
-	 * CSV (UTF-8, ; veya , ayraçlı) içe aktarma. stok_kodu mevcut ve bu satıcıya aitse yalnızca fiyat/stok güncellenir,
-	 * değilse yeni ürün (onay kuralına tabi) oluşturulur. Başka satıcının stok koduyla eşleşme asla yapılmaz.
+	 * CSV (UTF-8, ; veya , ayraçlı) içe aktarma. Satır mantığı importRows() ile Excel (.xlsx) içe aktarmayla ortaktır.
 	 *
 	 * @return array{success:bool, message:string, total:int, created:int, updated:int, failed:int, errors:list<string>}
 	 */
 	public static function importCsv(int $idVendor, string $path, string $fileName): array
 	{
-		$res = ['success' => false, 'message' => '', 'total' => 0, 'created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+		$res = self::emptyImportResult();
 
 		if (!is_file($path) || filesize($path) > self::CSV_MAX_BYTES) {
 			$res['message'] = 'Dosya bulunamadı veya 2 MB sınırını aşıyor.';
@@ -603,7 +602,7 @@ class RvProducts
 		$raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw;
 
 		if (!mb_check_encoding($raw, 'UTF-8')) {
-			$res['message'] = 'Dosya UTF-8 olmalı (Excel: "CSV UTF-8" olarak kaydedin).';
+			$res['message'] = 'Dosya UTF-8 olmalı (Excel: "CSV UTF-8" olarak kaydedin ya da doğrudan .xlsx yükleyin).';
 
 			return $res;
 		}
@@ -615,22 +614,75 @@ class RvProducts
 		rewind($fh);
 
 		$header = fgetcsv($fh, 0, $delim, '"', '');
-		$header = is_array($header) ? array_map(static fn($h): string => strtolower(trim((string) $h)), $header) : [];
-		$missing = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header);
+		$rows = [];
 
-		if ($missing !== []) {
-			fclose($fh);
-			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Şablonu indirip kullanın.';
+		while (($cells = fgetcsv($fh, 0, $delim, '"', '')) !== false) {
+			$rows[] = $cells;
+
+			if (count($rows) > self::CSV_MAX_ROWS + 1) {
+				break;
+			}
+		}
+
+		fclose($fh);
+
+		return self::importRows($idVendor, is_array($header) ? $header : [], $rows, $fileName, 'csv');
+	}
+
+	/** @return array{success:bool, message:string, total:int, created:int, updated:int, failed:int, errors:list<string>} */
+	public static function emptyImportResult(): array
+	{
+		return ['success' => false, 'message' => '', 'total' => 0, 'created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+	}
+
+	/**
+	 * Başlık hücresini makine adına çevirir: "Ürün Adı" → urun_adi, "Kategori ID" → kategori_id.
+	 *
+	 * @param mixed $h
+	 */
+	public static function normalizeHeader($h): string
+	{
+		$h = mb_strtolower(trim((string) $h), 'UTF-8');
+		$h = strtr($h, ['ı' => 'i', 'ğ' => 'g', 'ü' => 'u', 'ş' => 's', 'ö' => 'o', 'ç' => 'c', 'i̇' => 'i']);
+		$h = preg_replace('/[^a-z0-9]+/', '_', $h) ?? '';
+		$h = trim($h, '_');
+		$alias = ['kategori' => 'kategori_id', 'marka' => 'marka_id', 'id' => 'urun_id', 'urun_no' => 'urun_id', 'sku' => 'stok_kodu', 'barcode' => 'barkod'];
+
+		return $alias[$h] ?? $h;
+	}
+
+	/**
+	 * Ortak satır işleyici (CSV ve Excel).
+	 * Eşleşme sırası: urun_id (bu satıcıya aitse) → stok_kodu (bu satıcıya aitse) → eşleşme yoksa yeni ürün.
+	 * Eşleşen üründe yalnızca fiyat/stok güncellenir; BOŞ hücre mevcut değeri korur (sıfırlamaz).
+	 * Başka satıcının ürünüyle asla eşleşme yapılmaz.
+	 *
+	 * @param list<mixed> $header
+	 * @param iterable<list<mixed>> $rows
+	 * @return array{success:bool, message:string, total:int, created:int, updated:int, failed:int, errors:list<string>}
+	 */
+	public static function importRows(int $idVendor, array $header, iterable $rows, string $fileName, string $kind = 'csv'): array
+	{
+		$res = self::emptyImportResult();
+		$header = array_map([self::class, 'normalizeHeader'], $header);
+		$canCreate = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header) === [];
+		$canUpdate = (in_array('urun_id', $header, true) || in_array('stok_kodu', $header, true))
+			&& (in_array('fiyat', $header, true) || in_array('stok', $header, true));
+
+		if (!$canCreate && !$canUpdate) {
+			$missing = array_diff(['urun_adi', 'kategori_id', 'marka_id', 'fiyat'], $header);
+			$res['message'] = 'Eksik sütun(lar): ' . implode(', ', $missing) . '. Yeni ürün için bu sütunlar, yalnızca fiyat/stok güncellemesi için urun_id veya stok_kodu ile fiyat/stok gerekir. Şablonu indirip kullanın.';
 
 			return $res;
 		}
 
 		$line = 1;
 
-		while (($cells = fgetcsv($fh, 0, $delim, '"', '')) !== false) {
+		foreach ($rows as $cells) {
 			$line++;
+			$cells = is_array($cells) ? array_values($cells) : [];
 
-			if ($cells === [null] || $cells === []) {
+			if (implode('', array_map(static fn($c): string => trim((string) $c), $cells)) === '') {
 				continue;
 			}
 
@@ -643,22 +695,37 @@ class RvProducts
 			$row = [];
 
 			foreach ($header as $i => $h) {
-				$row[$h] = trim((string) ($cells[$i] ?? ''));
+				if ($h !== '' && !isset($row[$h])) {
+					$row[$h] = trim((string) ($cells[$i] ?? ''));
+				}
 			}
 
 			$code = mb_substr(strip_tags($row['stok_kodu'] ?? ''), 0, 64);
-			$owned = false;
+			$owned = null;
+			$pid = (int) preg_replace('/\D/', '', (string) ($row['urun_id'] ?? ''));
 
-			if ($code !== '') {
+			if ($pid > 0) {
+				if (!self::owns($idVendor, $pid)) {
+					$res['failed']++;
+					$res['errors'][] = 'Satır ' . $line . ': urun_id ' . $pid . ' size ait bir ürün değil.';
+
+					continue;
+				}
+
+				$owned = $pid;
+			} elseif ($code !== '') {
 				$hit = DB::execute(
 					'SELECT p.id_product FROM rafimda_vendor_products vp INNER JOIN products p ON p.id_product = vp.id_product WHERE vp.id_vendor = ? AND p.stock_code = ? LIMIT 1',
 					[$idVendor, $code]
 				);
-				$owned = ($hit && isset($hit[0])) ? $hit[0] : false;
+				$owned = ($hit && isset($hit[0])) ? (int) $hit[0]['id_product'] : null;
 			}
 
 			if ($owned) {
-				$u = self::quickUpdate($idVendor, (int) $owned['id_product'], $row['fiyat'] ?? 0, $row['stok'] ?? 0);
+				$cur = DB::getRowSafe('products', 'id_product = ?', [$owned]) ?: [];
+				$price = ($row['fiyat'] ?? '') !== '' ? $row['fiyat'] : ($cur['price'] ?? 0);
+				$stock = ($row['stok'] ?? '') !== '' ? $row['stok'] : ($cur['stock'] ?? 0);
+				$u = self::quickUpdate($idVendor, $owned, $price, $stock);
 
 				if (!empty($u['success'])) {
 					$res['updated']++;
@@ -670,12 +737,19 @@ class RvProducts
 				continue;
 			}
 
+			if (!$canCreate) {
+				$res['failed']++;
+				$res['errors'][] = 'Satır ' . $line . ': eşleşen ürününüz yok (urun_id/stok_kodu); yeni ürün için urun_adi, kategori_id, marka_id, fiyat sütunları gerekir.';
+
+				continue;
+			}
+
 			$c = self::create($idVendor, [
 				'product_name' => $row['urun_adi'] ?? '',
 				'id_category' => $row['kategori_id'] ?? 0,
 				'id_brand' => $row['marka_id'] ?? 0,
 				'price' => $row['fiyat'] ?? 0,
-				'stock' => $row['stok'] ?? 0,
+				'stock' => ($row['stok'] ?? '') !== '' ? $row['stok'] : 0,
 				'stock_code' => $code,
 				'barcode' => $row['barkod'] ?? '',
 				'description' => $row['aciklama'] ?? '',
@@ -691,7 +765,6 @@ class RvProducts
 			}
 		}
 
-		fclose($fh);
 		$res['success'] = true;
 		$res['message'] = $res['created'] . ' yeni, ' . $res['updated'] . ' güncellenen, ' . $res['failed'] . ' hatalı satır.';
 
@@ -706,7 +779,7 @@ class RvProducts
 			'rows_failed' => $res['failed'],
 			'errors' => $res['errors'] === [] ? null : json_encode(array_slice($res['errors'], 0, 50), JSON_UNESCAPED_UNICODE),
 		]);
-		RvAudit::log($idVendor, 'product.import_csv', 'import', 0, ['created' => $res['created'], 'updated' => $res['updated'], 'failed' => $res['failed']]);
+		RvAudit::log($idVendor, $kind === 'xlsx' ? 'product.import_xlsx' : 'product.import_csv', 'import', 0, ['created' => $res['created'], 'updated' => $res['updated'], 'failed' => $res['failed']]);
 
 		return $res;
 	}

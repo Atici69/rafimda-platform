@@ -420,12 +420,14 @@ class RvPanel
 					$f = $_FILES['csv'] ?? null;
 					$ext = $f ? strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION)) : '';
 
-					if (!$f || (int) $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name']) || !in_array($ext, ['csv', 'txt'], true)) {
-						RvView::flash('danger', 'Geçerli bir .csv dosyası seçin.');
+					if (!$f || (int) $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $f['tmp_name']) || !in_array($ext, ['csv', 'txt', 'xlsx'], true)) {
+						RvView::flash('danger', 'Geçerli bir Excel (.xlsx) veya .csv dosyası seçin.');
 						RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
 					}
 
-					$r = RvProducts::importCsv($idVendor, (string) $f['tmp_name'], (string) $f['name']);
+					$r = $ext === 'xlsx'
+						? RvExcel::import($idVendor, (string) $f['tmp_name'], (string) $f['name'])
+						: RvProducts::importCsv($idVendor, (string) $f['tmp_name'], (string) $f['name']);
 					$msg = $r['message'] . ($r['errors'] ? ' ' . implode(' | ', array_slice($r['errors'], 0, 8)) : '');
 					RvView::flash(!$r['success'] ? 'danger' : ($r['failed'] > 0 ? 'warning' : 'success'), $msg);
 					RvView::redirect(RvView::panelUrl('products', ['a' => 'import']));
@@ -446,6 +448,21 @@ class RvPanel
 
 		$a = (string) Tools::getValue('a', 'list');
 
+		if ($a === 'template_xlsx') {
+			self::deny('products.create');
+			RvExcel::template(
+				Category::getProductSelectOptions(),
+				DB::execute('SELECT id_brand, brand_name FROM brands WHERE active = 1 ORDER BY brand_name ASC') ?: []
+			)->downloadAs('rafimda-urun-sablonu.xlsx');
+			exit;
+		}
+
+		if ($a === 'export_xlsx') {
+			self::deny('products.view');
+			RvExcel::export($idVendor)->downloadAs('rafimda-urunlerim-' . date('Ymd-Hi') . '.xlsx');
+			exit;
+		}
+
 		if ($a === 'template') {
 			self::deny('products.create');
 			header('Content-Type: text/csv; charset=utf-8');
@@ -459,6 +476,8 @@ class RvPanel
 
 			return ['panel_import', [
 				'templateUrl' => RvView::panelUrl('products', ['a' => 'template']),
+				'templateXlsxUrl' => RvView::panelUrl('products', ['a' => 'template_xlsx']),
+				'exportXlsxUrl' => RvView::panelUrl('products', ['a' => 'export_xlsx']),
 				'listUrl' => RvView::panelUrl('products'),
 				'maxRows' => RvProducts::CSV_MAX_ROWS,
 				'categories' => Category::getProductSelectOptions(),
