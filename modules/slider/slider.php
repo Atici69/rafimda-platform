@@ -12,7 +12,7 @@ class SliderModule extends ModuleBase
 	public string $title = 'Slayt Modülü';
 	public string $version = '1.0.0';
 	public string $description = 'Ana sayfa üst slayt ve kampanya slaytı yönetimi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'home_slider' => 'Ana sayfa üst slayt (hero)',

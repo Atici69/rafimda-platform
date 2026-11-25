@@ -1027,9 +1027,9 @@ class Admin
 		$returnPending = Order::STATUS_RETURN_PENDING;
 		$exclude = [$from, $to, $cancelled, $returned, $returnPending];
 
-		$siteName = trim((string) Settings::get('SITE_NAME', 'Frisay'));
+		$siteName = trim((string) Settings::get('SITE_NAME', 'Rafımda'));
 		if ($siteName === '') {
-			$siteName = 'Frisay';
+			$siteName = 'Rafımda';
 		}
 
 		$platforms = [
@@ -1037,7 +1037,7 @@ class Admin
 			'hepsiburada' => ['label' => 'Hepsiburada', 'color' => '#FF6000'],
 			'n11' => ['label' => 'N11', 'color' => '#7C3AED'],
 			'prestashop' => ['label' => 'PrestaShop', 'color' => '#DF0067'],
-			'frisay' => ['label' => 'FriSay', 'color' => '#5B2CDE'],
+			'frisay' => ['label' => 'Uzak Mağaza', 'color' => '#5B2CDE'],
 			'store' => ['label' => $siteName, 'color' => '#475569'],
 			'pos' => ['label' => 'POS', 'color' => '#0F766E'],
 		];
@@ -1203,7 +1203,7 @@ class Admin
 			'trendyol' => 'Trendyol',
 			'hepsiburada' => 'Hepsiburada',
 			'n11' => 'N11',
-			'frisay' => 'Frisay',
+			'frisay' => 'Mağaza',
 		];
 
 		$mqExists = DB::execute("SHOW TABLES LIKE 'marketplace_questions'");

@@ -13,7 +13,7 @@ class RecentViewedModule extends ModuleBase
 	public string $title = 'Son Bakılan Ürünler';
 	public string $version = '1.0.0';
 	public string $description = 'Ziyaretçinin son baktığı ürünleri ana sayfada kompakt listede gösterir';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'home_bottom' => 'Ana sayfa — son bakılan ürünler bloğu',

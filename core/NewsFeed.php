@@ -2,7 +2,7 @@
 
 class NewsFeed
 {
-	private const REMOTE_URL = 'https://frisay.com/rss.xml';
+	private const REMOTE_URL = '';
 	private const CACHE_FILE = 'news-feed.json';
 	private const CACHE_TTL = 3600;
 
@@ -68,7 +68,7 @@ class NewsFeed
 
 			$items[] = [
 				'title' => (string) ($row['title'] ?? ''),
-				'link' => (string) ($row['link'] ?? 'https://frisay.com'),
+				'link' => (string) ($row['link'] ?? '/'),
 				'description' => (string) ($row['description'] ?? ''),
 				'pubDate' => (string) ($row['pubDate'] ?? date('c')),
 				'category' => (string) ($row['category'] ?? 'Haber'),
@@ -81,6 +81,10 @@ class NewsFeed
 	/** @return array<int, array{title: string, link: string, description: string, pubDate: string, category: string}> */
 	public static function fetchRemote(string $url): array
 	{
+		if (trim($url) === '') {
+			return [];
+		}
+
 		$xml = self::httpGet($url);
 
 		if ($xml === '') {
@@ -93,8 +97,8 @@ class NewsFeed
 	public static function renderRssXml(): string
 	{
 		$items = self::loadLocalItems();
-		$domain = Settings::get('DOMAIN') ?: 'https://frisay.com/';
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$domain = Settings::get('DOMAIN') ?: '/';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$channelLink = rtrim($domain, '/');
 		$buildDate = gmdate('D, d M Y H:i:s') . ' GMT';
 
@@ -102,7 +106,7 @@ class NewsFeed
 			'<?xml version="1.0" encoding="UTF-8"?>',
 			'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
 			'<channel>',
-			'<title>' . self::xmlEscape('FriSay ' . FShop::NAME . ' Haberleri') . '</title>',
+			'<title>' . self::xmlEscape(FShop::NAME . ' Haberleri') . '</title>',
 			'<link>' . self::xmlEscape($channelLink) . '</link>',
 			'<description>' . self::xmlEscape(FShop::NAME . ' sürüm, modül ve özellik duyuruları') . '</description>',
 			'<language>tr</language>',
@@ -144,7 +148,7 @@ class NewsFeed
 
 			$normalized[] = [
 				'title' => $title,
-				'link' => trim((string) ($item['link'] ?? 'https://frisay.com')) ?: 'https://frisay.com',
+				'link' => trim((string) ($item['link'] ?? '/')) ?: '/',
 				'description' => trim((string) ($item['description'] ?? '')),
 				'date' => date('c', $timestamp),
 				'date_label' => date('d.m.Y', $timestamp),

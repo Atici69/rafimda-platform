@@ -132,7 +132,6 @@ class AdminMenuFavorites
 			'marketplace-questions' => self::item('marketplace-questions', 'Questions', 'message-circle-question', $adminUrl . 'marketplace-questions', ['marketplace-questions']),
 			'marketplace-settings' => self::item('marketplace-settings', 'Settings', 'settings', $adminUrl . 'marketplace-settings', ['marketplace-settings']),
 			'modules' => self::item('modules', 'Modules', 'blocks', $adminUrl . 'modules', ['modules', 'module']),
-			'module-store' => self::item('module-store', 'Module Store', 'store', 'https://frisay.com/modules', [], 0, '_blank'),
 			'templates' => self::item('templates', 'Themes', 'palette', $adminUrl . 'templates', ['templates', 'theme-customize']),
 			'settings' => self::item('settings', 'Settings', 'settings', $adminUrl . 'settings', ['settings']),
 			'upgrade' => self::item('upgrade', 'System update', 'arrow-up-circle', $adminUrl . 'upgrade', ['upgrade'], (int) ($badges['upgrade'] ?? 0)),

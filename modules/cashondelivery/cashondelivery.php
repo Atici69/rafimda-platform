@@ -12,7 +12,7 @@ class CashondeliveryModule extends ModuleBase
 	public string $title = 'Kapıda Ödeme';
 	public string $version = '1.0.0';
 	public string $description = 'Teslimatta nakit veya kart ile ödeme';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public string $paymentMethodId = 'cash_on_delivery';

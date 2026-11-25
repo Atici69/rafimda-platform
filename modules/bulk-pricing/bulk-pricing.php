@@ -13,7 +13,7 @@ class BulkPricingModule extends ModuleBase
 	public string $title = 'Toplu Fiyat Güncelleme';
 	public string $version = '1.3.0';
 	public string $description = 'Kategori/marka/fiyat aralığı filtresi, kar dilimli formül veya Excel ile alış / satış fiyatlarını toplu güncelleme';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $frontStylesheets = ['.no-global-assets'];
 	public array $frontScripts = ['.no-global-assets'];

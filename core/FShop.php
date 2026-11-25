@@ -3,7 +3,7 @@
 class FShop
 {
 	public const VERSION = '3.0.3';
-	public const NAME = 'FriSay';
+	public const NAME = 'Rafımda';
 
 	/**
 	 * Güncelleme kanalı kimliği. UpdateInstaller yalnızca aynı kanalın paketini kurar;

@@ -17,7 +17,7 @@
 	{if $pageDesc}
 	<meta name="twitter:description" content="{$pageDesc|escape}">
 	{/if}
-	<meta name="author" content="FriSay">
+	<meta name="author" content="{$siteName|default:'Rafımda'|escape}">
 	<link rel="canonical" href="{$domain|escape}">
 	<meta name="robots" content="index, follow">
 	<meta name="publisher" content="{$siteName|escape}" />

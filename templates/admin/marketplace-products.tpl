@@ -209,7 +209,7 @@
 		<div class="modal fade" id="mp-modal-frisay-{$row.id_product}" tabindex="-1" aria-hidden="true">
 			<div class="modal-dialog modal-lg modal-dialog-scrollable">
 				<div class="modal-content">
-					<div class="modal-header"><div><h5 class="modal-title">FriSay Bağlantı</h5><div class="small text-muted">{$row.product_name|escape}</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button></div>
+					<div class="modal-header"><div><h5 class="modal-title">Uzak Mağaza Bağlantısı</h5><div class="small text-muted">{$row.product_name|escape}</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button></div>
 					<div class="modal-body">{$item.panel_html_frisay nofilter}</div>
 				</div>
 			</div>

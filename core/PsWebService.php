@@ -2319,7 +2319,7 @@ class PsWebService
 			'id_theme' => 1,
 			'active' => 1,
 			'deleted' => 0,
-			'name' => (string) (Settings::get('SITE_NAME') ?: 'FriSay'),
+			'name' => (string) (Settings::get('SITE_NAME') ?: 'Rafımda'),
 		];
 	}
 
@@ -2525,7 +2525,7 @@ class PsWebService
 		$doc = self::xmlDoc();
 		$root = $doc->documentElement;
 		$api = $doc->createElement('api');
-		$api->setAttribute('shopName', (string) (Settings::get('SITE_NAME') ?: 'FriSay'));
+		$api->setAttribute('shopName', (string) (Settings::get('SITE_NAME') ?: 'Rafımda'));
 		$root->appendChild($api);
 
 		foreach ($items as $name => $meta) {

@@ -13,7 +13,7 @@ class GoogleShoppingModule extends ModuleBase
     public string $title       = 'Google Shopping Feed';
     public string $version     = '1.0.0';
     public string $description = 'Google Merchant Center için RSS 2.0 / XML ürün feed\'i üretir.';
-    public string $author      = 'FShop';
+    public string $author      = 'Rafımda';
 
     public array $displayHooks        = [];
     public array $defaultDisplayHooks = [];
@@ -216,7 +216,7 @@ class GoogleShoppingModule extends ModuleBase
     public static function generateXml(): string
     {
         $domain       = rtrim((string) Settings::get('DOMAIN'), '/');
-        $siteName     = Settings::get('SITE_NAME') ?: 'FShop';
+        $siteName     = Settings::get('SITE_NAME') ?: 'Rafımda';
         $currency     = Settings::get('GSF_CURRENCY')      ?: 'TRY';
         $condition    = Settings::get('GSF_CONDITION')     ?: 'new';
         $brandDefault = Settings::get('GSF_BRAND_FALLBACK') ?: $siteName;

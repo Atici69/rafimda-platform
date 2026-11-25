@@ -113,7 +113,7 @@ if (Tools::isSubmit('clearPsWsLog')) {
 $editId = (int) Tools::getValue('edit', 0);
 $editKey = $editId > 0 ? ApiKey::getById($editId) : null;
 
-$apiDocsBase = 'https://frisay.com/developer/';
+$apiDocsBase = '';
 $apiDocs = [
     [
         'group' => adminT('Getting Started'),

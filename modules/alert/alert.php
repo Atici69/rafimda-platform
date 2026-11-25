@@ -13,7 +13,7 @@ class AlertModule extends ModuleBase
 	public string $title = 'Uyarılar';
 	public string $version = '1.0.0';
 	public string $description = 'Sipariş ve kritik stok e-posta uyarıları; stoğa girince haber ver';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_detail' => 'Stokta yokken “stoğa girince haber ver” formu',

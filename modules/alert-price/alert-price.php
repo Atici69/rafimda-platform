@@ -12,7 +12,7 @@ class AlertPriceModule extends ModuleBase
     public string $title = 'Fiyatı Düşünce Haber Ver';
     public string $version = '1.0.0';
     public string $description = 'Müşteriler ürün fiyatı belirli bir seviyeye düşünce e-posta ile bilgilendirilir';
-    public string $author = 'FShop';
+    public string $author = 'Rafımda';
 
     public array $displayHooks = [
         'product_inf' => 'Ürün sayfasında fiyat alarm butonu',

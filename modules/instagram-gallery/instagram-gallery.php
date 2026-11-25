@@ -13,7 +13,7 @@ class InstagramGalleryModule extends ModuleBase
 	public string $title = 'Instagram Galeri';
 	public string $version = '1.0.0';
 	public string $description = 'Ana sayfa altında Instagram görsel galerisi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'home_bottom' => 'Ana sayfa alt bölüm — Instagram galerisi',

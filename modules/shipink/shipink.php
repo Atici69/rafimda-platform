@@ -12,7 +12,7 @@ class ShipinkModule extends ModuleBase
 	public string $title = 'Shipink';
 	public string $version = '1.0.0';
 	public string $description = 'Shipink API ile kargo gönderisi oluşturur';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_order_detail' => 'Sipariş detayında Shipink paneli',
@@ -643,7 +643,7 @@ class ShipinkModule extends ModuleBase
 				'id' => 'fshop',
 				'order_id' => (string) $idOrder,
 				'order_number' => $reference,
-				'name' => $siteName !== '' ? $siteName : 'FShop',
+				'name' => $siteName !== '' ? $siteName : 'Rafımda',
 			],
 			'customer' => [
 				'name' => (string) ($order['customer_name'] ?? ''),

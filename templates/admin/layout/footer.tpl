@@ -51,7 +51,7 @@
 </div>
 {/if}
 <p class="admin-footer-meta text-center">
-	<a href="https://frisay.com/" target="_blank" rel="noopener">FriSay E-Commerce</a>
+	<a href="{$domain|default:'/'|escape}" target="_blank" rel="noopener">Rafımda</a>
 	<span class="text-muted"> · {$fshopName|escape} v{$fshopVersion|escape}</span>
 </p>
 <script src="{$adminJsDir|default:''}popper.min.js"></script>

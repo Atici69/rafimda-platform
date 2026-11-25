@@ -21,7 +21,7 @@
 						<option value="hepsiburada"{if $marketplaceLogPlatform == 'hepsiburada'} selected{/if}>Hepsiburada</option>
 						<option value="n11"{if $marketplaceLogPlatform == 'n11'} selected{/if}>N11</option>
 						<option value="prestashop"{if $marketplaceLogPlatform == 'prestashop'} selected{/if}>PrestaShop</option>
-						<option value="frisay"{if $marketplaceLogPlatform == 'frisay'} selected{/if}>FriSay</option>
+						<option value="frisay"{if $marketplaceLogPlatform == 'frisay'} selected{/if}>Uzak Mağaza</option>
 					</select>
 				</div>
 				<div class="col-md-4 mb-3">

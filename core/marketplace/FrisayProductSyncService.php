@@ -93,7 +93,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		if ($remoteId <= 0 && preg_match('/^\d+$/', trim($code))) {
@@ -101,13 +101,13 @@ class ProductSyncService
 		}
 
 		if ($remoteId <= 0) {
-			return ['ok' => false, 'message' => 'Uzak FriSay ürün ID girin (yalnızca sayı)'];
+			return ['ok' => false, 'message' => 'Uzak mağaza ürün ID girin (yalnızca sayı)'];
 		}
 
 		$remote = self::api()->getProduct($remoteId);
 
 		if (!$remote) {
-			return ['ok' => false, 'message' => 'Uzak FriSay ürünü bulunamadı'];
+			return ['ok' => false, 'message' => 'Uzak mağaza ürünü bulunamadı'];
 		}
 
 		$data = self::normalizeRemoteProduct($remote);
@@ -172,7 +172,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$page = max(1, $page);
@@ -247,7 +247,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$product = \Product::getByIdAdmin($idProduct);
@@ -280,7 +280,7 @@ class ProductSyncService
 				'last_sync_at' => date('Y-m-d H:i:s'),
 			]);
 
-			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'FriSay ürünü gönderilemedi')];
+			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'Uzak mağazaya ürün gönderilemedi')];
 		}
 
 		$remoteId = (int) (($result['data']['id'] ?? 0) ?: ($result['id'] ?? $remoteId));
@@ -301,8 +301,8 @@ class ProductSyncService
 		return [
 			'ok' => true,
 			'message' => $wasLinked
-				? 'Uzak FriSay ürünü güncellendi (#' . $remoteId . ')'
-				: 'Ürün uzak FriSay mağazasına eklendi (#' . $remoteId . ')',
+				? 'Uzak mağaza ürünü güncellendi (#' . $remoteId . ')'
+				: 'Ürün uzak mağazaya eklendi (#' . $remoteId . ')',
 			'mapping' => self::findMapping($idProduct),
 		];
 	}
@@ -315,7 +315,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$limit = max(1, min(25, $limit));
@@ -376,7 +376,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$product = \Product::getByIdAdmin($idProduct);
@@ -388,13 +388,13 @@ class ProductSyncService
 		$remoteId = (int) preg_replace('/\D+/', '', trim($code));
 
 		if ($remoteId <= 0) {
-			return ['ok' => false, 'message' => 'Uzak FriSay ürün ID girin (yalnızca sayı)'];
+			return ['ok' => false, 'message' => 'Uzak mağaza ürün ID girin (yalnızca sayı)'];
 		}
 
 		$remote = self::api()->getProduct($remoteId);
 
 		if (!$remote) {
-			return ['ok' => false, 'message' => 'Uzak FriSay ürün #' . $remoteId . ' bulunamadı'];
+			return ['ok' => false, 'message' => 'Uzak mağaza ürün #' . $remoteId . ' bulunamadı'];
 		}
 
 		$data = self::normalizeRemoteProduct($remote);
@@ -404,7 +404,7 @@ class ProductSyncService
 
 		return [
 			'ok' => true,
-			'message' => 'Uzak FriSay ürünüyle bağlantı oluşturuldu (#' . $remoteId . ')',
+			'message' => 'Uzak mağaza ürünüyle bağlantı oluşturuldu (#' . $remoteId . ')',
 			'mapping' => self::findMapping($idProduct),
 		];
 	}
@@ -417,7 +417,7 @@ class ProductSyncService
 		self::ensureSchema();
 
 		if (!self::isConfigured()) {
-			return ['ok' => false, 'message' => 'FriSay API ayarları tanımlı değil'];
+			return ['ok' => false, 'message' => 'Uzak mağaza API ayarları tanımlı değil'];
 		}
 
 		$product = \Product::getByIdAdmin($idProduct);
@@ -428,7 +428,7 @@ class ProductSyncService
 		}
 
 		if (!self::isLinked($mapping)) {
-			return ['ok' => false, 'message' => 'Önce uzak FriSay ürünüyle eşleştirin veya gönderin'];
+			return ['ok' => false, 'message' => 'Önce uzak mağaza ürünüyle eşleştirin veya gönderin'];
 		}
 
 		$remoteId = (int) ($mapping['remote_id'] ?? 0);
@@ -500,7 +500,7 @@ class ProductSyncService
 
 		return [
 			'ok' => true,
-			'message' => 'Uzak FriSay fiyat/stok güncellendi',
+			'message' => 'Uzak mağaza fiyat/stok güncellendi',
 			'mapping' => self::findMapping($idProduct),
 		];
 	}
@@ -517,14 +517,14 @@ class ProductSyncService
 		}
 
 		if (!self::findMapping($idProduct)) {
-			return ['ok' => false, 'message' => 'FriSay bağlantısı bulunamadı'];
+			return ['ok' => false, 'message' => 'Uzak mağaza bağlantısı bulunamadı'];
 		}
 
 		\DB::execute('DELETE FROM frisay_products WHERE id_product = ?', [$idProduct]);
 
 		return [
 			'ok' => true,
-			'message' => 'FriSay bağlantısı silindi (uzak mağazadaki ürün durmaya devam eder)',
+			'message' => 'Uzak mağaza bağlantısı silindi (uzak mağazadaki ürün durmaya devam eder)',
 		];
 	}
 
@@ -706,13 +706,13 @@ class ProductSyncService
 	 */
 	private static function createShopProduct(array $data, array $options): array
 	{
-		$categoryResult = self::resolveOrCreateCategoryId((string) ($data['category_name'] ?? 'FriSay'));
+		$categoryResult = self::resolveOrCreateCategoryId((string) ($data['category_name'] ?? 'Genel'));
 
 		if (!$categoryResult['success']) {
 			return ['success' => false, 'message' => (string) $categoryResult['message']];
 		}
 
-		$brandResult = self::resolveOrCreateBrandId((string) ($data['brand_name'] ?? 'FriSay'));
+		$brandResult = self::resolveOrCreateBrandId((string) ($data['brand_name'] ?? 'Genel'));
 
 		if (!$brandResult['success']) {
 			return ['success' => false, 'message' => (string) $brandResult['message']];
@@ -755,7 +755,7 @@ class ProductSyncService
 		$name = trim($name);
 
 		if ($name === '') {
-			$name = 'FriSay';
+			$name = 'Genel';
 		}
 
 		$id = (int) \DB::getValue(
@@ -790,7 +790,7 @@ class ProductSyncService
 		$name = trim($name);
 
 		if ($name === '') {
-			$name = 'FriSay';
+			$name = 'Genel';
 		}
 
 		$id = (int) \DB::getValue(

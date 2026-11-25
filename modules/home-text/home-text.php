@@ -12,7 +12,7 @@ class HomeTextModule extends ModuleBase
 	public string $title = 'Ana Sayfa Metni';
 	public string $version = '1.1.0';
 	public string $description = 'Ana sayfaya HTML metin bloğu ekler';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	private const TABLE = 'home_text';
 	private const LEGACY_TABLE = 'home-text';

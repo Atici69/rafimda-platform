@@ -56,8 +56,8 @@ function fshop_pwa_clip($value, $max)
 function fshop_pwa_defaults()
 {
 	return [
-		'name' => 'FShop',
-		'short_name' => 'FShop',
+		'name' => 'Rafımda',
+		'short_name' => 'Rafımda',
 		'description' => 'Online alışveriş',
 		'theme_color' => '#194e70',
 		'background_color' => '#ffffff',
@@ -146,7 +146,7 @@ $s = fshop_pwa_load_db_settings();
 $base = fshop_pwa_base_url();
 
 $manifest = [
-	'name' => $s['name'] !== '' ? $s['name'] : 'FShop',
+	'name' => $s['name'] !== '' ? $s['name'] : 'Rafımda',
 	'short_name' => $s['short_name'] !== '' ? $s['short_name'] : fshop_pwa_clip($s['name'], 12),
 	'description' => $s['description'] !== '' ? $s['description'] : 'Online alışveriş',
 	'id' => $scope,
@@ -163,4 +163,4 @@ $manifest = [
 
 $json = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 
-echo is_string($json) ? $json : '{"name":"FShop","short_name":"FShop","display":"standalone","start_url":"/","scope":"/","icons":[]}';
+echo is_string($json) ? $json : '{"name":"Rafımda","short_name":"Rafımda","display":"standalone","start_url":"/","scope":"/","icons":[]}';

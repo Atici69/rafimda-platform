@@ -90,7 +90,7 @@
 			<div class="form-check"><input class="form-check-input" type="checkbox" name="qa_moderation" value="1" id="eng-qa"{if $rvEngQaMod} checked{/if}><label class="form-check-label" for="eng-qa">Satıcı yanıtları yönetici onayından sonra yayınlansın</label></div>
 			<div class="form-check"><input class="form-check-input" type="checkbox" name="purchase_only" value="1" id="eng-po"{if $rvEngPurchaseOnly} checked{/if}><label class="form-check-label" for="eng-po">Ürün yorumu yalnızca teslim alınmış ürüne yapılabilsin</label></div>
 			<button class="btn btn-outline-primary btn-sm mt-2" type="submit">Kaydet</button></form>
-		<p class="small text-muted mt-2">Ürün soruları ve ürün yorumları FriSay "Soru-Cevap" ve "Yorumlar" modül ekranlarından onaylanır{if !$rvEngQaAvailable} (soru modülü kurulu değil){/if}{if !$rvEngReviewsAvailable} (yorum modülü kurulu değil){/if}. E-posta: {if $rvEngChannels.email == 'configured'}yapılandırıldı{else}<strong>yapılandırılmadı</strong>{/if}; SMS: altyapı yok.</p>
+		<p class="small text-muted mt-2">Ürün soruları ve ürün yorumları "Soru-Cevap" ve "Yorumlar" modül ekranlarından onaylanır{if !$rvEngQaAvailable} (soru modülü kurulu değil){/if}{if !$rvEngReviewsAvailable} (yorum modülü kurulu değil){/if}. E-posta: {if $rvEngChannels.email == 'configured'}yapılandırıldı{else}<strong>yapılandırılmadı</strong>{/if}; SMS: altyapı yok.</p>
 	</div></div>
 </div>
 <div class="col-lg-6">

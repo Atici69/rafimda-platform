@@ -384,7 +384,7 @@ CREATE TABLE `product_logs` (
 INSERT INTO `settings` (`title`, `value`) VALUES
 ('DOMAIN', 'http://localhost/fshop/'),
 ('FOLDER', '/fshop/'),
-('SITE_NAME', 'FShop'),
+('SITE_NAME', 'Rafımda'),
 ('THEME', 'default'),
 ('DEFAULT_LANG', 'tr'),
 ('SHOP_LANGUAGES', 'tr,en'),

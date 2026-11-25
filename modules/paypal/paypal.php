@@ -18,7 +18,7 @@ class PaypalModule extends ModuleBase
 	public string $title = 'PayPal';
 	public string $version = '1.0.0';
 	public string $description = 'PayPal ile güvenli ödeme (Orders API v2)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;
@@ -254,7 +254,7 @@ class PaypalModule extends ModuleBase
 
 		global $domain;
 		$base = rtrim((string) $domain, '/');
-		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'FShop';
+		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'Rafımda';
 
 		$body = [
 			'intent' => 'CAPTURE',

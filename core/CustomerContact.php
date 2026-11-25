@@ -88,7 +88,7 @@ class CustomerContact
 			return ['success' => false, 'message' => adminT('Customer email address is missing or invalid')];
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$mailSubject = $subject !== ''
 			? $subject
 			: ($siteName . ' - ' . adminT('Message from store'));

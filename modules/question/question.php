@@ -12,7 +12,7 @@ class QuestionModule extends ModuleBase
 	public string $title = 'Soru Sor';
 	public string $version = '1.0.0';
 	public string $description = 'Ürün hakkında soru alma ve cevaplama';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_tab' => 'Ürün Tabı',

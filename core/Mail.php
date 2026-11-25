@@ -119,7 +119,7 @@ class Mail
 			return false;
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 		$headers = [
 			'MIME-Version: 1.0',
@@ -151,7 +151,7 @@ class Mail
 	{
 		global $domain;
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$name = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
 		$loginUrl = htmlspecialchars(rtrim($domain, '/') . '/login', ENT_QUOTES, 'UTF-8');
 
@@ -166,7 +166,7 @@ class Mail
 
 	public static function sendPasswordReset(string $to, string $fullName, string $resetUrl): bool
 	{
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$name = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
 		$url = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
 
@@ -182,7 +182,7 @@ class Mail
 
 	public static function sendAdminPasswordReset(string $to, string $fullName, string $resetUrl): bool
 	{
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$name = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
 		$url = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
 
@@ -207,7 +207,7 @@ class Mail
 			return false;
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$reference = trim((string) ($order['reference'] ?? ''));
 		$subject = $siteName . ' — Siparişiniz alındı' . ($reference !== '' ? ' #' . $reference : '');
 
@@ -233,7 +233,7 @@ class Mail
 
 		$to = trim($to);
 		$type = preg_replace('/[^a-z_]/', '', strtolower($type)) ?: 'layout';
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$base = rtrim((string) $domain, '/');
 
 		if ($type === 'welcome') {
@@ -287,7 +287,7 @@ class Mail
 			$reference = (string) $idOrder;
 		}
 
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 		$subject = $siteName . ' — Yeni sipariş' . ($reference !== '' ? ' #' . $reference : '');
 
 		if ($isTest) {
@@ -412,7 +412,7 @@ class Mail
 		$header = self::replaceLayoutPlaceholders(self::getEmailHeader());
 		$content = self::wrapContentSection($body);
 		$footer = self::replaceLayoutPlaceholders(self::getEmailFooter());
-		$siteName = htmlspecialchars(Settings::get('SITE_NAME') ?: 'FShop', ENT_QUOTES, 'UTF-8');
+		$siteName = htmlspecialchars(Settings::get('SITE_NAME') ?: 'Rafımda', ENT_QUOTES, 'UTF-8');
 
 		return '<!DOCTYPE html>'
 			. '<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -643,7 +643,7 @@ class Mail
 		}
 
 		$siteUrl = rtrim((string) $domain, '/');
-		$siteName = (string) (Settings::get('SITE_NAME') ?: 'FShop');
+		$siteName = (string) (Settings::get('SITE_NAME') ?: 'Rafımda');
 		$map = [
 			'{site_name}' => htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8'),
 			'{site_url}' => htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'),

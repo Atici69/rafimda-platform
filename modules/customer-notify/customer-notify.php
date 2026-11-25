@@ -14,7 +14,7 @@ class CustomerNotifyModule extends ModuleBase
 	public string $title = 'Müşteri Bildirimleri';
 	public string $version = '1.2.0';
 	public string $description = 'Müşteri bildirimi + OneSignal tarayıcı push (kargo / yayın)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $routes = [
 		'customer-notification' => 'front/view.php',
@@ -195,7 +195,7 @@ class CustomerNotifyModule extends ModuleBase
 				$result = CustomerNotifyPush::sendOneSignal(
 					$testUserId,
 					'OneSignal test',
-					'FShop test bildirimi — ' . date('H:i:s'),
+					(Settings::get('SITE_NAME') ?: 'Rafımda') . ' test bildirimi — ' . date('H:i:s'),
 					rtrim((string) $domain, '/') . '/my-account#notifications'
 				);
 

@@ -13,7 +13,7 @@ class SmartCampaignModule extends ModuleBase
 	public string $title = 'Akıllı Kampanya';
 	public string $version = '1.1.0';
 	public string $description = 'Belirli ürünü satın alan müşterilere sipariş veya durum değişimine göre gecikmeli e-posta kampanyası ve tıklama takibi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $apiActions = [
 		'cron' => 'api/cron.php',

@@ -12,7 +12,7 @@ class GoogleLoginModule extends ModuleBase
 	public string $title = 'Google Login';
 	public string $version = '1.0.0';
 	public string $description = 'Google hesabı ile giriş ve kayıt';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'auth_social' => 'Giriş / kayıt formlarına Google butonu',

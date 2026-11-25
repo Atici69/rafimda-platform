@@ -5,7 +5,7 @@ class Seo
 	/** @return array<string, array{label: string, title_key: string, desc_key: string, default_title: string, default_desc: string}> */
 	public static function getPageDefinitions(): array
 	{
-		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$siteName = Settings::get('SITE_NAME') ?: 'Rafımda';
 
 		return [
 			'home' => [
@@ -141,7 +141,7 @@ class Seo
 
 		$siteName = trim((string) Settings::get('SITE_NAME'));
 
-		return $siteName !== '' ? $siteName : 'FShop';
+		return $siteName !== '' ? $siteName : 'Rafımda';
 	}
 
 	/**
@@ -153,7 +153,7 @@ class Seo
 		$pageTitle = trim($pageTitle);
 		$siteName = trim((string) Settings::get('SITE_NAME'));
 		if ($siteName === '') {
-			$siteName = 'FShop';
+			$siteName = 'Rafımda';
 		}
 		$suffix = self::getTitleSuffix();
 

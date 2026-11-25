@@ -12,7 +12,7 @@ class NewsletterModule extends ModuleBase
 	public string $title = 'Bülten';
 	public string $version = '1.0.0';
 	public string $description = 'Footer bülten aboneliği ve abone yönetimi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'footer' => 'Footer bülten abonelik formu',

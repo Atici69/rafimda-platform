@@ -77,7 +77,7 @@ class StoreStatus
 
 		$smarty->assign([
 			'maintenanceMessage' => self::getMaintenanceMessage(),
-			'siteName' => Settings::get('SITE_NAME') ?: 'FShop',
+			'siteName' => Settings::get('SITE_NAME') ?: 'Rafımda',
 			'logoUrl' => SiteAssets::getLogoUrl('header'),
 		]);
 

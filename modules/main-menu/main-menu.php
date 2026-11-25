@@ -13,7 +13,7 @@ class MainMenuModule extends ModuleBase
 	public string $title = 'Ana Menü';
 	public string $version = '1.3.0';
 	public string $description = 'Header, mobil ve footer menü konumları; mega menü desteği';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'main_menu' => 'Üst (header) navigasyon',

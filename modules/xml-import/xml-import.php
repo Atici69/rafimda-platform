@@ -13,7 +13,7 @@ class XmlImportModule extends ModuleBase
 	public string $title = 'XML Ürün Aktarım';
 	public string $version = '1.0.0';
 	public string $description = 'XML dosyası veya URL ile ürün ekleme / güncelleme (stok kodu, barkod veya ürün adı eşleştirme)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $apiActions = [
 		'cron' => 'api/cron.php',

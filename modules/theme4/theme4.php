@@ -13,7 +13,7 @@ class Theme4Module extends ModuleBase
 	public string $title = 'Tema Edit';
 	public string $version = '2.6.0';
 	public string $description = 'Default temayı sitede tıklayarak düzenleme';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $hooksMeta = [
 		'admin.menu' => 'Sol menüde Sistem bölümünde Tema Edit linki',
@@ -1049,7 +1049,7 @@ class Theme4Module extends ModuleBase
 		}
 
 		if ($siteName === '') {
-			$siteName = 'FShop';
+			$siteName = 'Rafımda';
 		}
 
 		$year = date('Y');

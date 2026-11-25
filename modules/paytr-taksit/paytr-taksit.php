@@ -12,7 +12,7 @@ class PaytrTaksitModule extends ModuleBase
 	public string $title = 'Taksit Tablosu';
 	public string $version = '1.0.0';
 	public string $description = 'Ürüne ait taksitleri gösterir';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_tab' => 'Ürün Tabı',

@@ -13,7 +13,7 @@ class AbandonedCartModule extends ModuleBase
 	public string $title = 'Terk Edilen Sepet';
 	public string $version = '1.0.0';
 	public string $description = 'Sepet takibi, hatırlatma e-postası ve otomatik cron';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $adminStylesheets = ['admin.css'];
 

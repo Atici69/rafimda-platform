@@ -13,7 +13,7 @@ class AiAssistantModule extends ModuleBase
 	public string $title = 'Yapay Zeka Asistanı';
 	public string $version = '1.2.0';
 	public string $description = 'Admin header: dashboard/sipariş özeti, SEO, CMS, blog ve ürün metni AI desteği';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'admin_header' => 'Admin orta alan üstü — sayfa bağlamlı AI bar',
@@ -168,7 +168,7 @@ class AiAssistantModule extends ModuleBase
 			} else {
 				$testResult = AiAssistantClient::chat(
 					'Sen kısa yardımcı bir asistansın. Türkçe cevap ver.',
-					'FShop AI Asistanı bağlantı testi. Tek cümleyle çalıştığını doğrula.',
+					'Rafımda AI Asistanı bağlantı testi. Tek cümleyle çalıştığını doğrula.',
 					['max_tokens' => 80, 'temperature' => 0.2]
 				);
 				$flash = !empty($testResult['success'])

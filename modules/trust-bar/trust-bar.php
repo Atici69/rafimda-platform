@@ -13,7 +13,7 @@ class TrustBarModule extends ModuleBase
 	public string $title = 'Güven Bandı';
 	public string $version = '1.0.0';
 	public string $description = 'Ana sayfa altında güven / avantaj kutuları (ücretsiz kargo, iade vb.)';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'home_bottom' => 'Ana sayfa alt bölüm — güven bandı',

@@ -13,7 +13,7 @@ class FiyattrendModule extends ModuleBase
 	public string $title = 'FiyatTrend';
 	public string $version = '1.0.0';
 	public string $description = 'FiyatTrend.com ürün karşılaştırması için Google Merchant uyumlu XML feed';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [];
 	public array $defaultDisplayHooks = [];

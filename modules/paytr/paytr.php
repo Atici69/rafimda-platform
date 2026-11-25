@@ -12,7 +12,7 @@ class PaytrModule extends ModuleBase
 	public string $title = 'PayTR';
 	public string $version = '1.0.0';
 	public string $description = 'PayTR iFrame ile kredi/banka kartı ödemesi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;

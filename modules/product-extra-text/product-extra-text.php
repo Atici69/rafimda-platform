@@ -12,7 +12,7 @@ class ProductExtraTextModule extends ModuleBase
 	public string $title = 'Ürün Ek Metin';
 	public string $version = '1.1.0';
 	public string $description = 'Tüm ürün sayfalarında gösterilen ortak metin/HTML alanı';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'product_detail' => 'Ürün sayfası — ortak metin alanı',

@@ -1405,7 +1405,7 @@
 		'Use the exact text from your template adminT call. Saved to lang/admin/en.php and the target language file.' => 'Şablondaki adminT metnini aynen yazın. lang/admin/en.php ve hedef dil dosyasına kaydedilir.',
 		'Use the exact text from your template translate call. Saved to lang/en.php and the target language file.' => 'Şablondaki translate metnini aynen yazın. lang/en.php ve hedef dil dosyasına kaydedilir.',
 		'Use variations' => 'Varyasyon kullan',
-		'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.' => 'Ürün, kategori ve diğer sayfalarda sayfa adından sonra eklenir (örn. Ürün | FriSay). Anasayfa kendi meta başlığını sonek olmadan kullanır.',
+		'Used after the page name on products, categories and other pages (e.g. Product | Rafımda). Homepage uses its own meta title without this suffix.' => 'Ürün, kategori ve diğer sayfalarda sayfa adından sonra eklenir (örn. Ürün | FriSay). Anasayfa kendi meta başlığını sonek olmadan kullanır.',
 		'Used by scheduled jobs (currency, marketplace, module cron). Regenerating breaks old cron URLs until you update them.' => 'Zamanlanmış görevler (döviz, pazaryeri, modül cron) kullanır. Yenilemek, güncelleyene kadar eski cron adreslerini bozar.',
 		'Used in Organization schema. Email and phone come from Site Settings.' => 'Organization şemasında kullanılır. E-posta ve telefon Site Ayarlarından alınır.',
 		'Used in the site footer and schema markup. Leave blank to hide.' => 'Site footer ve schema işaretlemesinde kullanılır. Boş bırakırsanız gizlenir.',

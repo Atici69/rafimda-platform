@@ -83,8 +83,8 @@
 
 {if $tab == 'categories'}
 <div class="admin-panel p-3">
-	<h2 class="h6 mb-3">FShop → Shopier Kategori Eşlemesi</h2>
-	<p class="small text-muted">Her FShop kategorisi için Shopier kategori ID tanımlayabilirsiniz. Boş bırakılanlar varsayılan kategoriyi kullanır.</p>
+	<h2 class="h6 mb-3">Mağaza → Shopier Kategori Eşlemesi</h2>
+	<p class="small text-muted">Her mağaza kategorisi için Shopier kategori ID tanımlayabilirsiniz. Boş bırakılanlar varsayılan kategoriyi kullanır.</p>
 
 	<form method="post">
 		<input type="hidden" name="saveShopierCategories" value="1">
@@ -99,7 +99,7 @@
 			<table class="table table-sm align-middle">
 				<thead>
 					<tr>
-						<th>FShop Kategorisi</th>
+						<th>Mağaza Kategorisi</th>
 						<th style="width:280px">Shopier Kategori ID</th>
 					</tr>
 				</thead>

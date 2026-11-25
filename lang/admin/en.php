@@ -1369,7 +1369,7 @@
 		'Use the exact text from your template adminT call. Saved to lang/admin/en.php and the target language file.' => 'Use the exact text from your template adminT call. Saved to lang/admin/en.php and the target language file.',
 		'Use the exact text from your template translate call. Saved to lang/en.php and the target language file.' => 'Use the exact text from your template translate call. Saved to lang/en.php and the target language file.',
 		'Use variations' => 'Use variations',
-		'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.' => 'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.',
+		'Used after the page name on products, categories and other pages (e.g. Product | Rafımda). Homepage uses its own meta title without this suffix.' => 'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.',
 		'Used by scheduled jobs (currency, marketplace, module cron). Regenerating breaks old cron URLs until you update them.' => 'Used by scheduled jobs (currency, marketplace, module cron). Regenerating breaks old cron URLs until you update them.',
 		'Used in Organization schema. Email and phone come from Site Settings.' => 'Used in Organization schema. Email and phone come from Site Settings.',
 		'Used in the site footer and schema markup. Leave blank to hide.' => 'Used in the site footer and schema markup. Leave blank to hide.',

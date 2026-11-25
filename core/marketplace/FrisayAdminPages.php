@@ -14,7 +14,7 @@ class FrisayAdminPages
 			if (hash_equals($adminToken, $postToken)) {
 				\Settings::set('FRISAY_API_URL', rtrim(trim((string) \Tools::getValue('frisay_url')), '/'));
 				\Settings::set('FRISAY_API_KEY', trim((string) \Tools::getValue('frisay_api_key')));
-				$flash = 'FriSay uzak mağaza ayarları kaydedildi';
+				$flash = 'Uzak mağaza ayarları kaydedildi';
 			} else {
 				$flash = 'Geçersiz istek';
 			}

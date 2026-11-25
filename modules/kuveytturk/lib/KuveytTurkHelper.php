@@ -229,7 +229,7 @@ class KuveytTurkHelper
 			'<CustomerId>' . htmlspecialchars((string) ($data['CustomerId'] ?? ''), ENT_XML1, 'UTF-8') . '</CustomerId>' .
 			'<UserName>' . htmlspecialchars((string) ($data['UserName'] ?? ''), ENT_XML1, 'UTF-8') . '</UserName>' .
 			'<IdentityTaxNumber>' . htmlspecialchars((string) ($data['IdentityTaxNumber'] ?? '11111111111'), ENT_XML1, 'UTF-8') . '</IdentityTaxNumber>' .
-			'<Description>' . htmlspecialchars((string) ($data['Description'] ?? 'FShop Order'), ENT_XML1, 'UTF-8') . '</Description>' .
+			'<Description>' . htmlspecialchars((string) ($data['Description'] ?? 'Rafımda Order'), ENT_XML1, 'UTF-8') . '</Description>' .
 			'<CardNumber>' . htmlspecialchars((string) ($data['CardNumber'] ?? ''), ENT_XML1, 'UTF-8') . '</CardNumber>' .
 			'<CardExpireDateYear>' . htmlspecialchars((string) ($data['CardExpireDateYear'] ?? ''), ENT_XML1, 'UTF-8') . '</CardExpireDateYear>' .
 			'<CardExpireDateMonth>' . htmlspecialchars((string) ($data['CardExpireDateMonth'] ?? ''), ENT_XML1, 'UTF-8') . '</CardExpireDateMonth>' .
@@ -272,7 +272,7 @@ class KuveytTurkHelper
 			'<CustomerId>' . htmlspecialchars((string) ($data['CustomerId'] ?? ''), ENT_XML1, 'UTF-8') . '</CustomerId>' .
 			'<UserName>' . htmlspecialchars((string) ($data['UserName'] ?? ''), ENT_XML1, 'UTF-8') . '</UserName>' .
 			'<IdentityTaxNumber>' . htmlspecialchars((string) ($data['IdentityTaxNumber'] ?? '11111111111'), ENT_XML1, 'UTF-8') . '</IdentityTaxNumber>' .
-			'<Description>' . htmlspecialchars((string) ($data['Description'] ?? 'FShop Order'), ENT_XML1, 'UTF-8') . '</Description>' .
+			'<Description>' . htmlspecialchars((string) ($data['Description'] ?? 'Rafımda Order'), ENT_XML1, 'UTF-8') . '</Description>' .
 			'<TransactionType>Sale</TransactionType>' .
 			'<InstallmentCount>0</InstallmentCount>' .
 			'<CurrencyCode>0949</CurrencyCode>' .

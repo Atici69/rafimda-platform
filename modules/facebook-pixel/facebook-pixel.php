@@ -13,7 +13,7 @@ class FacebookPixelModule extends ModuleBase
 	public string $title = 'Facebook Pixel';
 	public string $version = '1.0.0';
 	public string $description = 'Meta (Facebook) Pixel ile ziyaret, ürün, sepet ve satın alma olaylarını izler';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [
 		'head.top' => 'Pixel temel kodu (head)',

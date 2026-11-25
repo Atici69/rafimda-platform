@@ -556,7 +556,7 @@ class Contact
 			return;
 		}
 
-		$subjectLine = '[FShop] ' . ($subject !== '' ? $subject : 'Contact form');
+		$subjectLine = '[' . (Settings::get('SITE_NAME') ?: 'Rafımda') . '] ' . ($subject !== '' ? $subject : 'Contact form');
 		$bodyHtml = '<p><strong>Name:</strong> ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</p>'
 			. '<p><strong>Email:</strong> ' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '</p>'
 			. '<p><strong>Subject:</strong> ' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</p>';

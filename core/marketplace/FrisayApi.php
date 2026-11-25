@@ -209,7 +209,7 @@ class FrisayApi
 	public function request(string $method, string $path, ?array $body = null, array $query = []): array
 	{
 		if (!$this->isConfigured()) {
-			return ['ok' => false, 'success' => false, 'message' => 'FriSay API ayarları eksik'];
+			return ['ok' => false, 'success' => false, 'message' => 'Uzak mağaza API ayarları eksik'];
 		}
 
 		if (!function_exists('curl_init')) {

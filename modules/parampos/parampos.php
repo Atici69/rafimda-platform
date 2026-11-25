@@ -12,7 +12,7 @@ class ParamposModule extends ModuleBase
 	public string $title = 'ParamPOS';
 	public string $version = '1.1.0';
 	public string $description = 'ParamPOS ortak ödeme sayfası ile kredi/banka kartı ödemesi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;
@@ -171,7 +171,7 @@ class ParamposModule extends ModuleBase
 		$bodyParams = [
 			'GUID' => $guid,
 			'Borclu_Kisi_TC' => '',
-			'Borclu_Aciklama' => 'r|FShop siparis ' . $reference,
+			'Borclu_Aciklama' => 'r|Rafimda siparis ' . $reference,
 			'Borclu_Tutar' => 'r|' . $amount,
 			'Borclu_GSM' => 'r|' . $phone,
 			'Borclu_Odeme_Tip' => 'r|Diger',

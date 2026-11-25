@@ -202,15 +202,6 @@
 					</ul>
 				</div>
 
-				<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 rounded-3 module-upload-store">
-					<div>
-						<div class="fw-semibold">{'FriSay module store'|adminT}</div>
-						<div class="small text-muted">{'Browse verified modules and download as ZIP.'|adminT}</div>
-					</div>
-					<a href="{$frisayModulesUrl|escape}" class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer">
-						{'Browse FriSay modules'|adminT}
-					</a>
-				</div>
 
 				<form method="post" enctype="multipart/form-data" id="uploadModuleForm">
 					<input type="hidden" name="uploadModuleZip" value="1">

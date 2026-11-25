@@ -12,7 +12,7 @@ class BankwireModule extends ModuleBase
 	public string $title = 'Banka Havalesi';
 	public string $version = '1.1.0';
 	public string $description = 'Havale / EFT ile ödeme alma';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public string $paymentMethodId = 'bank_transfer';

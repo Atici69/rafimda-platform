@@ -18,7 +18,7 @@ class IyzicoModule extends ModuleBase
 	public string $title = 'iyzico';
 	public string $version = '1.0.0';
 	public string $description = 'iyzico Checkout Form ile kredi/banka kartı ödemesi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public bool $isPayment = true;
 	public bool $paysBeforeOrder = true;

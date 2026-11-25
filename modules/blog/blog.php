@@ -13,7 +13,7 @@ class BlogModule extends ModuleBase
 	public string $title = 'Blog';
 	public string $version = '1.1.0';
 	public string $description = 'Blog yazıları ve kategoriler: liste, detay ve admin yönetimi';
-	public string $author = 'FShop';
+	public string $author = 'Rafımda';
 
 	public array $displayHooks = [];
 	public array $defaultDisplayHooks = [];
