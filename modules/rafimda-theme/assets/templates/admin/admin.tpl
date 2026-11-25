@@ -8,6 +8,19 @@
 		</tbody></table>
 		<p class="text-muted">Satıcı bağlantıları/bandı yalnızca <code>rafimda-vendor</code>, bayi bağlantıları/bandı yalnızca <code>rafimda-dealer</code> etkinse gösterilir. Ürün bölümleri veritabanındaki gerçek ürünlerden gelir; ürün yoksa bölüm gösterilmez.</p>
 	</div>
+	<div class="card" style="padding:16px;margin-bottom:16px">
+		<h4>Pazaryeri kategori ağacı</h4>
+		<p class="text-muted">Büyük pazaryerlerindeki gibi {$rtCatPlan.items|count} kategorilik iki seviyeli bir ağaç. Yükleyici yalnızca <strong>eksik</strong> kategorileri ekler; mevcut kategorilere dokunmaz, hiçbir şeyi silmez ve tekrar çalıştırılırsa kopya oluşturmaz. Yeni üst kategoriler ana sayfada gösterilir; boş kategorileri daha sonra Katalog → Kategoriler'den pasifleştirebilirsiniz.</p>
+		<p><strong>{$rtCatPlan.create|escape}</strong> kategori eklenecek, <strong>{$rtCatPlan.existing|escape}</strong> kategori zaten var.</p>
+		<details style="margin-bottom:12px"><summary>Ağacı göster</summary>
+			<ul style="columns:3;font-size:13px;margin-top:8px">
+			{foreach $rtCatPlan.items as $it}{if $it.name == ''}<li style="margin-top:6px"><strong>{$it.top|escape}</strong>{if $it.exists} <span class="text-muted">(var)</span>{/if}</li>{else}<li style="margin-left:14px">{$it.name|escape}{if $it.exists} <span class="text-muted">(var)</span>{/if}</li>{/if}{/foreach}
+			</ul>
+		</details>
+		{if $rtCatPlan.create > 0}
+		<form method="post" onsubmit="return confirm('{$rtCatPlan.create|escape} kategori eklenecek. Mevcut kategoriler değişmez. Devam edilsin mi?')"><input type="hidden" name="token" value="{$rtToken|escape}"><input type="hidden" name="rtAction" value="category_tree"><button class="btn btn-dark" type="submit">Eksik kategorileri ekle</button></form>
+		{else}<p class="text-success mb-0">Ağaçtaki tüm kategoriler mevcut.</p>{/if}
+	</div>
 	<form method="post" class="card" style="padding:16px">
 		<input type="hidden" name="token" value="{$rtToken|escape}">
 		<h4>Görünüm</h4>

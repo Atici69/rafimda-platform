@@ -4,4 +4,4 @@
 <p>Rafımda'da mağaza açmak ücretsizdir; satıcılar yalnızca gerçekleşen satışları üzerinden komisyon öder. Başvuru için <a href="/satici-kayit">satıcı başvuru sayfasını</a> ziyaret edebilirsiniz.</p>
 
 <h2 class="fs-6 mt-4">İletişim</h2>
-<p>Sorularınız için <a href="/iletisim">iletişim sayfamızdan</a> bize ulaşabilirsiniz.</p>
+<p>Sorularınız için <a href="/contact">iletişim sayfamızdan</a> bize ulaşabilirsiniz.</p>

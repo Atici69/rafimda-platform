@@ -5,6 +5,7 @@ if (!defined('IN_SCRIPT') && !defined('IN_ADMIN')) {
 }
 
 require_once dirname(__DIR__, 2) . '/core/ModuleBase.php';
+require_once __DIR__ . '/lib/RtCategoryTree.php';
 
 /**
  * Rafımda mağaza teması entegrasyonu: FriSay'ın mevcut temasının (theme4) ÜSTÜNE marka renkleri (lacivert/turuncu), ana sayfa hero'su,
@@ -56,6 +57,23 @@ class RafimdaThemeModule extends ModuleBase
 	public function boot(): void
 	{
 		$this->registerAdminMenuLink('Rafımda Tema', 'system', 43);
+
+		if (defined('IN_ADMIN') || !defined('IN_SCRIPT') || !class_exists('Module')) {
+			return;
+		}
+
+		// Pazaryeri teması: başlıktaki kategori menüsü için üst kategoriler + alt kategoriler (tek sorgu turu, yalnızca bu temada)
+		Module::registerHook('smarty.assign', static function ($smarty): void {
+			if (!$smarty || !self::marketplaceTheme() || !class_exists('Category')) {
+				return;
+			}
+
+			try {
+				$smarty->assign('rtMenuTree', Category::getMenuListWithChildren());
+			} catch (\Throwable $e) {
+				error_log('rafimda-theme menu: ' . $e->getMessage());
+			}
+		});
 	}
 
 	public static function setting(string $key, string $default = ''): string
@@ -74,6 +92,12 @@ class RafimdaThemeModule extends ModuleBase
 	{
 		// Modül etkin olsa bile bayilik ana anahtarı kapalıysa (ilk lansman) hiçbir bayi bağlantısı gösterilmez
 		return class_exists('Module') && Module::isEnabled('rafimda-dealer') && class_exists('RdSwitch') && RdSwitch::enabled();
+	}
+
+	/** Etkin tema Rafımda Pazaryeri teması mı? O tema kategori şeridini ve ürün bölümlerini kendisi çizer (tekrar olmasın). */
+	public static function marketplaceTheme(): bool
+	{
+		return class_exists('Settings') && (string) Settings::get('THEME') === 'rafimda';
 	}
 
 	/** Ana sayfa mı? (kancalar her sayfada çizildiği için ağır sorgular yalnızca burada çalışır) */
@@ -295,7 +319,7 @@ class RafimdaThemeModule extends ModuleBase
 				return null;
 			}
 
-			$vars['rtCategories'] = self::homeData()['categories'];
+			$vars['rtCategories'] = self::marketplaceTheme() ? [] : self::homeData()['categories'];
 			$vars['rtHeroImage'] = self::cleanBanner(['image' => self::setting('hero_image', '')])['image'];
 			$html = $this->renderFrontTemplate('hero', $vars);
 
@@ -307,7 +331,7 @@ class RafimdaThemeModule extends ModuleBase
 				return null;
 			}
 
-			$data = self::homeData();
+			$data = self::marketplaceTheme() ? ['sections' => []] : self::homeData();
 			$vars['rtSections'] = $data['sections'];
 			$vars['rtBanners'] = self::banners();
 			$vars['rtShowPromo'] = self::setting('footer', '1') === '1';
@@ -338,6 +362,9 @@ class RafimdaThemeModule extends ModuleBase
 				$flash = ['type' => 'danger', 'message' => 'Geçersiz istek.'];
 			} elseif (Admin::isDemoMode()) {
 				$flash = ['type' => 'warning', 'message' => 'Demo modunda bu işlem yapılamaz.'];
+			} elseif (($_POST['rtAction'] ?? '') === 'category_tree') {
+				$r = RtCategoryTree::apply();
+				$flash = ['type' => $r['success'] ? 'success' : 'warning', 'message' => $r['message'] . ($r['errors'] ? ' ' . implode(' | ', array_slice($r['errors'], 0, 5)) : '')];
 			} else {
 				self::saveSettings($_POST);
 				$flash = ['type' => 'success', 'message' => 'Kaydedildi.'];
@@ -358,7 +385,7 @@ class RafimdaThemeModule extends ModuleBase
 
 		$smarty->assign(['pageTitle' => $this->title, 'rtFlash' => $flash, 'rtToken' => $adminToken, 'rtMods' => $mods, 'rtBannerSlots' => $banners, 'rtSet' => [
 			'hero_image' => self::setting('hero_image', ''), 'hero' => self::setting('hero', '1'), 'footer' => self::setting('footer', '1'), 'sections' => self::setting('sections', '1'), 'title' => self::setting('title', ''), 'subtitle' => self::setting('subtitle', ''), 'slide_seconds' => (string) self::slideSeconds(),
-		], 'rtSlideSlots' => self::slideSlots()]);
+		], 'rtSlideSlots' => self::slideSlots(), 'rtCatPlan' => RtCategoryTree::plan()]);
 	}
 
 	/** Yönetim formu için sabit sayıda slayt alanı (kayıtlı slaytlar + boş alanlar). @return list<array<string,string>> */
