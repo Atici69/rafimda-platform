@@ -511,7 +511,16 @@ final class RcatMatcher
 		$where = in_array($origin, ['manual', 'auto', 'pending', 'ignore'], true) ? 'WHERE m.origin = ?' : '';
 		$params = $where !== '' ? [$origin] : [];
 
-		return DB::execute('SELECT m.*, c.category_name, s.category_name AS suggest_name FROM ' . self::TABLE . ' m LEFT JOIN categories c ON c.id_category = m.id_category LEFT JOIN categories s ON s.id_category = m.suggest_id ' . $where . ' ORDER BY m.hits DESC, m.date_upd DESC LIMIT ' . max(1, min(2000, $limit)), $params) ?: [];
+		$rows = DB::execute('SELECT m.*, c.category_name, s.category_name AS suggest_name FROM ' . self::TABLE . ' m LEFT JOIN categories c ON c.id_category = m.id_category LEFT JOIN categories s ON s.id_category = m.suggest_id ' . $where . ' ORDER BY m.hits DESC, m.date_upd DESC LIMIT ' . max(1, min(2000, $limit)), $params) ?: [];
+
+		foreach ($rows as &$r) {
+			// aynı adlı kategoriler (Kadın > Mont / Erkek > Mont) ayırt edilsin diye tam yol
+			$r['category_name'] = (int) $r['id_category'] > 0 ? (self::pathOf((int) $r['id_category']) ?: $r['category_name']) : $r['category_name'];
+			$r['suggest_name'] = (int) $r['suggest_id'] > 0 ? (self::pathOf((int) $r['suggest_id']) ?: $r['suggest_name']) : $r['suggest_name'];
+		}
+		unset($r);
+
+		return $rows;
 	}
 
 	/** Kategori ID → "Üst > Alt" gösterimi. */

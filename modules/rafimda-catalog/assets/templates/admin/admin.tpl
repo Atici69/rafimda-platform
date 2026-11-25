@@ -37,16 +37,16 @@
 {if $rcTab == 'map'}
 <div class="admin-panel p-3 mb-3">
 	<p class="small text-muted">XML, Excel ve pazaryerinden gelen kategori adları burada toplanır. Puanı <strong>{$rcThreshold|escape}</strong> ve üzeri olanlar otomatik eşlenir; altındakiler <em>bekleyen</em> olarak önerilir ve onaylayana kadar ürün varsayılan kategoriye gider (yanlış kategoriye ürün atılmaz). Kaydettiğiniz eşleme kalıcıdır ve tüm satıcılar için geçerlidir.</p>
-	<div class="btn-group btn-group-sm mb-3">
+	<div class="d-flex flex-wrap gap-1 mb-3">
 		{foreach ['pending' => 'Bekleyen öneriler', 'auto' => 'Otomatik', 'manual' => 'Elle', 'ignore' => 'Yok sayılan', 'all' => 'Tümü'] as $k => $l}
-		<a class="btn {if $rcOrigin == $k}btn-dark{else}btn-outline-dark{/if}" href="?tab=map&origin={$k|escape}">{$l|escape}</a>
+		<a class="btn btn-sm {if $rcOrigin == $k}btn-dark{else}btn-outline-dark{/if}" href="?tab=map&origin={$k|escape}">{$l|escape}</a>
 		{/foreach}
 	</div>
 	{if $rcOrigin == 'pending' && $rcMaps}
 	<form method="post" id="rcBulk"><input type="hidden" name="token" value="{$rcToken|escape}"><input type="hidden" name="rcAction" value="accept_suggestions"></form>
 	{/if}
 	<div class="table-responsive"><table class="table table-sm align-middle">
-		<thead><tr>{if $rcOrigin == 'pending'}<th><input type="checkbox" onclick="document.querySelectorAll('.rc-k').forEach(function(x){ x.checked = this.checked; }, this)" aria-label="Tümünü seç"></th>{/if}<th>Kaynak kategori</th><th>Kategori</th><th>Puan</th><th>Kullanım</th><th>Durum</th><th style="min-width:340px">Düzelt</th></tr></thead>
+		<thead><tr>{if $rcOrigin == 'pending'}<th><input type="checkbox" onclick="document.querySelectorAll('.rc-k').forEach(function(x){ x.checked = this.checked; }, this)" aria-label="Tümünü seç"></th>{/if}<th>Kaynak kategori</th><th style="min-width:200px">Kategori</th><th>Puan</th><th>Kullanım</th><th>Durum</th><th style="min-width:240px">Düzelt</th></tr></thead>
 		<tbody>
 		{foreach $rcMaps as $m}
 		<tr>
@@ -57,10 +57,10 @@
 			<td>{$m.hits|escape}</td>
 			<td>{if $m.origin == 'manual'}<span class="badge text-bg-success">elle</span>{elseif $m.origin == 'auto'}<span class="badge text-bg-primary">otomatik</span>{elseif $m.origin == 'ignore'}<span class="badge text-bg-secondary">yok sayılıyor</span>{else}<span class="badge text-bg-warning">bekliyor</span>{/if}</td>
 			<td>
-				<form method="post" class="d-flex gap-1"><input type="hidden" name="token" value="{$rcToken|escape}"><input type="hidden" name="rcAction" value="map_save"><input type="hidden" name="source" value="{$m.source_text|escape}">
-					<input class="form-control form-control-sm" name="category" list="rcCatList" placeholder="Kategori ara…" aria-label="Kategori">
-					<button class="btn btn-sm btn-dark" type="submit">Kaydet</button>
-					<button class="btn btn-sm btn-outline-secondary" type="submit" name="rcAction" value="map_ignore" title="Eşleştirme; varsayılan kategori kullanılsın">Yok say</button>
+				<form method="post"><input type="hidden" name="token" value="{$rcToken|escape}"><input type="hidden" name="rcAction" value="map_save"><input type="hidden" name="source" value="{$m.source_text|escape}">
+					<input class="form-control form-control-sm mb-1" name="category" list="rcCatList" placeholder="Kategori ara…" aria-label="Kategori">
+					<div class="d-flex gap-1"><button class="btn btn-sm btn-dark" type="submit">Kaydet</button>
+					<button class="btn btn-sm btn-outline-secondary" type="submit" name="rcAction" value="map_ignore" title="Eşleştirme; varsayılan kategori kullanılsın">Yok say</button></div>
 				</form>
 			</td>
 		</tr>
