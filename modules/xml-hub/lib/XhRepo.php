@@ -178,10 +178,15 @@ class XhRepo
 		return $id ? ['success' => true, 'message' => 'Bağlantı oluşturuldu.', 'id' => (int) $id] : ['success' => false, 'message' => 'Kaydedilemedi.', 'id' => 0];
 	}
 
-	public static function setConn(int $id, array $fields): void
+	public static function setConn(int $id, array $fields): bool
 	{
+		if ($id <= 0 || $fields === []) {
+			return false;
+		}
+
 		$fields['date_upd'] = self::now();
-		DB::update('xh_connections', $fields, 'id_connection = :cid', ['cid' => $id]);
+
+		return DB::update('xh_connections', $fields, 'id_connection = :cid', ['cid' => $id]) !== false;
 	}
 
 	/** Tedarikçi marka/kategori adını sitedeki marka/kategoriye eşler (0 = eşlemeyi kaldır). Hedef ID doğrulanır. @return array{success:bool,message:string} */
@@ -213,7 +218,18 @@ class XhRepo
 		}
 
 		$m[$kind . '_map'] = array_slice($map, 0, 2000, true);
-		self::setConn((int) $conn['id_connection'], ['mapping' => json_encode(XhMapper::sanitizeMapping($m))]);
+		$encoded = json_encode(XhMapper::sanitizeMapping($m), JSON_UNESCAPED_UNICODE);
+		$id = (int) $conn['id_connection'];
+
+		if (!is_string($encoded) || !self::setConn($id, ['mapping' => $encoded])) {
+			return ['success' => false, 'message' => 'Eşleştirme veritabanına yazılamadı.'];
+		}
+
+		$saved = self::conn($id, null);
+		$check = $saved ? self::mapping($saved) : [];
+		if (($check[$kind . '_map'][$text] ?? null) !== ($target > 0 ? $target : null)) {
+			return ['success' => false, 'message' => 'Eşleştirme kaydı doğrulanamadı.'];
+		}
 
 		return ['success' => true, 'message' => 'Eşleştirme kaydedildi.'];
 	}
