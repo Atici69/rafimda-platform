@@ -6,6 +6,12 @@ class XhImporter
 	/** @var array<string,list<array{id:int,name:string,key:string}>> */
 	private static array $taxonomyCache = [];
 
+	/** Testlerde yeni bir veritabanı kurulduğunda önbelleği temizler. */
+	public static function resetTaxonomyCache(): void
+	{
+		self::$taxonomyCache = [];
+	}
+
 	/** Kategori yollarından son parçayı alır ve tedarikçi XML etiketini temizler. */
 	private static function taxonomyKey(string $text): string
 	{
