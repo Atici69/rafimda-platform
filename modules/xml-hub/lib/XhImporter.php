@@ -3,21 +3,84 @@
 /** Tek ürün satırının işlenmesi: eşleştirme → yinelenen/değişiklik denetimi → ekleme/güncelleme → geçmiş ve hata kaydı. */
 class XhImporter
 {
-	/** @return int marka/kategori adına göre (büyük/küçük harf duyarsız, tam ad) aktif kayıt ID'si */
+	/** @var array<string,list<array{id:int,name:string,key:string}>> */
+	private static array $taxonomyCache = [];
+
+	/** Kategori yollarından son parçayı alır ve tedarikçi XML etiketini temizler. */
+	private static function taxonomyKey(string $text): string
+	{
+		$parts = preg_split('/[>»|\\\\]+/u', trim($text)) ?: [$text];
+		$leaf = trim((string) end($parts));
+		$leaf = preg_replace('/\\s*\\(xml\\)\\s*$/iu', '', $leaf) ?? $leaf;
+
+		return XhMapper::norm($leaf);
+	}
+
+	/** @return int marka/kategori adına göre güvenli, belirsizlikte boş bırakılan aktif kayıt ID'si */
 	public static function lookup(string $kind, string $text): int
 	{
 		$text = trim($text);
-
-		if ($text === '') {
+		if ($text === '' || !in_array($kind, ['brand', 'category'], true)) {
 			return 0;
 		}
 
-		$sql = $kind === 'brand'
-			? 'SELECT id_brand AS id FROM brands WHERE LOWER(brand_name) = LOWER(?) AND active = 1 LIMIT 1'
-			: 'SELECT id_category AS id FROM categories WHERE LOWER(category_name) = LOWER(?) AND active = 1 LIMIT 1';
-		$r = DB::execute($sql, [$text]);
+		if (!isset(self::$taxonomyCache[$kind])) {
+			$sql = $kind === 'brand'
+				? 'SELECT id_brand AS id, brand_name AS name FROM brands WHERE active = 1'
+				: 'SELECT id_category AS id, category_name AS name FROM categories WHERE active = 1';
+			$rows = DB::execute($sql) ?: [];
+			self::$taxonomyCache[$kind] = [];
+			foreach ($rows as $row) {
+				$name = trim((string) ($row['name'] ?? ''));
+				$key = self::taxonomyKey($name);
+				if ((int) ($row['id'] ?? 0) > 0 && $key !== '') {
+					self::$taxonomyCache[$kind][] = ['id' => (int) $row['id'], 'name' => $name, 'key' => $key];
+				}
+			}
+		}
 
-		return $r && isset($r[0]) ? (int) $r[0]['id'] : 0;
+		$needle = self::taxonomyKey($text);
+		if ($needle === '') {
+			return 0;
+		}
+
+		$exact = [];
+		foreach (self::$taxonomyCache[$kind] as $candidate) {
+			if ($candidate['key'] === $needle) {
+				$exact[$candidate['id']] = true;
+			}
+		}
+		if (count($exact) === 1) {
+			return (int) array_key_first($exact);
+		}
+		if (count($exact) > 1) {
+			return 0; // Aynı isim birden fazla kategoriye aitse tahmin yürütme.
+		}
+
+		// Yazım farklarını yalnızca tek ve belirgin bir aday varsa otomatik eşleştir.
+		$best = 0.0;
+		$second = 0.0;
+		$bestIds = [];
+		foreach (self::$taxonomyCache[$kind] as $candidate) {
+			$key = $candidate['key'];
+			$max = max(strlen($needle), strlen($key));
+			if ($max === 0) {
+				continue;
+			}
+			$score = 1.0 - (levenshtein($needle, $key) / $max);
+			if ($score > $best + 0.000001) {
+				$second = $best;
+				$best = $score;
+				$bestIds = [$candidate['id'] => true];
+			} elseif (abs($score - $best) <= 0.000001) {
+				$bestIds[$candidate['id']] = true;
+			} elseif ($score > $second) {
+				$second = $score;
+			}
+		}
+
+		$threshold = $kind === 'category' ? 0.86 : 0.90;
+		return $best >= $threshold && count($bestIds) === 1 && ($best - $second) >= 0.08 ? (int) array_key_first($bestIds) : 0;
 	}
 
 	/**
