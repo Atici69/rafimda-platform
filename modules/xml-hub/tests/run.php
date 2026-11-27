@@ -386,6 +386,9 @@ ok($r['flash']['type'] === 'success' && strpos($r['flash']['message'], '3 ürün
 $mp = ['xhAction' => 'conn_mapping_save', 'id_connection' => $cA, 'item_path' => 'Catalog/Products/Product', 'fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim'], 'cat_text' => ['Giyim'], 'cat_id' => ['1']];
 $r = $call($vA, 'POST', [], $mp);
 ok($r['flash']['type'] === 'success' && (XhRepo::mapping(XhRepo::conn($cA, $vA))['fields']['name'] ?? '') === 'Name' && (XhRepo::mapping(XhRepo::conn($cA, $vA))['category_map']['Giyim'] ?? 0) === 1, 'A eşleştirmesini kaydeder (kategori eşlemesi dahil)');
+$r = $call($vA, 'POST', [], ['xhAction' => 'conn_mapping_save', 'id_connection' => $cA, 'fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim']]);
+$reloadedMap = XhRepo::mapping(XhRepo::conn($cA, $vA));
+ok($r['flash']['type'] === 'success' && ($reloadedMap['category_map']['Giyim'] ?? 0) === 1, 'alan eşleştirmesi yeniden kaydedilince önceki kategori eşlemesi silinmez');
 $r = $call($vA, 'GET', ['view' => 'conn', 'id' => $cA, 'tab' => 'preview']);
 ok(count($r['vars']['rows']) === 3 && $r['vars']['rows'][0]['action'] === 'create', 'önizleme 3 ürünü "eklenecek" olarak gösterir (yazmadan)');
 ok((int) DB::getValue('SELECT COUNT(*) FROM products') === 0, 'önizleme veritabanına ürün yazmadı');
