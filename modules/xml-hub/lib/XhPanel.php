@@ -279,12 +279,19 @@ class XhPanel
 					$this->go([], 'danger', 'Bağlantı bulunamadı.');
 				}
 
+				$previous = XhRepo::mapping($c);
 				$m = XhMapper::sanitizeMapping([
 					'fields' => $_POST['fields'] ?? [], 'variant_source' => self::post('variant_source'), 'variant_fields' => $_POST['variant_fields'] ?? [],
-					'category_map' => $this->pairs('cat_text', 'cat_id'), 'brand_map' => $this->pairs('brand_text', 'brand_id'),
+					// Formda görünmeyen/taşınmayan eski eşleştirmeleri kaybetme.
+					'category_map' => array_replace((array) ($previous['category_map'] ?? []), $this->pairs('cat_text', 'cat_id')),
+					'brand_map' => array_replace((array) ($previous['brand_map'] ?? []), $this->pairs('brand_text', 'brand_id')),
 				]);
 				$itemPath = mb_substr(preg_replace('/[^A-Za-z0-9_.:\-\/]/', '', self::post('item_path')) ?? '', 0, 190);
 				XhRepo::setConn($id, ['mapping' => json_encode($m, JSON_UNESCAPED_UNICODE), 'item_path' => $itemPath !== '' ? $itemPath : (string) $c['item_path']]);
+				$saved = XhRepo::mapping(XhRepo::conn($id, $this->scope()) ?: []);
+				if (($saved['fields'] ?? []) !== ($m['fields'] ?? []) || ($saved['category_map'] ?? []) !== ($m['category_map'] ?? []) || ($saved['brand_map'] ?? []) !== ($m['brand_map'] ?? [])) {
+					$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'danger', 'Eşleştirmeler veritabanına doğrulanarak kaydedilemedi. Lütfen tekrar deneyin.');
+				}
 				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'success', 'Eşleştirme kaydedildi.' . (($m['fields']['name'] ?? '') === '' || ($m['fields']['price'] ?? '') === '' ? ' Uyarı: ürün adı ve fiyat eşleşmeden içe aktarma başlatılamaz.' : ''));
 				break;
 
