@@ -158,6 +158,13 @@ XhUrlGuard::$resolver = fn(string $h): array => $dns[$h] ?? ['93.184.216.34']; /
 Settings::set('RAFIMDA_PRODUCT_MODERATION', '0');
 DB::execute("INSERT INTO rafimda_vendors (owner_user_id, store_name, store_slug, status) VALUES (1,'A','a','active'),(2,'B','b','active')");
 $vA = 1; $vB = 2;
+XhImporter::resetTaxonomyCache();
+ok(XhImporter::lookup('category', 'Giyim (XML)') === 1, 'kategori adı (XML ekiyle) otomatik ve normalize eşleşir');
+DB::execute("INSERT INTO categories (id_category, category_name, active) VALUES (99, 'Giyim', 1)");
+XhImporter::resetTaxonomyCache();
+ok(XhImporter::lookup('category', 'Giyim') === 0, 'aynı adlı birden fazla kategori varsa otomatik seçim yapılmaz');
+DB::execute('DELETE FROM categories WHERE id_category = 99');
+XhImporter::resetTaxonomyCache();
 $mapping = ['fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim', 'images' => 'Images/Img', 'description' => 'Desc']];
 $mkConn = function (int $vendor, string $xml, array $opt = [], string $name = 'Tedarikçi') use ($mapping): int {
 	$path = put($xml);
