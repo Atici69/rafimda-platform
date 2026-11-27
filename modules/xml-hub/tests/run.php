@@ -148,6 +148,8 @@ $alt = XhMapper::apply(['A' => '', 'B' => 'Yedek Ad', 'Price' => '5'], ['fields'
 ok($alt['name'] === 'Yedek Ad', '"a|b" ilk dolu alanı seçer');
 $sm = XhMapper::sanitizeMapping(['fields' => ['name' => 'N', 'hack' => 'x', 'price' => ''], 'category_map' => ['K' => '3', 'Z' => '0'], 'variant_fields' => ['sku' => 'S', 'evil' => 'e']]);
 ok($sm['fields'] === ['name' => 'N'] && $sm['category_map'] === ['K' => 3] && $sm['variant_fields'] === ['sku' => 'S'], 'eşleştirme girdisi temizlenir (bilinmeyen hedefler atılır)');
+$short = XhMapper::apply(['Name' => 'Açıklamalı Ürün', 'Price' => '10', 'Desc' => '<p>Uzun ürün açıklaması &amp; detay.</p>'], ['fields' => ['name' => 'Name', 'price' => 'Price', 'description' => 'Desc']], ['default_brand' => 1, 'default_category' => 1]);
+ok($short['errors'] === [] && $short['short_description'] === 'Uzun ürün açıklaması & detay.', 'kısa açıklama XML\'de yoksa açıklamadan otomatik üretilir');
 
 // ---------- 6. İçe aktarma, kuyruk, sahiplik ----------
 section('Satıcı bağlantısı: içe aktarma ve sahiplik');
