@@ -356,11 +356,18 @@ class XhMapper
 		}
 
 		$desi = self::parseNumber($get('desi'));
+		$descriptionValue = $get('description');
+		$description = $descriptionValue !== null && !is_array($descriptionValue) ? mb_substr((string) $descriptionValue, 0, 60000) : '';
+		$shortDescription = $str($get('short_description'), 500);
+		if ($shortDescription === '' && $description !== '') {
+			$plain = html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			$shortDescription = mb_substr(trim(preg_replace('/\\s+/u', ' ', $plain) ?? $plain), 0, 500);
+		}
 		$row = [
 			'key' => mb_substr($key, 0, 100),
 			'name' => $name,
-			'description' => (string) ($get('description') !== null && !is_array($get('description')) ? mb_substr((string) $get('description'), 0, 60000) : ''),
-			'short_description' => $str($get('short_description'), 500),
+			'description' => $description,
+			'short_description' => $shortDescription,
 			'sku' => $sku,
 			'barcode' => $barcode,
 			'price' => $price,
