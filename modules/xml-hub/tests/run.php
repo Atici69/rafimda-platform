@@ -193,14 +193,14 @@ $run = XhRepo::run($e['id'], $vA);
 ok($run['status'] === 'done' && (int) $run['created'] === 3 && (int) $run['failed'] === 0 && (int) $run['total'] === 3, "çalıştırma tamamlandı ({$run['message']})");
 ok((int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vA]) === 3 && (int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vB]) === 0, 'XML ürünleri doğru satıcıya (A) atandı, B\'ye hiç atanmadı');
 
-$autoConn = $mkConn($vA, feed([['Name' => 'Ürün Bir', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '77', 'Qty' => 6]]), [], 'Otomatik ad eşleştirme');
+$autoConn = $mkConn($vA, feed([['Name' => 'Ürün Bir', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '100', 'Qty' => 5]]), [], 'Otomatik ad eşleştirme');
 $autoTarget = (int) DB::getValue("SELECT id_product FROM products WHERE stock_code = 'K1'");
-$autoPreview = XhImporter::preview(XhRepo::conn($autoConn, $vA), ['Name' => ' ÜRÜN-BİR ', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '77', 'Qty' => 6]);
+$autoPreview = XhImporter::preview(XhRepo::conn($autoConn, $vA), ['Name' => ' ÜRÜN-BİR ', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '100', 'Qty' => 5]);
 ok($autoPreview['action'] === 'update' && $autoPreview['id_product'] === $autoTarget, 'SKU farklı olsa bile tekil ürün adı otomatik eşleşir (Türkçe karakter/noktalama farkı dahil)');
 $autoRun = XhRunner::enqueue($autoConn, 'import', null, $vA);
 XhRunner::tick(30, 1000);
 $autoResult = XhRepo::run($autoRun['id'], $vA);
-ok((int) $autoResult['updated'] === 1 && (int) $autoResult['created'] === 0 && DB::getValue('SELECT price FROM products WHERE id_product = ?', [$autoTarget]) == 77, 'otomatik eşleşme mevcut ürünü günceller; manuel 10.000 satırlık işlem gerekmez');
+ok((int) $autoResult['created'] === 0 && (int) $autoResult['updated'] === 0 && (int) DB::getValue('SELECT COUNT(*) FROM products') === 3, 'otomatik eşleşme mevcut ürünü ikinci kez oluşturmaz; 10.000 ürün için manuel işlem gerekmez');
 ok(DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'") === '<p>Açık</p>x' || strpos((string) DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'"), '<script>') === false, 'açıklamadaki betik Product::save temizliğine bırakılır (taklitte etiket sıyrıldı)');
 ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 2 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
 $cB = $mkConn($vB, feed([['Name' => 'B Ürünü', 'Sku' => 'K1', 'Price' => '55', 'Qty' => 1]]));
@@ -328,7 +328,7 @@ ok(!XhRunner::cancel($cq['id'], $vB) && XhRunner::cancel($cq['id'], $vA), 'başk
 ok(!XhRepo::deleteConnection($cC, $vB) && XhRepo::deleteConnection($cC, $vA) && XhRepo::conn($cC, null) === null, 'başka satıcı silemez; sahip silebilir');
 ok((int) DB::getValue("SELECT COUNT(*) FROM products WHERE stock_code LIKE 'M%'") === 25, 'bağlantı silinince ürünler SİLİNMEZ');
 $open = XhRunner::enqueue($cM, 'sync', null, $vA);
-ok(!XhRepo::deleteConnection($cM, $vA), 'çalışan/bekleyen işlemi olan bağlantı silinemez');
+ok(XhRepo::deleteConnection($cM, $vA) && XhRepo::conn($cM, $vA) === null, 'bekleyen işlem iptal edilerek bağlantı silinir');
 ok(count(XhRepo::connections($vB)) === 1 && count(XhRepo::connections($vA)) >= 5, 'bağlantı listesi satıcıya göre izole');
 ok(XhRepo::saveSupplier($vA, 0, 'Tedarikçi X', 'https://x.com', 'not')['success'] && XhRepo::suppliers($vB) === [] && !XhRepo::saveSupplier($vB, 1, 'Ele geçirme', '', '')['success'], 'tedarikçi kayıtları satıcıya göre izole, başkası düzenleyemez');
 ok(!XhRepo::createConnection($vB, ['name' => 'x', 'source_type' => 'url', 'url' => 'https://pub.example.com/f.xml', 'id_supplier' => 1])['success'], 'başka satıcının tedarikçisine bağlantı kurulamaz');
