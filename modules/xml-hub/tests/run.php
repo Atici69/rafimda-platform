@@ -509,7 +509,15 @@ XhRunner::tick(60, 1500); XhRunner::tick(60, 1500);
 $rb = XhRepo::run($qb['id'], $vA);
 $dt = round(microtime(true) - $t0, 1);
 ok($rb['status'] === 'running' && (int) $rb['item_offset'] === 3000 && (int) $rb['total'] === 30000 && (int) $rb['created'] === 3000 && (int) DB::getValue("SELECT COUNT(*) FROM products WHERE stock_code LIKE 'BG%'") === 3000, "30.000 ürünlü kuyruk 1.500'lük turlarla ilerliyor: 2 turda 3.000 ürün ($dt sn, SQLite+taklit Product; toplam tahmini " . round($dt * 10 / 60, 1) . " dk)");
-ok(XhRunner::cancel($qb['id'], $vA) && !is_file(XhStorage::dir() . '/nonexistent') && XhRepo::run($qb['id'], $vA)['status'] === 'cancelled', 'uzun işlem iptal edilebilir');
+XhRepo::setConn($cBig['id'], ['status' => 'paused']);
+XhRunner::tick(60, 1500);
+$pausedRun = XhRepo::run($qb['id'], $vA);
+ok((int) $pausedRun['item_offset'] === 3000 && $pausedRun['status'] === 'running', 'bağlantı duraklatılınca cron yeni ürün işlemeyi durdurur ve ilerleme korunur');
+XhRepo::setConn($cBig['id'], ['status' => 'active']);
+XhRunner::tick(60, 1500);
+$resumedRun = XhRepo::run($qb['id'], $vA);
+ok((int) $resumedRun['item_offset'] === 4500, 'bağlantı yeniden aktifleştirilince kaldığı yerden devam eder');
+ok(XhRunner::cancel($qb['id'], $vA) && XhRepo::run($qb['id'], $vA)['status'] === 'cancelled', 'uzun işlem iptal edilebilir');
 
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 foreach ($failures as $f) { echo " BAŞARISIZ: $f\n"; }
