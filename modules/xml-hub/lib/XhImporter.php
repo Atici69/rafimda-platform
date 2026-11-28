@@ -3,21 +3,63 @@
 /** Tek ürün satırının işlenmesi: eşleştirme → yinelenen/değişiklik denetimi → ekleme/güncelleme → geçmiş ve hata kaydı. */
 class XhImporter
 {
-	/** @return int marka/kategori adına göre (büyük/küçük harf duyarsız, tam ad) aktif kayıt ID'si */
+	/** @var array<string,array<string,int>> Aktif marka/kategori adları istek boyunca bellekte tutulur. */
+	private static array $lookupCache = [];
+
+	/** Testlerde/aynı istekte katalog değiştiğinde önbelleği sıfırlar. */
+	public static function resetLookupCache(): void
+	{
+		self::$lookupCache = [];
+	}
+
+	/**
+	 * Marka/kategori adına göre aktif kayıt ID'si. Türkçe karakter/noktalama farklarını normalize eder;
+	 * kategori yolunda (Ana > Alt veya Ana/Alt) yalnızca benzersiz alt kategori adına geri düşer.
+	 */
 	public static function lookup(string $kind, string $text): int
 	{
 		$text = trim($text);
-
-		if ($text === '') {
+		if ($text === '' || !in_array($kind, ['brand', 'category'], true)) {
 			return 0;
 		}
 
-		$sql = $kind === 'brand'
-			? 'SELECT id_brand AS id FROM brands WHERE LOWER(brand_name) = LOWER(?) AND active = 1 LIMIT 1'
-			: 'SELECT id_category AS id FROM categories WHERE LOWER(category_name) = LOWER(?) AND active = 1 LIMIT 1';
-		$r = DB::execute($sql, [$text]);
+		if (!isset(self::$lookupCache[$kind])) {
+			$sql = $kind === 'brand'
+				? 'SELECT id_brand AS id, brand_name AS name FROM brands WHERE active = 1'
+				: 'SELECT id_category AS id, category_name AS name FROM categories WHERE active = 1';
+			$rows = DB::execute($sql) ?: [];
+			$index = [];
+			$ambiguous = [];
 
-		return $r && isset($r[0]) ? (int) $r[0]['id'] : 0;
+			foreach ($rows as $row) {
+				$key = XhMapper::normText((string) $row['name']);
+				$id = (int) $row['id'];
+				if ($key === '' || $id <= 0) {
+					continue;
+				}
+				if (isset($index[$key]) && $index[$key] !== $id) {
+					$ambiguous[$key] = true;
+				} else {
+					$index[$key] = $id;
+				}
+			}
+			foreach (array_keys($ambiguous) as $key) {
+				$index[$key] = 0;
+			}
+			self::$lookupCache[$kind] = $index;
+		}
+
+		$key = XhMapper::normText($text);
+		$id = (int) (self::$lookupCache[$kind][$key] ?? 0);
+		if ($id > 0 || $kind !== 'category') {
+			return $id;
+		}
+
+		$parts = preg_split('/\s*(?:>|\/|\\\\)\s*/u', $text) ?: [];
+		$leaf = trim((string) end($parts));
+		$leafKey = XhMapper::normText($leaf);
+
+		return $leafKey !== '' ? (int) (self::$lookupCache[$kind][$leafKey] ?? 0) : 0;
 	}
 
 	/**
@@ -48,7 +90,7 @@ class XhImporter
 				$v = XhMapper::pick($raw, $src);
 				$text = is_array($v) ? '' : trim((string) $v);
 
-				if ($text === '' || isset(($mapping[$kind . '_map'] ?? [])[$text]) || self::lookup($kind, $text) > 0) {
+				if ($text === '' || XhMapper::mappedId((array) ($mapping[$kind . '_map'] ?? []), $text) > 0 || self::lookup($kind, $text) > 0) {
 					continue;
 				}
 
@@ -80,6 +122,11 @@ class XhImporter
 	private static function resolveExisting(array $conn, array $row): int
 	{
 		$idVendor = (int) $conn['id_vendor'];
+		$mapping = XhRepo::mapping($conn);
+		$manual = (int) (($mapping['product_map'] ?? [])[$row['key']] ?? 0);
+		if ($manual > 0 && XhOwner::owns($idVendor, $manual)) {
+			return $manual;
+		}
 		$link = XhRepo::item((int) $conn['id_connection'], (string) $row['key']);
 
 		if ($link && (int) $link['id_product'] > 0 && XhOwner::owns($idVendor, (int) $link['id_product'])) {
