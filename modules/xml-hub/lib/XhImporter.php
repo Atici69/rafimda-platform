@@ -10,6 +10,7 @@ class XhImporter
 	public static function resetTaxonomyCache(): void
 	{
 		self::$taxonomyCache = [];
+		XhSink::resetNameIndex();
 	}
 
 	/** Kategori yollarından son parçayı alır ve tedarikçi XML etiketini temizler. */
@@ -149,18 +150,14 @@ class XhImporter
 	private static function resolveExisting(array $conn, array $row): int
 	{
 		$idVendor = (int) $conn['id_vendor'];
-		$mapping = XhRepo::mapping($conn);
-		$manual = (int) (($mapping['product_map'] ?? [])[$row['key']] ?? 0);
-		if ($manual > 0 && XhOwner::owns($idVendor, $manual)) {
-			return $manual;
-		}
 		$link = XhRepo::item((int) $conn['id_connection'], (string) $row['key']);
 
 		if ($link && (int) $link['id_product'] > 0 && XhOwner::owns($idVendor, (int) $link['id_product'])) {
 			return (int) $link['id_product'];
 		}
 
-		return XhSink::find($idVendor, (string) $row['sku'], (string) $row['barcode']);
+		$id = XhSink::find($idVendor, (string) $row['sku'], (string) $row['barcode']);
+		return $id > 0 ? $id : XhSink::findByName($idVendor, (string) $row['name']);
 	}
 
 	/**
