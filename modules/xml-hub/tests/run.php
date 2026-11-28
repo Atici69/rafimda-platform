@@ -168,6 +168,7 @@ DB::execute("INSERT INTO rafimda_vendors (owner_user_id, store_name, store_slug,
 $vA = 1; $vB = 2;
 XhImporter::resetTaxonomyCache();
 ok(XhImporter::lookup('category', 'Giyim (XML)') === 1, 'kategori adı (XML ekiyle) otomatik ve normalize eşleşir');
+ok(XhImporter::lookup('category', 'Üst Kategori/Giyim') === 1, 'eğik çizgili kategori yolu benzersiz alt kategori adına göre eşleşir');
 DB::execute("INSERT INTO categories (id_category, category_name, active) VALUES (99, 'Giyim', 1)");
 XhImporter::resetTaxonomyCache();
 ok(XhImporter::lookup('category', 'Giyim') === 0, 'aynı adlı birden fazla kategori varsa otomatik seçim yapılmaz');
