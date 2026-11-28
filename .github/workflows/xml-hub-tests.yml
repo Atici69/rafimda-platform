@@ -1,0 +1,38 @@
+name: XML Hub tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "fix/xml-hub-mapping-reliability"
+
+jobs:
+  xml-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: curl, dom, mbstring, pdo_sqlite, sodium, xml, xmlreader, xmlwriter
+          coverage: none
+
+      - name: PHP syntax checks
+        run: |
+          php -l modules/xml-hub/lib/XhMapper.php
+          php -l modules/xml-hub/lib/XhImporter.php
+          php -l modules/xml-hub/lib/XhPanel.php
+          php -l modules/xml-hub/lib/XhXml.php
+          php -l modules/xml-hub/lib/XhRunner.php
+          php -l modules/xml-hub/tests/run.php
+
+      - name: XML Hub regression suites
+        run: |
+          php modules/xml-hub/tests/run.php
+          php modules/xml-hub/tests/run_v2.php
+          php modules/xml-hub/tests/run_v3.php
+          php modules/xml-hub/tests/load_module.php
