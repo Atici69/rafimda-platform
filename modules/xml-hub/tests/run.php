@@ -518,6 +518,12 @@ XhRunner::tick(60, 1500);
 $resumedRun = XhRepo::run($qb['id'], $vA);
 ok((int) $resumedRun['item_offset'] === 4500, 'bağlantı yeniden aktifleştirilince kaldığı yerden devam eder');
 ok(XhRunner::cancel($qb['id'], $vA) && XhRepo::run($qb['id'], $vA)['status'] === 'cancelled', 'uzun işlem iptal edilebilir');
+$deleteConn = $mkConn($vA, feed([['Name' => 'Silme testi ürünü', 'Sku' => 'DELETE-TEST', 'Price' => '10', 'Qty' => 1]]), [], 'Silme testi');
+$deleteRun = XhRunner::enqueue($deleteConn, 'import', null, $vA);
+$beforeDeleteProducts = (int) DB::getValue('SELECT COUNT(*) FROM products');
+$deleted = XhRepo::deleteConnection($deleteConn, $vA);
+ok($deleted && XhRepo::conn($deleteConn, $vA) === null && XhRepo::run($deleteRun['id'], $vA) === null, 'bağlantı silinirken bekleyen aktarım iptal edilir ve XML Hub geçmişi temizlenir');
+ok((int) DB::getValue('SELECT COUNT(*) FROM products') === $beforeDeleteProducts, 'XML bağlantısını silmek mağazadaki ürünleri silmez');
 
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 foreach ($failures as $f) { echo " BAŞARISIZ: $f\n"; }
