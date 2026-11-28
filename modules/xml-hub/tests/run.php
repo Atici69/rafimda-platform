@@ -148,10 +148,20 @@ $alt = XhMapper::apply(['A' => '', 'B' => 'Yedek Ad', 'Price' => '5'], ['fields'
 ok($alt['name'] === 'Yedek Ad', '"a|b" ilk dolu alanı seçer');
 $sm = XhMapper::sanitizeMapping(['fields' => ['name' => 'N', 'hack' => 'x', 'price' => ''], 'category_map' => ['K' => '3', 'Z' => '0'], 'variant_fields' => ['sku' => 'S', 'evil' => 'e']]);
 ok($sm['fields'] === ['name' => 'N'] && $sm['category_map'] === ['K' => 3] && $sm['variant_fields'] === ['sku' => 'S'], 'eşleştirme girdisi temizlenir (bilinmeyen hedefler atılır)');
+$sm2 = XhMapper::sanitizeMapping(['product_map' => ['sku:ABC' => '17', 'bad' => '0']]);
+ok(($sm2['product_map']['sku:ABC'] ?? 0) === 17 && count($sm2['product_map']) === 1, 'manuel ürün eşleştirmesi güvenli biçimde saklanır');
+ok(XhMapper::mappedId(['Çanta & Cüzdan' => 5], 'canta-cuzdan') === 5, 'marka/kategori eşleştirmesi Türkçe karakter ve noktalama farklarını tolere eder');
+ok(XhMapper::mappedId(['Ana > Alt' => 8], 'Ana/Alt') === 8, 'kategori yolundaki ayraç farkları normalize edilir');
 
 // ---------- 6. İçe aktarma, kuyruk, sahiplik ----------
 section('Satıcı bağlantısı: içe aktarma ve sahiplik');
 xh_fresh_db();
+DB::execute("INSERT INTO categories (id_category, category_name, active) VALUES (3,'Telefon',1)");
+ok(XhImporter::lookup('category', 'Elektronik > Telefon') === 3, 'kategori yolu benzersiz alt kategori adına göre bulunur');
+DB::execute("INSERT INTO categories (id_category, category_name, active) VALUES (4,'Telefon',1)");
+XhImporter::resetLookupCache();
+ok(XhImporter::lookup('category', 'Elektronik > Telefon') === 0, 'aynı adlı birden fazla alt kategori varsa yanlış eşleşme yapılmaz');
+ok(XhImporter::lookup('brand', 'markaa') === 1, 'marka adı Türkçe/büyük-küçük harf farkına rağmen bulunur');
 XhUrlGuard::$resolver = fn(string $h): array => $dns[$h] ?? ['93.184.216.34']; // test DNS: bilinmeyen adlar genel IP'ye çözülür
 Settings::set('RAFIMDA_PRODUCT_MODERATION', '0');
 DB::execute("INSERT INTO rafimda_vendors (owner_user_id, store_name, store_slug, status) VALUES (1,'A','a','active'),(2,'B','b','active')");
