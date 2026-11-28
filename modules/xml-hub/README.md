@@ -30,7 +30,9 @@ Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destruct
 - Pazaryeri bağdaştırıcıları için bkz. Aşama B (varsa `modules/marketplace-hub`).
 - Zamanlama harici cron'a bağlıdır.
 - Görseller silinmez/değiştirilmez (yalnızca eklenir). Kargo ücreti ürün sayfasına/ödemeye yansımaz; yalnızca `xh_product_meta` içinde tutulur ve pazaryeri gönderimlerinde kullanılabilir.
-- Marka/kategori otomatik oluşturulmaz (eşleştirilir).
+- Marka/kategori otomatik oluşturulmaz (eşleştirilir); Türkçe karakter ve noktalama farkları normalize edilir. Hiyerarşik kategori yolunda alt kategori adı yalnızca benzersizse otomatik eşleşir; belirsiz durumda elle eşleştirme gerekir.
+- Alan eşleştirme sekmesinde ilk 20 kaynak ürünü için manuel mevcut ürün eşleştirmesi vardır. Rafımda ürün ID'si girilir; sunucu tarafında ürün sahipliği doğrulanır ve manuel eşleştirme SKU/barkod otomatik eşleşmesinden önce gelir.
+- Kısmi marka/kategori eşleştirme kayıtları önceki eşleştirmeleri korur; kategori seçenekleri hiyerarşik gösterilir.
 - Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
 - Her tick offset'e kadar yeniden akış okur (O(n)).
 - Mobil/görsel arayüz tarayıcıda denenmedi; MySQL, gerçek curl/DNS/TLS ve gerçek `Product::save` ile uçtan uca test edilmedi.
