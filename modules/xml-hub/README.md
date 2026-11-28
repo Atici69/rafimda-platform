@@ -31,6 +31,7 @@ Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destruct
 - Zamanlama harici cron'a bağlıdır.
 - Görseller silinmez/değiştirilmez (yalnızca eklenir). Kargo ücreti ürün sayfasına/ödemeye yansımaz; yalnızca `xh_product_meta` içinde tutulur ve pazaryeri gönderimlerinde kullanılabilir.
 - Marka/kategori otomatik oluşturulmaz (eşleştirilir); Türkçe karakter/noktalama farkları normalize edilir. Kategori adları ve XML etiketleri güvenli eşleştirme için normalize edilir; belirsiz kategori adında otomatik seçim yapılmaz.
+- Bağlantı oluşturulurken tedarikçi seçilmezse bağlantı adıyla aynı tedarikçi bulunur veya otomatik oluşturulur ve ürünlerin kaynak metası bu tedarikçiye bağlanır. Marka/kategori otomatik eşleştirmesinde `>`, `/` ve `\\` kategori yolu ayraçları desteklenir.
 - Mevcut ürünler toplu olarak otomatik eşleştirilir: önce bağlantıdaki ürün anahtarı, ardından satıcıya ait SKU/stok kodu ve barkod; bunlar bulunamazsa Türkçe karakter/noktalama farkları normalize edilmiş, en az 6 karakterli benzersiz tam ürün adı kullanılır. Aynı ada sahip birden fazla ürün varsa yanlış ürünü güncellememek için otomatik eşleştirme yapılmaz.
 - Kısmi marka/kategori eşleştirme kayıtları korunur; kategori seçenekleri hiyerarşik gösterilir.
 - Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
