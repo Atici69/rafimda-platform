@@ -118,6 +118,13 @@ ok(XhXml::countItems($p, 'Catalog/Products/Product') === 2, 'ürün sayısı 2')
 $it = iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product'));
 ok($it[0]['Name'] === 'Tişört' && $it[0]['Images/Img'] === ['http://a.com/1.jpg', 'http://a.com/2.jpg'] && is_array($it[0]['Variants/Item']) && count($it[0]['Variants/Item']) === 2 && $it[0]['Variants/Item'][1]['Size'] === 'M', 'düz alanlar, çoklu görsel listesi ve varyant kayıtları çıkarıldı');
 ok(array_keys(iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product', 1))) === [1], 'offset ile kaldığı yerden devam eder');
+$rowsSnapshot = XhStorage::newPath('rows');
+$indexSnapshot = $rowsSnapshot . '.idx';
+$snapshotCount = XhXml::buildSnapshot($p, 'Catalog/Products/Product', $rowsSnapshot, $indexSnapshot);
+$snapshotRows = iterator_to_array(XhXml::streamSnapshot($rowsSnapshot, $indexSnapshot, 1));
+ok($snapshotCount === 2 && array_keys($snapshotRows) === [1] && $snapshotRows[1]['Name'] === 'Pantolon', 'indeksli ürün anlık görüntüsü offset 1 kaydına doğrudan gider');
+XhStorage::remove($rowsSnapshot);
+XhStorage::remove($indexSnapshot);
 $at = put('<r><items><it id="7" cur="TRY"><Price currency="USD">10</Price><n>A</n></it><it id="8"><Price>5</Price><n>B</n></it></items></r>');
 $ai = iterator_to_array(XhXml::stream($at, 'r/items/it'));
 ok($ai[0]['@id'] === '7' && $ai[0]['Price@currency'] === 'USD' && $ai[0]['Price'] === '10', 'öznitelikler (@id, Price@currency) okunur');
