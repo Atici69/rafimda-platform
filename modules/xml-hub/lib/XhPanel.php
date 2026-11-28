@@ -165,7 +165,7 @@ class XhPanel
 
 				if ($tab === 'mapping') {
 					$vars['suggest'] = $items !== [] ? XhMapper::suggest($items[0]) : ['fields' => [], 'variant_source' => '', 'variant_fields' => []];
-manual product sample builder					$vars['recordKeys'] = array_values(array_filter(array_keys($keys), static function ($k) use ($items): bool {
+					$vars['recordKeys'] = array_values(array_filter(array_keys($keys), static function ($k) use ($items): bool {
 						foreach ($items as $it) {
 							if (isset($it[$k]) && is_array($it[$k]) && is_array(reset($it[$k]))) {
 								return true;
