@@ -427,7 +427,7 @@ class XhMapper
 	/** @param array<string,mixed> $m @return array<string,mixed> */
 	public static function sanitizeMapping(array $m): array
 	{
-		$clean = ['fields' => [], 'variant_source' => '', 'variant_fields' => [], 'category_map' => [], 'brand_map' => [], 'product_map' => []];
+		$clean = ['fields' => [], 'variant_source' => '', 'variant_fields' => [], 'category_map' => [], 'brand_map' => []];
 
 		foreach ((array) ($m['fields'] ?? []) as $t => $src) {
 			if (isset(self::TARGETS[$t]) && is_scalar($src) && trim((string) $src) !== '') {
@@ -448,11 +448,6 @@ class XhMapper
 				if ((int) $id > 0 && is_scalar($txt)) {
 					$clean[$k][mb_substr(trim((string) $txt), 0, 255)] = (int) $id;
 				}
-			}
-		}
-		foreach (array_slice((array) ($m['product_map'] ?? []), 0, 5000, true) as $key => $id) {
-			if (is_scalar($key) && trim((string) $key) !== '' && (int) $id > 0) {
-				$clean['product_map'][mb_substr(trim((string) $key), 0, 100)] = (int) $id;
 			}
 		}
 
