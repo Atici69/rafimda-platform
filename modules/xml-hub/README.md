@@ -31,10 +31,11 @@ Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destruct
 - Zamanlama harici cron'a bağlıdır.
 - Görseller silinmez/değiştirilmez (yalnızca eklenir). Kargo ücreti ürün sayfasına/ödemeye yansımaz; yalnızca `xh_product_meta` içinde tutulur ve pazaryeri gönderimlerinde kullanılabilir.
 - Marka/kategori otomatik oluşturulmaz (eşleştirilir); Türkçe karakter/noktalama farkları normalize edilir. Kategori adları ve XML etiketleri güvenli eşleştirme için normalize edilir; belirsiz kategori adında otomatik seçim yapılmaz.
-- Alan eşleştirme sekmesinde ilk 20 kaynak ürünü için manuel mevcut ürün eşleştirmesi vardır. Rafımda ürün ID'si girilir; sunucu tarafında ürün sahipliği doğrulanır ve manuel eşleştirme SKU/barkod otomatik eşleşmesinden önce gelir.
+- Mevcut ürünler toplu olarak otomatik eşleştirilir: önce bağlantıdaki ürün anahtarı, ardından satıcıya ait SKU/stok kodu ve barkod; bunlar bulunamazsa Türkçe karakter/noktalama farkları normalize edilmiş, en az 6 karakterli benzersiz tam ürün adı kullanılır. Aynı ada sahip birden fazla ürün varsa yanlış ürünü güncellememek için otomatik eşleştirme yapılmaz.
 - Kısmi marka/kategori eşleştirme kayıtları korunur; kategori seçenekleri hiyerarşik gösterilir.
 - Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
 - XML ilk hazırlıkta JSONL ürün anlık görüntüsü ve byte-offset indeksi üretir; sonraki cron dilimleri önceki ürünleri yeniden taramadan doğrudan kaldığı yerden devam eder. Çalışma anlık görüntüsü üst sınırı 200 MB'tır; iş bitince geçici dosyalar silinir.
+- Bağlantı duraklatıldığında cron her ürün arasında durur ve offset korunur; yeniden aktifleştirilince devam eder. Aktarım geçmişinden çalışan iş iptal edilebilir. Bağlantı silme önce bekleyen işleri iptal eder; canlı işçi hâlâ çalışıyorsa birkaç saniye sonra tekrar silme onayı ister. Mağaza ürünleri, görseller, siparişler ve ödemeler bağlantı silme işleminden etkilenmez.
 - Mobil/görsel arayüz tarayıcıda denenmedi; MySQL, gerçek curl/DNS/TLS ve gerçek `Product::save` ile uçtan uca test edilmedi.
 
 ## v0.3.0 — Satıcı bazlı XML dışa aktarma
