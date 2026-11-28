@@ -163,6 +163,9 @@ function xh_fresh_db(bool $withVendor = true): void
 		}
 	}
 	RvContext::reset();
+	if (class_exists('XhImporter', false) && method_exists('XhImporter', 'resetLookupCache')) {
+		XhImporter::resetLookupCache();
+	}
 	$_SESSION = [];
 	XhUrlGuard::$resolver = null;
 	XhHttp::$transport = null;
