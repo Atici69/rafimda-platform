@@ -133,7 +133,9 @@ class XhRunner
 	private static function dropSnapshot(array $run): void
 	{
 		if (!empty($run['snapshot_path'])) {
-			XhStorage::remove((string) $run['snapshot_path']);
+			$path = (string) $run['snapshot_path'];
+			XhStorage::remove($path);
+			XhStorage::remove($path . '.idx');
 		}
 	}
 
@@ -230,103 +232,97 @@ class XhRunner
 	{
 		$idRun = (int) $run['id_run'];
 		$path = (string) $run['snapshot_path'];
-
-		$prepare = $run['started_at'] === null || ($conn['source_type'] === 'url' && $path === '');
+		$prepare = $run['started_at'] === null || $path === '';
 
 		if ($prepare) {
-			if ($conn['source_type'] === 'url') {
-				$path = XhStorage::newPath('snap');
-				$f = XhHttp::fetchToFile((string) $conn['url'], $path, XhHttp::MAX_BYTES, XhHttp::TIMEOUT, XhRepo::auth((int) $conn['id_connection']));
-
+			$sourcePath = (string) $conn['file_path'];
+			$isRemote = $conn['source_type'] === 'url';
+			if ($isRemote) {
+				$sourcePath = XhStorage::newPath('snap');
+				$f = XhHttp::fetchToFile((string) $conn['url'], $sourcePath, XhHttp::MAX_BYTES, XhHttp::TIMEOUT, XhRepo::auth((int) $conn['id_connection']));
 				if (!$f['ok']) {
-					@unlink($path);
+					XhStorage::remove($sourcePath);
 					self::retryOrFail($run, $conn, 'İndirilemedi: ' . $f['error']);
-
 					return 0;
 				}
-			} else {
-				$path = (string) $conn['file_path'];
-
-				if (!XhStorage::isInside($path)) {
-					self::failPermanently($run, $conn, 'Yüklenen dosya bulunamadı.');
-
-					return 0;
-				}
+			} elseif (!XhStorage::isInside($sourcePath)) {
+				self::failPermanently($run, $conn, 'Yüklenen dosya bulunamadı.');
+				return 0;
 			}
 
-			$v = XhXml::validate($path);
-
+			$v = XhXml::validate($sourcePath);
 			if (!$v['ok']) {
-				if ($conn['source_type'] === 'url') {
-					XhStorage::remove($path);
-				}
-
+				if ($isRemote) { XhStorage::remove($sourcePath); }
 				self::failPermanently($run, $conn, 'XML reddedildi: ' . $v['error']);
-
 				return 0;
 			}
-
-			$itemPath = (string) $conn['item_path'] !== '' ? (string) $conn['item_path'] : (XhXml::detectItemPath($path) ?? '');
-
+			$itemPath = (string) $conn['item_path'] !== '' ? (string) $conn['item_path'] : (XhXml::detectItemPath($sourcePath) ?? '');
 			if ($itemPath === '') {
-				if ($conn['source_type'] === 'url') {
-					XhStorage::remove($path);
-				}
-
+				if ($isRemote) { XhStorage::remove($sourcePath); }
 				self::failPermanently($run, $conn, 'Ürün düğümü bulunamadı; bağlantıda ürün yolunu belirtin.');
-
 				return 0;
 			}
-
 			if ((string) $conn['item_path'] === '') {
 				XhRepo::setConn((int) $conn['id_connection'], ['item_path' => $itemPath]);
 				$conn['item_path'] = $itemPath;
 			}
 
-			$total = XhXml::countItems($path, $itemPath);
-			DB::update('xh_runs', ['snapshot_path' => $conn['source_type'] === 'url' ? $path : '', 'total' => $total, 'status' => 'running', 'started_at' => XhRepo::now()], 'id_run = :i', ['i' => $idRun]);
-			$run['snapshot_path'] = $conn['source_type'] === 'url' ? $path : '';
+			$path = XhStorage::newPath('rows');
+			$indexPath = $path . '.idx';
+			try {
+				$total = XhXml::buildSnapshot($sourcePath, $itemPath, $path, $indexPath);
+			} catch (Throwable $e) {
+				XhStorage::remove($path);
+				XhStorage::remove($indexPath);
+				if ($isRemote) { XhStorage::remove($sourcePath); }
+				self::failPermanently($run, $conn, 'XML ürünleri hazırlanamadı: ' . mb_substr($e->getMessage(), 0, 180));
+				return 0;
+			}
+			if ($isRemote) {
+				XhStorage::remove($sourcePath);
+			}
+			if ($total <= 0) {
+				XhStorage::remove($path);
+				XhStorage::remove($indexPath);
+				self::failPermanently($run, $conn, 'XML içinde aktarılacak ürün kaydı bulunamadı.');
+				return 0;
+			}
+
+			DB::update('xh_runs', ['snapshot_path' => $path, 'total' => $total, 'status' => 'running', 'started_at' => XhRepo::now()], 'id_run = :i', ['i' => $idRun]);
+			$run['snapshot_path'] = $path;
 			$run['total'] = $total;
-		} elseif ($conn['source_type'] === 'file') {
-			$path = (string) $conn['file_path'];
 		}
 
-		if ($path === '' || !is_file($path)) {
-			self::retryOrFail($run, $conn, 'Anlık görüntü dosyası kayboldu.');
+		$indexPath = $path . '.idx';
+		if ($path === '' || !XhStorage::isInside($path) || !XhStorage::isInside($indexPath)) {
+			self::retryOrFail($run, $conn, 'Ürün anlık görüntüsü veya indeksi kayboldu.');
 			DB::update('xh_runs', ['snapshot_path' => ''], 'id_run = :i', ['i' => $idRun]);
-
 			return 0;
 		}
 
 		$selected = null;
-
 		if ($run['selected'] !== null && $run['selected'] !== '') {
 			$selected = array_fill_keys((array) json_decode((string) $run['selected'], true), true);
 		}
-
 		$processed = 0;
 		$offset = (int) $run['item_offset'];
 		$exhausted = true;
-
-		foreach (XhXml::stream($path, (string) $conn['item_path'], $offset) as $idx => $raw) {
+		foreach (XhXml::streamSnapshot($path, $indexPath, $offset) as $idx => $raw) {
 			$res = XhImporter::process($conn, $run, $raw, $selected);
 			self::bump($run, $res['outcome']);
 			$run['item_offset'] = $idx + 1;
 			$processed++;
 			self::saveProgress($run);
-
 			if (microtime(true) >= $deadline || $processed >= $maxItems) {
 				$exhausted = false;
 				break;
 			}
 		}
-
 		if ($exhausted) {
 			self::finish($run, $conn);
 		} else {
 			DB::update('xh_runs', ['status' => 'running', 'lock_token' => '', 'locked_at' => null], 'id_run = :i', ['i' => $idRun]);
 		}
-
 		return $processed;
 	}
 
