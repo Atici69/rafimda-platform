@@ -104,6 +104,9 @@ class XhPanel
 	/** @return list<array<string,mixed>> */
 	private function categories(): array
 	{
+		if (class_exists('Category') && method_exists('Category', 'getProductSelectOptions')) {
+			return Category::getProductSelectOptions();
+		}
 		return DB::execute('SELECT id_category, category_name FROM categories WHERE active = 1 ORDER BY category_name ASC LIMIT 2000') ?: [];
 	}
 
@@ -239,6 +242,20 @@ class XhPanel
 		$id = (int) self::post('id_connection');
 
 		switch ($a) {
+			case 'conn_status':
+				$c = $this->myConn($id);
+				$status = self::post('status');
+				if (!$c || !in_array($status, ['active', 'paused'], true)) {
+					$this->go(['view' => 'conn', 'id' => $id], 'danger', 'Bağlantı durumu değiştirilemedi.');
+				}
+				$fields = ['status' => $status];
+				if ($status === 'active' && (int) $c['interval_minutes'] > 0 && empty($c['next_run_at'])) {
+					$fields['next_run_at'] = XhRepo::now();
+				}
+				XhRepo::setConn($id, $fields);
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'general'], 'success', $status === 'active' ? 'Bağlantı aktifleştirildi. Bekleyen aktarım kaldığı yerden devam edebilir.' : 'Bağlantı duraklatıldı. Çalışan aktarım ürün satırının sonunda durur.');
+				break;
+
 			case 'supplier_save':
 				$r = XhRepo::saveSupplier($this->ownerFor(), (int) self::post('id_supplier'), self::post('name'), self::post('website'), self::post('notes'));
 				$this->go(['view' => 'suppliers'], $r['success'] ? 'success' : 'danger', $r['message']);
@@ -279,13 +296,19 @@ class XhPanel
 					$this->go([], 'danger', 'Bağlantı bulunamadı.');
 				}
 
+				$previous = XhRepo::mapping($c);
 				$m = XhMapper::sanitizeMapping([
 					'fields' => $_POST['fields'] ?? [], 'variant_source' => self::post('variant_source'), 'variant_fields' => $_POST['variant_fields'] ?? [],
-					'category_map' => $this->pairs('cat_text', 'cat_id'), 'brand_map' => $this->pairs('brand_text', 'brand_id'),
+					'category_map' => array_replace((array) ($previous['category_map'] ?? []), $this->pairs('cat_text', 'cat_id')),
+					'brand_map' => array_replace((array) ($previous['brand_map'] ?? []), $this->pairs('brand_text', 'brand_id')),
 				]);
 				$itemPath = mb_substr(preg_replace('/[^A-Za-z0-9_.:\-\/]/', '', self::post('item_path')) ?? '', 0, 190);
 				XhRepo::setConn($id, ['mapping' => json_encode($m, JSON_UNESCAPED_UNICODE), 'item_path' => $itemPath !== '' ? $itemPath : (string) $c['item_path']]);
-				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'success', 'Eşleştirme kaydedildi.' . (($m['fields']['name'] ?? '') === '' || ($m['fields']['price'] ?? '') === '' ? ' Uyarı: ürün adı ve fiyat eşleşmeden içe aktarma başlatılamaz.' : ''));
+				$saved = XhRepo::mapping(XhRepo::conn($id, $this->scope()) ?: []);
+				if (($saved['fields'] ?? []) !== ($m['fields'] ?? []) || ($saved['category_map'] ?? []) !== ($m['category_map'] ?? []) || ($saved['brand_map'] ?? []) !== ($m['brand_map'] ?? []) ) {
+					$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'danger', 'Eşleştirmeler veritabanına doğrulanarak kaydedilemedi. Lütfen tekrar deneyin.');
+				}
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'success', 'Eşleştirme kaydedildi. Ürünler SKU/barkod ve tekil ürün adına göre otomatik eşleştirilir.' . (($m['fields']['name'] ?? '') === '' || ($m['fields']['price'] ?? '') === '' ? ' Uyarı: ürün adı ve fiyat eşleşmeden içe aktarma başlatılamaz.' : ''));
 				break;
 
 			case 'conn_options_save':
@@ -302,7 +325,7 @@ class XhPanel
 					'interval_minutes' => XhRepo::sanitizeInterval(self::post('interval_minutes')),
 				];
 
-				if (in_array($status, ['active', 'paused'], true) && $c['status'] !== 'draft') {
+				if (in_array($status, ['active', 'paused'], true)) {
 					$upd['status'] = $status;
 				}
 
@@ -346,7 +369,7 @@ class XhPanel
 						$text = (string) base64_decode((string) $enc, true);
 						$target = (int) $target;
 
-						if ($text === '' || $target <= 0) {
+						if ($text === '') {
 							continue;
 						}
 
@@ -361,7 +384,7 @@ class XhPanel
 
 			case 'conn_delete':
 				$ok = XhRepo::deleteConnection($id, $this->scope());
-				$this->go($ok ? [] : ['view' => 'conn', 'id' => $id], $ok ? 'success' : 'danger', $ok ? 'Bağlantı ve XML Hub kayıtları silindi (ürünler korundu).' : 'Silinemedi (bekleyen/çalışan işlem olabilir).');
+				$this->go($ok ? [] : ['view' => 'conn', 'id' => $id], $ok ? 'success' : 'warning', $ok ? 'Bağlantı ve XML Hub kayıtları silindi; mağaza ürünleri korundu.' : 'Aktif cron işlemi durduruldu. Birkaç saniye sonra bağlantıyı sil düğmesine tekrar basın.');
 				break;
 
 			case 'run_enqueue':
@@ -382,7 +405,7 @@ class XhPanel
 
 			case 'run_cancel':
 				$ok = XhRunner::cancel((int) self::post('id_run'), $this->scope());
-				$this->go(['view' => 'runs'], $ok ? 'success' : 'danger', $ok ? 'İşlem iptal edildi.' : 'İşlem iptal edilemedi.');
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'history'], $ok ? 'success' : 'danger', $ok ? 'Aktarım durduruldu; mevcut ürün satırı tamamlandıktan sonra kuyruk bırakılacak.' : 'İşlem iptal edilemedi.');
 				break;
 
 			case 'queue_tick':
@@ -412,6 +435,23 @@ class XhPanel
 	{
 		$type = self::post('source_type') === 'file' ? 'file' : 'url';
 		$d = ['name' => self::post('name'), 'source_type' => $type, 'url' => self::post('url'), 'id_supplier' => (int) self::post('id_supplier'), 'interval_minutes' => self::post('interval_minutes'), 'options' => $_POST['opt'] ?? []];
+		// Tedarikçi seçilmediyse bağlantı adından otomatik bul/oluştur; ürün meta kayıtları bu tedarikçiye bağlanır.
+		if ((int) $d['id_supplier'] <= 0) {
+			$supplierKey = XhMapper::normText((string) $d['name']);
+			foreach (XhRepo::suppliers($this->ownerFor()) as $existingSupplier) {
+				if ($supplierKey !== '' && XhMapper::normText((string) $existingSupplier['name']) === $supplierKey) {
+					$d['id_supplier'] = (int) $existingSupplier['id_supplier'];
+					break;
+				}
+			}
+			if ((int) $d['id_supplier'] <= 0) {
+				$createdSupplier = XhRepo::saveSupplier($this->ownerFor(), 0, (string) $d['name'], '', 'XML bağlantısı oluşturulurken otomatik tanımlandı.');
+				if (!$createdSupplier['success']) {
+					$this->go(['view' => 'new'], 'danger', 'Tedarikçi otomatik oluşturulamadı: ' . $createdSupplier['message']);
+				}
+				$d['id_supplier'] = (int) $createdSupplier['id'];
+			}
+		}
 		$path = '';
 
 		if ($type === 'file') {

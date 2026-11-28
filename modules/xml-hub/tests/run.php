@@ -118,6 +118,13 @@ ok(XhXml::countItems($p, 'Catalog/Products/Product') === 2, 'ürün sayısı 2')
 $it = iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product'));
 ok($it[0]['Name'] === 'Tişört' && $it[0]['Images/Img'] === ['http://a.com/1.jpg', 'http://a.com/2.jpg'] && is_array($it[0]['Variants/Item']) && count($it[0]['Variants/Item']) === 2 && $it[0]['Variants/Item'][1]['Size'] === 'M', 'düz alanlar, çoklu görsel listesi ve varyant kayıtları çıkarıldı');
 ok(array_keys(iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product', 1))) === [1], 'offset ile kaldığı yerden devam eder');
+$rowsSnapshot = XhStorage::newPath('rows');
+$indexSnapshot = $rowsSnapshot . '.idx';
+$snapshotCount = XhXml::buildSnapshot($p, 'Catalog/Products/Product', $rowsSnapshot, $indexSnapshot);
+$snapshotRows = iterator_to_array(XhXml::streamSnapshot($rowsSnapshot, $indexSnapshot, 1));
+ok($snapshotCount === 2 && array_keys($snapshotRows) === [1] && $snapshotRows[1]['Name'] === 'Pantolon', 'indeksli ürün anlık görüntüsü offset 1 kaydına doğrudan gider');
+XhStorage::remove($rowsSnapshot);
+XhStorage::remove($indexSnapshot);
 $at = put('<r><items><it id="7" cur="TRY"><Price currency="USD">10</Price><n>A</n></it><it id="8"><Price>5</Price><n>B</n></it></items></r>');
 $ai = iterator_to_array(XhXml::stream($at, 'r/items/it'));
 ok($ai[0]['@id'] === '7' && $ai[0]['Price@currency'] === 'USD' && $ai[0]['Price'] === '10', 'öznitelikler (@id, Price@currency) okunur');
@@ -148,6 +155,9 @@ $alt = XhMapper::apply(['A' => '', 'B' => 'Yedek Ad', 'Price' => '5'], ['fields'
 ok($alt['name'] === 'Yedek Ad', '"a|b" ilk dolu alanı seçer');
 $sm = XhMapper::sanitizeMapping(['fields' => ['name' => 'N', 'hack' => 'x', 'price' => ''], 'category_map' => ['K' => '3', 'Z' => '0'], 'variant_fields' => ['sku' => 'S', 'evil' => 'e']]);
 ok($sm['fields'] === ['name' => 'N'] && $sm['category_map'] === ['K' => 3] && $sm['variant_fields'] === ['sku' => 'S'], 'eşleştirme girdisi temizlenir (bilinmeyen hedefler atılır)');
+ok(XhMapper::mappedId(['Çanta & Cüzdan' => 5], 'canta-cuzdan') === 5, 'marka/kategori eşleştirmesi Türkçe karakter ve noktalama farklarını tolere eder');
+$short = XhMapper::apply(['Name' => 'Açıklamalı Ürün', 'Price' => '10', 'Desc' => '<p>Uzun ürün açıklaması &amp; detay.</p>'], ['fields' => ['name' => 'Name', 'price' => 'Price', 'description' => 'Desc']], ['default_brand' => 1, 'default_category' => 1]);
+ok($short['errors'] === [] && $short['short_description'] === 'Uzun ürün açıklaması & detay.', 'kısa açıklama XML\'de yoksa açıklamadan otomatik üretilir');
 
 // ---------- 6. İçe aktarma, kuyruk, sahiplik ----------
 section('Satıcı bağlantısı: içe aktarma ve sahiplik');
@@ -156,6 +166,14 @@ XhUrlGuard::$resolver = fn(string $h): array => $dns[$h] ?? ['93.184.216.34']; /
 Settings::set('RAFIMDA_PRODUCT_MODERATION', '0');
 DB::execute("INSERT INTO rafimda_vendors (owner_user_id, store_name, store_slug, status) VALUES (1,'A','a','active'),(2,'B','b','active')");
 $vA = 1; $vB = 2;
+XhImporter::resetTaxonomyCache();
+ok(XhImporter::lookup('category', 'Giyim (XML)') === 1, 'kategori adı (XML ekiyle) otomatik ve normalize eşleşir');
+ok(XhImporter::lookup('category', 'Üst Kategori/Giyim') === 1, 'eğik çizgili kategori yolu benzersiz alt kategori adına göre eşleşir');
+DB::execute("INSERT INTO categories (id_category, category_name, active) VALUES (99, 'Giyim', 1)");
+XhImporter::resetTaxonomyCache();
+ok(XhImporter::lookup('category', 'Giyim') === 0, 'aynı adlı birden fazla kategori varsa otomatik seçim yapılmaz');
+DB::execute('DELETE FROM categories WHERE id_category = 99');
+XhImporter::resetTaxonomyCache();
 $mapping = ['fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim', 'images' => 'Images/Img', 'description' => 'Desc']];
 $mkConn = function (int $vendor, string $xml, array $opt = [], string $name = 'Tedarikçi') use ($mapping): int {
 	$path = put($xml);
@@ -175,8 +193,17 @@ ok($res['runs'] === 1 && $res['items'] === 3, 'kuyruk işlendi: 3 ürün');
 $run = XhRepo::run($e['id'], $vA);
 ok($run['status'] === 'done' && (int) $run['created'] === 3 && (int) $run['failed'] === 0 && (int) $run['total'] === 3, "çalıştırma tamamlandı ({$run['message']})");
 ok((int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vA]) === 3 && (int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vB]) === 0, 'XML ürünleri doğru satıcıya (A) atandı, B\'ye hiç atanmadı');
+
+$autoConn = $mkConn($vA, feed([['Name' => 'Ürün Bir', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '100', 'Qty' => 5]]), [], 'Otomatik ad eşleştirme');
+$autoTarget = (int) DB::getValue("SELECT id_product FROM products WHERE stock_code = 'K1'");
+$autoPreview = XhImporter::preview(XhRepo::conn($autoConn, $vA), ['Name' => ' ÜRÜN-BİR ', 'Sku' => 'SUPPLIER-CODE-1', 'Price' => '100', 'Qty' => 5]);
+ok($autoPreview['action'] === 'update' && $autoPreview['id_product'] === $autoTarget, 'SKU farklı olsa bile tekil ürün adı otomatik eşleşir (Türkçe karakter/noktalama farkı dahil)');
+$autoRun = XhRunner::enqueue($autoConn, 'import', null, $vA);
+XhRunner::tick(30, 1000);
+$autoResult = XhRepo::run($autoRun['id'], $vA);
+ok((int) $autoResult['created'] === 0 && (int) $autoResult['updated'] === 0 && (int) DB::getValue('SELECT COUNT(*) FROM products') === 3, 'otomatik eşleşme mevcut ürünü ikinci kez oluşturmaz; 10.000 ürün için manuel işlem gerekmez');
 ok(DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'") === '<p>Açık</p>x' || strpos((string) DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'"), '<script>') === false, 'açıklamadaki betik Product::save temizliğine bırakılır (taklitte etiket sıyrıldı)');
-ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 1 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
+ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 2 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
 $cB = $mkConn($vB, feed([['Name' => 'B Ürünü', 'Sku' => 'K1', 'Price' => '55', 'Qty' => 1]]));
 XhRunner::enqueue($cB, 'import', null, $vB);
 XhRunner::tick(30, 1000);
@@ -302,7 +329,7 @@ ok(!XhRunner::cancel($cq['id'], $vB) && XhRunner::cancel($cq['id'], $vA), 'başk
 ok(!XhRepo::deleteConnection($cC, $vB) && XhRepo::deleteConnection($cC, $vA) && XhRepo::conn($cC, null) === null, 'başka satıcı silemez; sahip silebilir');
 ok((int) DB::getValue("SELECT COUNT(*) FROM products WHERE stock_code LIKE 'M%'") === 25, 'bağlantı silinince ürünler SİLİNMEZ');
 $open = XhRunner::enqueue($cM, 'sync', null, $vA);
-ok(!XhRepo::deleteConnection($cM, $vA), 'çalışan/bekleyen işlemi olan bağlantı silinemez');
+ok(XhRepo::deleteConnection($cM, $vA) && XhRepo::conn($cM, $vA) === null, 'bekleyen işlem iptal edilerek bağlantı silinir');
 ok(count(XhRepo::connections($vB)) === 1 && count(XhRepo::connections($vA)) >= 5, 'bağlantı listesi satıcıya göre izole');
 ok(XhRepo::saveSupplier($vA, 0, 'Tedarikçi X', 'https://x.com', 'not')['success'] && XhRepo::suppliers($vB) === [] && !XhRepo::saveSupplier($vB, 1, 'Ele geçirme', '', '')['success'], 'tedarikçi kayıtları satıcıya göre izole, başkası düzenleyemez');
 ok(!XhRepo::createConnection($vB, ['name' => 'x', 'source_type' => 'url', 'url' => 'https://pub.example.com/f.xml', 'id_supplier' => 1])['success'], 'başka satıcının tedarikçisine bağlantı kurulamaz');
@@ -377,6 +404,9 @@ ok($r['flash']['type'] === 'success' && strpos($r['flash']['message'], '3 ürün
 $mp = ['xhAction' => 'conn_mapping_save', 'id_connection' => $cA, 'item_path' => 'Catalog/Products/Product', 'fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim'], 'cat_text' => ['Giyim'], 'cat_id' => ['1']];
 $r = $call($vA, 'POST', [], $mp);
 ok($r['flash']['type'] === 'success' && (XhRepo::mapping(XhRepo::conn($cA, $vA))['fields']['name'] ?? '') === 'Name' && (XhRepo::mapping(XhRepo::conn($cA, $vA))['category_map']['Giyim'] ?? 0) === 1, 'A eşleştirmesini kaydeder (kategori eşlemesi dahil)');
+$r = $call($vA, 'POST', [], ['xhAction' => 'conn_mapping_save', 'id_connection' => $cA, 'fields' => ['name' => 'Name', 'sku' => 'Sku', 'price' => 'Price', 'stock' => 'Qty', 'brand' => '=MarkaA', 'category' => '=Giyim']]);
+$reloadedMap = XhRepo::mapping(XhRepo::conn($cA, $vA));
+ok($r['flash']['type'] === 'success' && ($reloadedMap['category_map']['Giyim'] ?? 0) === 1, 'alan eşleştirmesi yeniden kaydedilince önceki kategori eşlemesi silinmez');
 $r = $call($vA, 'GET', ['view' => 'conn', 'id' => $cA, 'tab' => 'preview']);
 ok(count($r['vars']['rows']) === 3 && $r['vars']['rows'][0]['action'] === 'create', 'önizleme 3 ürünü "eklenecek" olarak gösterir (yazmadan)');
 ok((int) DB::getValue('SELECT COUNT(*) FROM products') === 0, 'önizleme veritabanına ürün yazmadı');
@@ -399,8 +429,9 @@ $r = $call($vA, 'POST', [], ['xhAction' => 'conn_create', 'name' => 'Uzak XML', 
 $new = XhRepo::connections($vA)[0];
 $o = XhRepo::options($new);
 ok($new['name'] === 'Uzak XML' && (int) $new['interval_minutes'] === 60 && $o['create_new'] === 0 && $o['sync_stock'] === 1 && $o['update_existing'] === 1, 'form seçenekleri kaydedilir (işaretsiz kutu = kapalı, belirtilmeyen = varsayılan)');
+ok((int) $new['id_supplier'] > 0 && $new['supplier_name'] === 'Uzak XML', 'tedarikçi seçilmezse bağlantı adına göre otomatik tedarikçi oluşturulur ve bağlanır');
 $sv = $call($vA, 'POST', [], ['xhAction' => 'supplier_save', 'name' => 'Tedarikçi Z', 'website' => 'https://z.com']);
-$sid = (int) DB::getValue('SELECT id_supplier FROM xh_suppliers WHERE id_vendor = 1');
+$sid = (int) DB::getValue("SELECT id_supplier FROM xh_suppliers WHERE id_vendor = 1 AND name = 'Tedarikçi Z'");
 $r = $call($vB, 'POST', [], ['xhAction' => 'supplier_save', 'id_supplier' => $sid, 'name' => 'Ele geçirildi']);
 ok($sid > 0 && DB::getValue('SELECT name FROM xh_suppliers WHERE id_supplier = ?', [$sid]) === 'Tedarikçi Z' && $call($vB, 'GET', ['view' => 'suppliers'])['vars']['suppliers'] === [], 'tedarikçi kaydı izole; B değiştiremez/göremez');
 $adm = function (string $method, array $get, array $post = []) { $_SERVER['REQUEST_METHOD'] = $method; $_GET = $get; $_POST = $post; $_SESSION = []; try { $p = new XhPanel(0, true, ''); $r = $p->handle(); return $r; } catch (RuntimeException $e) { return [null, ['flash' => $_SESSION['xh_flash'] ?? null]]; } };
@@ -478,7 +509,21 @@ XhRunner::tick(60, 1500); XhRunner::tick(60, 1500);
 $rb = XhRepo::run($qb['id'], $vA);
 $dt = round(microtime(true) - $t0, 1);
 ok($rb['status'] === 'running' && (int) $rb['item_offset'] === 3000 && (int) $rb['total'] === 30000 && (int) $rb['created'] === 3000 && (int) DB::getValue("SELECT COUNT(*) FROM products WHERE stock_code LIKE 'BG%'") === 3000, "30.000 ürünlü kuyruk 1.500'lük turlarla ilerliyor: 2 turda 3.000 ürün ($dt sn, SQLite+taklit Product; toplam tahmini " . round($dt * 10 / 60, 1) . " dk)");
-ok(XhRunner::cancel($qb['id'], $vA) && !is_file(XhStorage::dir() . '/nonexistent') && XhRepo::run($qb['id'], $vA)['status'] === 'cancelled', 'uzun işlem iptal edilebilir');
+XhRepo::setConn($cBig['id'], ['status' => 'paused']);
+XhRunner::tick(60, 1500);
+$pausedRun = XhRepo::run($qb['id'], $vA);
+ok((int) $pausedRun['item_offset'] === 3000 && $pausedRun['status'] === 'running', 'bağlantı duraklatılınca cron yeni ürün işlemeyi durdurur ve ilerleme korunur');
+XhRepo::setConn($cBig['id'], ['status' => 'active']);
+XhRunner::tick(60, 1500);
+$resumedRun = XhRepo::run($qb['id'], $vA);
+ok((int) $resumedRun['item_offset'] === 4500, 'bağlantı yeniden aktifleştirilince kaldığı yerden devam eder');
+ok(XhRunner::cancel($qb['id'], $vA) && XhRepo::run($qb['id'], $vA)['status'] === 'cancelled', 'uzun işlem iptal edilebilir');
+$deleteConn = $mkConn($vA, feed([['Name' => 'Silme testi ürünü', 'Sku' => 'DELETE-TEST', 'Price' => '10', 'Qty' => 1]]), [], 'Silme testi');
+$deleteRun = XhRunner::enqueue($deleteConn, 'import', null, $vA);
+$beforeDeleteProducts = (int) DB::getValue('SELECT COUNT(*) FROM products');
+$deleted = XhRepo::deleteConnection($deleteConn, $vA);
+ok($deleted && XhRepo::conn($deleteConn, $vA) === null && XhRepo::run($deleteRun['id'], $vA) === null, 'bağlantı silinirken bekleyen aktarım iptal edilir ve XML Hub geçmişi temizlenir');
+ok((int) DB::getValue('SELECT COUNT(*) FROM products') === $beforeDeleteProducts, 'XML bağlantısını silmek mağazadaki ürünleri silmez');
 
 echo "\n==== SONUÇ: $pass geçti, $fail başarısız ====\n";
 foreach ($failures as $f) { echo " BAŞARISIZ: $f\n"; }

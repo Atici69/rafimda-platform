@@ -65,10 +65,42 @@ class XhMapper
 	public static function norm(string $s): string
 	{
 		$s = strtr($s, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ğ' => 'g', 'ğ' => 'g', 'Ü' => 'u', 'ü' => 'u', 'Ö' => 'o', 'ö' => 'o', 'Ç' => 'c', 'ç' => 'c']);
-		$leaf = strtolower($s);
+		$leaf = mb_strtolower($s);
 		$leaf = preg_replace('/^.*[\/@]/', '', $leaf) ?? $leaf;
 
 		return preg_replace('/[^a-z0-9]/', '', $leaf) ?? '';
+	}
+
+	/** Tam ad/yol normalizasyonu; Türkçe karakter ve noktalama farklarını eşleştirmede yok sayar. */
+	public static function normText(string $s): string
+	{
+		$s = strtr($s, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ğ' => 'g', 'ğ' => 'g', 'Ü' => 'u', 'ü' => 'u', 'Ö' => 'o', 'ö' => 'o', 'Ç' => 'c', 'ç' => 'c']);
+		$s = mb_strtolower(trim($s));
+
+		return preg_replace('/[^a-z0-9]/', '', $s) ?? '';
+	}
+
+	/** Haritada tam veya benzersiz normalize eşleşme arar; belirsizlikte hedef seçmez. */
+	public static function mappedId(array $map, string $text): int
+	{
+		if (isset($map[$text]) && (int) $map[$text] > 0) {
+			return (int) $map[$text];
+		}
+		$key = self::normText($text);
+		if ($key === '') {
+			return 0;
+		}
+		$found = 0;
+		foreach ($map as $source => $id) {
+			if (self::normText((string) $source) !== $key || (int) $id <= 0) {
+				continue;
+			}
+			if ($found > 0 && $found !== (int) $id) {
+				return 0;
+			}
+			$found = (int) $id;
+		}
+		return $found;
 	}
 
 	/**
@@ -278,8 +310,8 @@ class XhMapper
 		$catTxt = $str($get('category'), 255);
 		$brandMap = is_array($mapping['brand_map'] ?? null) ? $mapping['brand_map'] : [];
 		$catMap = is_array($mapping['category_map'] ?? null) ? $mapping['category_map'] : [];
-		$idBrand = $brandTxt !== '' ? (int) ($brandMap[$brandTxt] ?? 0) : 0;
-		$idCat = $catTxt !== '' ? (int) ($catMap[$catTxt] ?? 0) : 0;
+		$idBrand = $brandTxt !== '' ? self::mappedId($brandMap, $brandTxt) : 0;
+		$idCat = $catTxt !== '' ? self::mappedId($catMap, $catTxt) : 0;
 
 		if ($idBrand <= 0 && $brandTxt !== '' && $lookup) {
 			$idBrand = (int) $lookup('brand', $brandTxt);
@@ -356,11 +388,18 @@ class XhMapper
 		}
 
 		$desi = self::parseNumber($get('desi'));
+		$descriptionValue = $get('description');
+		$description = $descriptionValue !== null && !is_array($descriptionValue) ? mb_substr((string) $descriptionValue, 0, 60000) : '';
+		$shortDescription = $str($get('short_description'), 500);
+		if ($shortDescription === '' && $description !== '') {
+			$plain = html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			$shortDescription = mb_substr(trim(preg_replace('/\\s+/u', ' ', $plain) ?? $plain), 0, 500);
+		}
 		$row = [
 			'key' => mb_substr($key, 0, 100),
 			'name' => $name,
-			'description' => (string) ($get('description') !== null && !is_array($get('description')) ? mb_substr((string) $get('description'), 0, 60000) : ''),
-			'short_description' => $str($get('short_description'), 500),
+			'description' => $description,
+			'short_description' => $shortDescription,
 			'sku' => $sku,
 			'barcode' => $barcode,
 			'price' => $price,

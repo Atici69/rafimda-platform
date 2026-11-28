@@ -178,10 +178,15 @@ class XhRepo
 		return $id ? ['success' => true, 'message' => 'Bağlantı oluşturuldu.', 'id' => (int) $id] : ['success' => false, 'message' => 'Kaydedilemedi.', 'id' => 0];
 	}
 
-	public static function setConn(int $id, array $fields): void
+	public static function setConn(int $id, array $fields): bool
 	{
+		if ($id <= 0 || $fields === []) {
+			return false;
+		}
+
 		$fields['date_upd'] = self::now();
-		DB::update('xh_connections', $fields, 'id_connection = :cid', ['cid' => $id]);
+
+		return DB::update('xh_connections', $fields, 'id_connection = :cid', ['cid' => $id]) !== false;
 	}
 
 	/** Tedarikçi marka/kategori adını sitedeki marka/kategoriye eşler (0 = eşlemeyi kaldır). Hedef ID doğrulanır. @return array{success:bool,message:string} */
@@ -213,7 +218,18 @@ class XhRepo
 		}
 
 		$m[$kind . '_map'] = array_slice($map, 0, 2000, true);
-		self::setConn((int) $conn['id_connection'], ['mapping' => json_encode(XhMapper::sanitizeMapping($m))]);
+		$encoded = json_encode(XhMapper::sanitizeMapping($m), JSON_UNESCAPED_UNICODE);
+		$id = (int) $conn['id_connection'];
+
+		if (!is_string($encoded) || !self::setConn($id, ['mapping' => $encoded])) {
+			return ['success' => false, 'message' => 'Eşleştirme veritabanına yazılamadı.'];
+		}
+
+		$saved = self::conn($id, null);
+		$check = $saved ? self::mapping($saved) : [];
+		if (($check[$kind . '_map'][$text] ?? null) !== ($target > 0 ? $target : null)) {
+			return ['success' => false, 'message' => 'Eşleştirme kaydı doğrulanamadı.'];
+		}
 
 		return ['success' => true, 'message' => 'Eşleştirme kaydedildi.'];
 	}
@@ -298,24 +314,33 @@ class XhRepo
 	public static function deleteConnection(int $id, ?int $vendor): bool
 	{
 		$c = self::conn($id, $vendor);
-
 		if (!$c) {
 			return false;
 		}
 
-		if (DB::getRowSafe('xh_runs', "id_connection = ? AND status IN ('queued','running')", [$id])) {
-			return false; // çalışan işlem varken silinmez
+		// Önce yeni cron işlerini durdur; bekleyen/çalışan XML işleri iptal edilir.
+		self::setConn($id, ['status' => 'paused', 'interval_minutes' => 0]);
+		$active = DB::execute("SELECT * FROM xh_runs WHERE id_connection = ? AND status IN ('queued','running')", [$id]) ?: [];
+		$busy = false;
+		foreach ($active as $run) {
+			$locked = !empty($run['lock_token']) && !empty($run['locked_at']) && strtotime((string) $run['locked_at']) >= time() - 300;
+			XhRunner::cancel((int) $run['id_run'], $vendor);
+			if ($locked) {
+				$busy = true;
+			}
+		}
+		// Canlı PHP işçisi varsa, mevcut ürün satırını bitirip iptali görmesine izin ver.
+		// Bağlantı silme düğmesine tekrar basıldığında temizlik tamamlanır.
+		if ($busy) {
+			return false;
 		}
 
-		XhStorage::remove((string) $c['file_path']); // yüklenen dosya veya URL örneği
-
-		// Yalnızca XML Hub kayıtları silinir; ürünlere dokunulmaz.
+		XhStorage::remove((string) $c['file_path']);
+		// Yalnızca XML Hub bağlantı verileri temizlenir; ürünler, görseller, siparişler ve ödemeler korunur.
 		foreach (['xh_errors', 'xh_items', 'xh_runs', 'xh_credentials', 'xh_changes'] as $t) {
 			DB::execute('DELETE FROM ' . $t . ' WHERE id_connection = ?', [$id]);
 		}
-
 		DB::execute('DELETE FROM xh_connections WHERE id_connection = ?', [$id]);
-
 		return true;
 	}
 

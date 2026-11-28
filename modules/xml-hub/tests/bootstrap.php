@@ -163,6 +163,7 @@ function xh_fresh_db(bool $withVendor = true): void
 		}
 	}
 	RvContext::reset();
+	XhImporter::resetTaxonomyCache();
 	$_SESSION = [];
 	XhUrlGuard::$resolver = null;
 	XhHttp::$transport = null;
