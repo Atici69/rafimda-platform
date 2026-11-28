@@ -314,24 +314,33 @@ class XhRepo
 	public static function deleteConnection(int $id, ?int $vendor): bool
 	{
 		$c = self::conn($id, $vendor);
-
 		if (!$c) {
 			return false;
 		}
 
-		if (DB::getRowSafe('xh_runs', "id_connection = ? AND status IN ('queued','running')", [$id])) {
-			return false; // çalışan işlem varken silinmez
+		// Önce yeni cron işlerini durdur; bekleyen/çalışan XML işleri iptal edilir.
+		self::setConn($id, ['status' => 'paused', 'interval_minutes' => 0]);
+		$active = DB::execute("SELECT * FROM xh_runs WHERE id_connection = ? AND status IN ('queued','running')", [$id]) ?: [];
+		$busy = false;
+		foreach ($active as $run) {
+			$locked = !empty($run['lock_token']) && !empty($run['locked_at']) && strtotime((string) $run['locked_at']) >= time() - 300;
+			XhRunner::cancel((int) $run['id_run'], $vendor);
+			if ($locked) {
+				$busy = true;
+			}
+		}
+		// Canlı PHP işçisi varsa, mevcut ürün satırını bitirip iptali görmesine izin ver.
+		// Bağlantı silme düğmesine tekrar basıldığında temizlik tamamlanır.
+		if ($busy) {
+			return false;
 		}
 
-		XhStorage::remove((string) $c['file_path']); // yüklenen dosya veya URL örneği
-
-		// Yalnızca XML Hub kayıtları silinir; ürünlere dokunulmaz.
+		XhStorage::remove((string) $c['file_path']);
+		// Yalnızca XML Hub bağlantı verileri temizlenir; ürünler, görseller, siparişler ve ödemeler korunur.
 		foreach (['xh_errors', 'xh_items', 'xh_runs', 'xh_credentials', 'xh_changes'] as $t) {
 			DB::execute('DELETE FROM ' . $t . ' WHERE id_connection = ?', [$id]);
 		}
-
 		DB::execute('DELETE FROM xh_connections WHERE id_connection = ?', [$id]);
-
 		return true;
 	}
 
