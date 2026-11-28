@@ -58,8 +58,12 @@ class XhRunner
 			return false;
 		}
 
+		$locked = !empty($run['lock_token']) && !empty($run['locked_at']) && strtotime((string) $run['locked_at']) >= time() - self::STALE_LOCK_SECONDS;
 		DB::update('xh_runs', ['status' => 'cancelled', 'finished_at' => XhRepo::now(), 'message' => 'Kullanıcı iptal etti.', 'lock_token' => ''], 'id_run = :i', ['i' => $idRun]);
-		self::dropSnapshot($run);
+		// Çalışan işçi mevcut ürün kaydını bitirip iptali gördüğünde snapshot'ı kendisi temizler.
+		if (!$locked) {
+			self::dropSnapshot($run);
+		}
 
 		return true;
 	}
@@ -128,6 +132,34 @@ class XhRunner
 	private static function release(int $idRun): void
 	{
 		DB::execute("UPDATE xh_runs SET lock_token = '', locked_at = NULL WHERE id_run = ?", [$idRun]);
+	}
+
+	/** İptal veya duraklatma talebini her ürün arasında kontrol eder. */
+	private static function controlState(int $idRun, int $idConn): string
+	{
+		$r = DB::execute('SELECT r.status AS run_status, c.status AS conn_status FROM xh_runs r LEFT JOIN xh_connections c ON c.id_connection = r.id_connection WHERE r.id_run = ? AND r.id_connection = ?', [$idRun, $idConn]);
+		if (!$r || !isset($r[0])) {
+			return 'cancelled';
+		}
+		if ((string) $r[0]['run_status'] === 'cancelled') {
+			return 'cancelled';
+		}
+		return (string) ($r[0]['conn_status'] ?? '') === 'paused' ? 'paused' : 'active';
+	}
+
+	/** Duraklatmada ilerleme korunur; iptalde geçici dosyalar güvenle temizlenir. */
+	private static function stopBetweenItems(array $run, array $conn, int $processed): bool
+	{
+		$state = self::controlState((int) $run['id_run'], (int) $conn['id_connection']);
+		if ($state === 'cancelled') {
+			self::dropSnapshot($run);
+			return true;
+		}
+		if ($state === 'paused') {
+			DB::update('xh_runs', ['status' => 'queued', 'lock_token' => '', 'locked_at' => null, 'message' => 'Duraklatıldı; devam etmek için bağlantıyı aktifleştirin.'], 'id_run = :i', ['i' => $run['id_run']]);
+			return true;
+		}
+		return false;
 	}
 
 	private static function dropSnapshot(array $run): void
@@ -200,6 +232,10 @@ class XhRunner
 			self::failPermanently($run, $conn ?: ['id_connection' => (int) $run['id_connection'], 'fail_count' => 0], 'Bağlantı bulunamadı veya sahibi uyuşmuyor.');
 
 			return 0;
+		}
+		if ((string) $conn['status'] === 'paused') {
+			self::release($idRun);
+			return -1;
 		}
 
 		try {
@@ -308,6 +344,9 @@ class XhRunner
 		$offset = (int) $run['item_offset'];
 		$exhausted = true;
 		foreach (XhXml::streamSnapshot($path, $indexPath, $offset) as $idx => $raw) {
+			if (self::stopBetweenItems($run, $conn, $processed)) {
+				return $processed;
+			}
 			$res = XhImporter::process($conn, $run, $raw, $selected);
 			self::bump($run, $res['outcome']);
 			$run['item_offset'] = $idx + 1;
@@ -348,6 +387,9 @@ class XhRunner
 			}
 
 			foreach ($rows as $r) {
+				if (self::stopBetweenItems($run, $conn, $processed)) {
+					return $processed;
+				}
 				$raw = json_decode((string) $r['data'], true);
 				$run['item_offset'] = (int) $r['id_item'];
 
