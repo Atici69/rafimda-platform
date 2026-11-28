@@ -118,6 +118,13 @@ ok(XhXml::countItems($p, 'Catalog/Products/Product') === 2, 'ürün sayısı 2')
 $it = iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product'));
 ok($it[0]['Name'] === 'Tişört' && $it[0]['Images/Img'] === ['http://a.com/1.jpg', 'http://a.com/2.jpg'] && is_array($it[0]['Variants/Item']) && count($it[0]['Variants/Item']) === 2 && $it[0]['Variants/Item'][1]['Size'] === 'M', 'düz alanlar, çoklu görsel listesi ve varyant kayıtları çıkarıldı');
 ok(array_keys(iterator_to_array(XhXml::stream($p, 'Catalog/Products/Product', 1))) === [1], 'offset ile kaldığı yerden devam eder');
+$rowsSnapshot = XhStorage::newPath('rows');
+$indexSnapshot = $rowsSnapshot . '.idx';
+$snapshotCount = XhXml::buildSnapshot($p, 'Catalog/Products/Product', $rowsSnapshot, $indexSnapshot);
+$snapshotRows = iterator_to_array(XhXml::streamSnapshot($rowsSnapshot, $indexSnapshot, 1));
+ok($snapshotCount === 2 && array_keys($snapshotRows) === [1] && $snapshotRows[1]['Name'] === 'Pantolon', 'indeksli ürün anlık görüntüsü offset 1 kaydına doğrudan gider');
+XhStorage::remove($rowsSnapshot);
+XhStorage::remove($indexSnapshot);
 $at = put('<r><items><it id="7" cur="TRY"><Price currency="USD">10</Price><n>A</n></it><it id="8"><Price>5</Price><n>B</n></it></items></r>');
 $ai = iterator_to_array(XhXml::stream($at, 'r/items/it'));
 ok($ai[0]['@id'] === '7' && $ai[0]['Price@currency'] === 'USD' && $ai[0]['Price'] === '10', 'öznitelikler (@id, Price@currency) okunur');
@@ -148,6 +155,9 @@ $alt = XhMapper::apply(['A' => '', 'B' => 'Yedek Ad', 'Price' => '5'], ['fields'
 ok($alt['name'] === 'Yedek Ad', '"a|b" ilk dolu alanı seçer');
 $sm = XhMapper::sanitizeMapping(['fields' => ['name' => 'N', 'hack' => 'x', 'price' => ''], 'category_map' => ['K' => '3', 'Z' => '0'], 'variant_fields' => ['sku' => 'S', 'evil' => 'e']]);
 ok($sm['fields'] === ['name' => 'N'] && $sm['category_map'] === ['K' => 3] && $sm['variant_fields'] === ['sku' => 'S'], 'eşleştirme girdisi temizlenir (bilinmeyen hedefler atılır)');
+$sm2 = XhMapper::sanitizeMapping(['product_map' => ['sku:ABC' => '17', 'bad' => '0']]);
+ok(($sm2['product_map']['sku:ABC'] ?? 0) === 17 && count($sm2['product_map']) === 1, 'manuel ürün eşleştirmesi güvenli biçimde saklanır');
+ok(XhMapper::mappedId(['Çanta & Cüzdan' => 5], 'canta-cuzdan') === 5, 'marka/kategori eşleştirmesi Türkçe karakter ve noktalama farklarını tolere eder');
 $short = XhMapper::apply(['Name' => 'Açıklamalı Ürün', 'Price' => '10', 'Desc' => '<p>Uzun ürün açıklaması &amp; detay.</p>'], ['fields' => ['name' => 'Name', 'price' => 'Price', 'description' => 'Desc']], ['default_brand' => 1, 'default_category' => 1]);
 ok($short['errors'] === [] && $short['short_description'] === 'Uzun ürün açıklaması & detay.', 'kısa açıklama XML\'de yoksa açıklamadan otomatik üretilir');
 
@@ -184,8 +194,20 @@ ok($res['runs'] === 1 && $res['items'] === 3, 'kuyruk işlendi: 3 ürün');
 $run = XhRepo::run($e['id'], $vA);
 ok($run['status'] === 'done' && (int) $run['created'] === 3 && (int) $run['failed'] === 0 && (int) $run['total'] === 3, "çalıştırma tamamlandı ({$run['message']})");
 ok((int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vA]) === 3 && (int) DB::getValue('SELECT COUNT(*) FROM rafimda_vendor_products WHERE id_vendor = ?', [$vB]) === 0, 'XML ürünleri doğru satıcıya (A) atandı, B\'ye hiç atanmadı');
+
+$manualConn = $mkConn($vA, feed([['Name' => 'Tedarikçi Kodu Farklı', 'Sku' => 'MANUAL-1', 'Price' => '77', 'Qty' => 6]]), [], 'Manuel ürün eşleştirme');
+$manualTarget = (int) DB::getValue("SELECT id_product FROM products WHERE stock_code = 'K1'");
+$manualMapping = json_decode((string) DB::getValue('SELECT mapping FROM xh_connections WHERE id_connection = ?', [$manualConn]), true);
+$manualMapping['product_map'] = ['sku:MANUAL-1' => $manualTarget];
+XhRepo::setConn($manualConn, ['mapping' => json_encode($manualMapping)]);
+$manualPreview = XhImporter::preview(XhRepo::conn($manualConn, $vA), ['Name' => 'Tedarikçi Kodu Farklı', 'Sku' => 'MANUAL-1', 'Price' => '77', 'Qty' => 6]);
+ok($manualPreview['action'] === 'update' && $manualPreview['id_product'] === $manualTarget, 'manuel ürün eşleştirmesi önizlemede otomatik SKU eşleşmesinden önce gelir');
+$manualRun = XhRunner::enqueue($manualConn, 'import', null, $vA);
+XhRunner::tick(30, 1000);
+$manualResult = XhRepo::run($manualRun['id'], $vA);
+ok((int) $manualResult['updated'] === 1 && (int) $manualResult['created'] === 0 && DB::getValue('SELECT price FROM products WHERE id_product = ?', [$manualTarget]) == 77, 'manuel eşleştirme mevcut ürünü günceller, ikinci ürün oluşturmaz');
 ok(DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'") === '<p>Açık</p>x' || strpos((string) DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'"), '<script>') === false, 'açıklamadaki betik Product::save temizliğine bırakılır (taklitte etiket sıyrıldı)');
-ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 1 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
+ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 2 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
 $cB = $mkConn($vB, feed([['Name' => 'B Ürünü', 'Sku' => 'K1', 'Price' => '55', 'Qty' => 1]]));
 XhRunner::enqueue($cB, 'import', null, $vB);
 XhRunner::tick(30, 1000);
