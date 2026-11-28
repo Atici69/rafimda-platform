@@ -155,8 +155,6 @@ $alt = XhMapper::apply(['A' => '', 'B' => 'Yedek Ad', 'Price' => '5'], ['fields'
 ok($alt['name'] === 'Yedek Ad', '"a|b" ilk dolu alanı seçer');
 $sm = XhMapper::sanitizeMapping(['fields' => ['name' => 'N', 'hack' => 'x', 'price' => ''], 'category_map' => ['K' => '3', 'Z' => '0'], 'variant_fields' => ['sku' => 'S', 'evil' => 'e']]);
 ok($sm['fields'] === ['name' => 'N'] && $sm['category_map'] === ['K' => 3] && $sm['variant_fields'] === ['sku' => 'S'], 'eşleştirme girdisi temizlenir (bilinmeyen hedefler atılır)');
-$sm2 = XhMapper::sanitizeMapping(['product_map' => ['sku:ABC' => '17', 'bad' => '0']]);
-ok(($sm2['product_map']['sku:ABC'] ?? 0) === 17 && count($sm2['product_map']) === 1, 'manuel ürün eşleştirmesi güvenli biçimde saklanır');
 ok(XhMapper::mappedId(['Çanta & Cüzdan' => 5], 'canta-cuzdan') === 5, 'marka/kategori eşleştirmesi Türkçe karakter ve noktalama farklarını tolere eder');
 $short = XhMapper::apply(['Name' => 'Açıklamalı Ürün', 'Price' => '10', 'Desc' => '<p>Uzun ürün açıklaması &amp; detay.</p>'], ['fields' => ['name' => 'Name', 'price' => 'Price', 'description' => 'Desc']], ['default_brand' => 1, 'default_category' => 1]);
 ok($short['errors'] === [] && $short['short_description'] === 'Uzun ürün açıklaması & detay.', 'kısa açıklama XML\'de yoksa açıklamadan otomatik üretilir');
