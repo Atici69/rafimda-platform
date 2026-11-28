@@ -159,12 +159,7 @@
 	<table><tbody>{foreach $distinctCats as $i => $txt}<tr><td>{$txt|escape}<input type="hidden" name="cat_text[{$i|escape}]" value="{$txt|escape}"></td><td><select name="cat_id[{$i|escape}]"><option value="0">—</option>{foreach $categories as $c}<option value="{$c.id_category|escape}"{if isset($mapping.category_map[$txt]) && $mapping.category_map[$txt] == $c.id_category} selected{/if}>{$c.category_name|escape}</option>{/foreach}</select></td></tr>{/foreach}</tbody></table>{/if}
 	{if $distinctBrands}<h3 style="margin-top:14px">Marka eşleştirme</h3>
 	<table><tbody>{foreach $distinctBrands as $i => $txt}<tr><td>{$txt|escape}<input type="hidden" name="brand_text[{$i|escape}]" value="{$txt|escape}"></td><td><select name="brand_id[{$i|escape}]"><option value="0">—</option>{foreach $brands as $b}<option value="{$b.id_brand|escape}"{if isset($mapping.brand_map[$txt]) && $mapping.brand_map[$txt] == $b.id_brand} selected{/if}>{$b.brand_name|escape}</option>{/foreach}</select></td></tr>{/foreach}</tbody></table>{/if}
-	{if $productSamples}
-	<h3 style="margin-top:14px">Mevcut ürünle manuel eşleştirme</h3>
-	<p class="muted">SKU/barkod eşleşmesi otomatik yapılır. Buraya Rafımda ürün ID'si girerseniz kaynak ürünü seçtiğiniz mevcut ürüne bağlarız; bu eşleştirme otomatik eşleşmeden önce gelir. Ürün ID'sini yönetim panelindeki ürün düzenleme adresinde bulabilirsiniz. Boş/0 değer eşleştirmeyi kaldırır.</p>
-	<div class="scroll"><table><thead><tr><th>Tedarikçi ürünü</th><th>Kaynak anahtarı</th><th>Rafımda ürün ID</th></tr></thead><tbody>
-	{foreach $productSamples as $p}<tr><td>{$p.name|escape}{if $p.sku}<div class="muted">SKU: {$p.sku|escape}</div>{/if}</td><td><code>{$p.key|escape}</code></td><td><input type="number" min="0" step="1" name="product_map[{$p.key_enc|escape}]" value="{if $p.product_id > 0}{$p.product_id|escape}{/if}" placeholder="Ürün ID" style="max-width:130px"></td></tr>{/foreach}
-	</tbody></table></div>{/if}
+	<p class="muted">Ürünler tek tek seçilmez: önce SKU, sonra barkod, bunlar yoksa yalnızca benzersiz ve tam eşleşen ürün adıyla otomatik bağlanır. Aynı isim birden fazla üründe varsa yanlış ürünü güncellememek için yeni ürün olarak bırakılır.</p>
 	<p><button class="btn" type="submit">Eşleştirmeyi kaydet</button></p></form>{/if}
 </div>
 {/if}
