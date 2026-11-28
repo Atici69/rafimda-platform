@@ -435,6 +435,23 @@ class XhPanel
 	{
 		$type = self::post('source_type') === 'file' ? 'file' : 'url';
 		$d = ['name' => self::post('name'), 'source_type' => $type, 'url' => self::post('url'), 'id_supplier' => (int) self::post('id_supplier'), 'interval_minutes' => self::post('interval_minutes'), 'options' => $_POST['opt'] ?? []];
+		// Tedarikçi seçilmediyse bağlantı adından otomatik bul/oluştur; ürün meta kayıtları bu tedarikçiye bağlanır.
+		if ((int) $d['id_supplier'] <= 0) {
+			$supplierKey = XhMapper::normText((string) $d['name']);
+			foreach (XhRepo::suppliers($this->ownerFor()) as $existingSupplier) {
+				if ($supplierKey !== '' && XhMapper::normText((string) $existingSupplier['name']) === $supplierKey) {
+					$d['id_supplier'] = (int) $existingSupplier['id_supplier'];
+					break;
+				}
+			}
+			if ((int) $d['id_supplier'] <= 0) {
+				$createdSupplier = XhRepo::saveSupplier($this->ownerFor(), 0, (string) $d['name'], '', 'XML bağlantısı oluşturulurken otomatik tanımlandı.');
+				if (!$createdSupplier['success']) {
+					$this->go(['view' => 'new'], 'danger', 'Tedarikçi otomatik oluşturulamadı: ' . $createdSupplier['message']);
+				}
+				$d['id_supplier'] = (int) $createdSupplier['id'];
+			}
+		}
 		$path = '';
 
 		if ($type === 'file') {
