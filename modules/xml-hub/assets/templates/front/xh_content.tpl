@@ -196,8 +196,8 @@
 
 {if $tab == 'history'}
 <div class="xh-card"><h3>Bu bağlantının işlemleri</h3>
-	{if $runs}<div class="scroll"><table><thead><tr><th>#</th><th>Tür</th><th>Durum</th><th>İlerleme</th><th>Sonuç</th><th>Tarih</th></tr></thead><tbody>
-	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{$r.kind|escape}</td><td>{$r.status|escape}</td><td>{$r.item_offset|escape} / {$r.total|escape}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
+	{if $runs}<div class="scroll"><table><thead><tr><th>#</th><th>Tür</th><th>Durum</th><th>İlerleme</th><th>Sonuç</th><th>Tarih</th><th>Kontrol</th></tr></thead><tbody>
+	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{$r.kind|escape}</td><td>{$r.status|escape}</td><td>{$r.item_offset|escape} / {$r.total|escape}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td><td>{if $r.status == 'queued' || $r.status == 'running'}<form method="post" style="margin:0" onsubmit="return confirm('Bu aktarım durdurulsun mu?')"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="run_cancel"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><input type="hidden" name="id_run" value="{$r.id_run|escape}"><button class="btn danger sm" type="submit">Durdur</button></form>{else}—{/if}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
 </div>
 {/if}
 
