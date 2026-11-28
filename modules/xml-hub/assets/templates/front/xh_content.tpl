@@ -111,6 +111,7 @@
 {if $tab == 'general'}
 <div class="grid g2">
 <div class="xh-card"><h3>Durum</h3>
+	{if $xhCanManage}<form method="post" class="row" style="margin-bottom:10px"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_status"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}">{if $conn.status == 'active'}<input type="hidden" name="status" value="paused"><button class="btn ghost sm" type="submit">Aktarımı duraklat</button>{else}<input type="hidden" name="status" value="active"><button class="btn navy sm" type="submit">Bağlantıyı aktifleştir / devam et</button>{/if}</form>{/if}
 	<p>Ürün satırı: {foreach $counts as $st => $n}<span class="pill">{$st|escape}: {$n|escape}</span> {foreachelse}<span class="muted">henüz yok</span>{/foreach}</p>
 	{if $xhCanManage}
 	<form method="post" class="row"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_test"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><button class="btn navy sm" type="submit">Bağlantıyı test et{if $conn.source_type == 'url'} (örnek indir){/if}</button></form>
