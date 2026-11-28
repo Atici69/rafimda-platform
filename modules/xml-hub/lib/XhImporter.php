@@ -117,7 +117,7 @@ class XhImporter
 				$v = XhMapper::pick($raw, $src);
 				$text = is_array($v) ? '' : trim((string) $v);
 
-				if ($text === '' || isset(($mapping[$kind . '_map'] ?? [])[$text]) || self::lookup($kind, $text) > 0) {
+				if ($text === '' || XhMapper::mappedId((array) ($mapping[$kind . '_map'] ?? []), $text) > 0 || self::lookup($kind, $text) > 0) {
 					continue;
 				}
 
@@ -149,6 +149,11 @@ class XhImporter
 	private static function resolveExisting(array $conn, array $row): int
 	{
 		$idVendor = (int) $conn['id_vendor'];
+		$mapping = XhRepo::mapping($conn);
+		$manual = (int) (($mapping['product_map'] ?? [])[$row['key']] ?? 0);
+		if ($manual > 0 && XhOwner::owns($idVendor, $manual)) {
+			return $manual;
+		}
 		$link = XhRepo::item((int) $conn['id_connection'], (string) $row['key']);
 
 		if ($link && (int) $link['id_product'] > 0 && XhOwner::owns($idVendor, (int) $link['id_product'])) {
