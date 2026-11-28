@@ -198,7 +198,7 @@ XhRunner::tick(30, 1000);
 $manualResult = XhRepo::run($manualRun['id'], $vA);
 ok((int) $manualResult['updated'] === 1 && (int) $manualResult['created'] === 0 && DB::getValue('SELECT price FROM products WHERE id_product = ?', [$manualTarget]) == 77, 'manuel eşleştirme mevcut ürünü günceller, ikinci ürün oluşturmaz');
 ok(DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'") === '<p>Açık</p>x' || strpos((string) DB::getValue("SELECT description FROM products WHERE stock_code = 'K1'"), '<script>') === false, 'açıklamadaki betik Product::save temizliğine bırakılır (taklitte etiket sıyrıldı)');
-ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 1 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
+ok(XhRepo::runs($vB) === [] && count(XhRepo::runs($vA)) === 2 && XhRepo::run($e['id'], $vB) === null, 'çalıştırma geçmişi satıcıya göre izole');
 $cB = $mkConn($vB, feed([['Name' => 'B Ürünü', 'Sku' => 'K1', 'Price' => '55', 'Qty' => 1]]));
 XhRunner::enqueue($cB, 'import', null, $vB);
 XhRunner::tick(30, 1000);
