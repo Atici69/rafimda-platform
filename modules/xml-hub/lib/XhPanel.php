@@ -242,6 +242,20 @@ class XhPanel
 		$id = (int) self::post('id_connection');
 
 		switch ($a) {
+			case 'conn_status':
+				$c = $this->myConn($id);
+				$status = self::post('status');
+				if (!$c || !in_array($status, ['active', 'paused'], true)) {
+					$this->go(['view' => 'conn', 'id' => $id], 'danger', 'Bağlantı durumu değiştirilemedi.');
+				}
+				$fields = ['status' => $status];
+				if ($status === 'active' && (int) $c['interval_minutes'] > 0 && empty($c['next_run_at'])) {
+					$fields['next_run_at'] = XhRepo::now();
+				}
+				XhRepo::setConn($id, $fields);
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'general'], 'success', $status === 'active' ? 'Bağlantı aktifleştirildi. Bekleyen aktarım kaldığı yerden devam edebilir.' : 'Bağlantı duraklatıldı. Çalışan aktarım ürün satırının sonunda durur.');
+				break;
+
 			case 'supplier_save':
 				$r = XhRepo::saveSupplier($this->ownerFor(), (int) self::post('id_supplier'), self::post('name'), self::post('website'), self::post('notes'));
 				$this->go(['view' => 'suppliers'], $r['success'] ? 'success' : 'danger', $r['message']);
@@ -311,7 +325,7 @@ class XhPanel
 					'interval_minutes' => XhRepo::sanitizeInterval(self::post('interval_minutes')),
 				];
 
-				if (in_array($status, ['active', 'paused'], true) && $c['status'] !== 'draft') {
+				if (in_array($status, ['active', 'paused'], true)) {
 					$upd['status'] = $status;
 				}
 
