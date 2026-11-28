@@ -370,7 +370,7 @@ manual product sample builder					$vars['recordKeys'] = array_values(array_filte
 
 			case 'conn_delete':
 				$ok = XhRepo::deleteConnection($id, $this->scope());
-				$this->go($ok ? [] : ['view' => 'conn', 'id' => $id], $ok ? 'success' : 'danger', $ok ? 'Bağlantı ve XML Hub kayıtları silindi (ürünler korundu).' : 'Silinemedi (bekleyen/çalışan işlem olabilir).');
+				$this->go($ok ? [] : ['view' => 'conn', 'id' => $id], $ok ? 'success' : 'warning', $ok ? 'Bağlantı ve XML Hub kayıtları silindi; mağaza ürünleri korundu.' : 'Aktif cron işlemi durduruldu. Birkaç saniye sonra bağlantıyı sil düğmesine tekrar basın.');
 				break;
 
 			case 'run_enqueue':
@@ -391,7 +391,7 @@ manual product sample builder					$vars['recordKeys'] = array_values(array_filte
 
 			case 'run_cancel':
 				$ok = XhRunner::cancel((int) self::post('id_run'), $this->scope());
-				$this->go(['view' => 'runs'], $ok ? 'success' : 'danger', $ok ? 'İşlem iptal edildi.' : 'İşlem iptal edilemedi.');
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'history'], $ok ? 'success' : 'danger', $ok ? 'Aktarım durduruldu; mevcut ürün satırı tamamlandıktan sonra kuyruk bırakılacak.' : 'İşlem iptal edilemedi.');
 				break;
 
 			case 'queue_tick':
