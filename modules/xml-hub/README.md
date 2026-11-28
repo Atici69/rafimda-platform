@@ -34,7 +34,7 @@ Kaldırma güvenlidir (veri silmez); tabloları silmek için `uninstall.destruct
 - Alan eşleştirme sekmesinde ilk 20 kaynak ürünü için manuel mevcut ürün eşleştirmesi vardır. Rafımda ürün ID'si girilir; sunucu tarafında ürün sahipliği doğrulanır ve manuel eşleştirme SKU/barkod otomatik eşleşmesinden önce gelir.
 - Kısmi marka/kategori eşleştirme kayıtları önceki eşleştirmeleri korur; kategori seçenekleri hiyerarşik gösterilir.
 - Mevcut varyant yalnızca SKU ile bulunur; SKU'suz varyant atlanır.
-- Her tick offset'e kadar yeniden akış okur (O(n)).
+- XML ilk hazırlıkta ürün satırlarına ayrılmış JSONL anlık görüntüsü ve byte-offset indeksi üretir; sonraki cron dilimleri önceki ürünleri yeniden taramadan doğrudan kaldığı yerden devam eder. Çalışma anlık görüntüsü üst sınırı 200 MB'tır; iş bitince geçici dosyalar silinir.
 - Mobil/görsel arayüz tarayıcıda denenmedi; MySQL, gerçek curl/DNS/TLS ve gerçek `Product::save` ile uçtan uca test edilmedi.
 
 ## v0.3.0 — Satıcı bazlı XML dışa aktarma
