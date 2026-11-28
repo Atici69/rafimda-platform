@@ -9,3 +9,20 @@
 	<div><label>Görsel modu</label><select name="opt[image_mode]"><option value="if_empty"{if $opt.image_mode != 'add_new'} selected{/if}>Yalnızca görseli olmayan ürüne ekle</option><option value="add_new"{if $opt.image_mode == 'add_new'} selected{/if}>Yeni görsel adreslerini ekle (eskiler silinmez)</option></select></div>
 	<div><label>Ürün başına en çok görsel</label><input type="number" min="0" max="10" name="opt[max_images]" value="{$opt.max_images|escape}"></div>
 </div>
+
+<details class="xh-category-margins">
+	<summary>Kategoriye özel kâr oranları (isteğe bağlı)</summary>
+	<p>Burada tanımlanan oran, genel kâr oranını yalnızca seçilen kategori için geçersiz kılar. Boş bırakılan kategoriler genel oranı kullanır.</p>
+	<div class="table-responsive"><table class="table">
+		<thead><tr><th>Kategori</th><th>Ek kâr (%)</th><th>Sabit ekleme (₺)</th></tr></thead>
+		<tbody>
+		{foreach $categories as $c}
+		<tr>
+			<td>{$c.category_name|escape}</td>
+			<td><input type="number" step="0.01" name="opt[category_markup][{$c.id_category|escape}][percent]" value="{$opt.category_markup[$c.id_category].percent|default:''|escape}" placeholder="Genel oran"></td>
+			<td><input type="number" step="0.01" name="opt[category_markup][{$c.id_category|escape}][add]" value="{$opt.category_markup[$c.id_category].add|default:''|escape}" placeholder="0"></td>
+		</tr>
+		{/foreach}
+		</tbody>
+	</table></div>
+</details>
