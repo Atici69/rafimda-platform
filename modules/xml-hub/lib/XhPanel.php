@@ -146,7 +146,7 @@ class XhPanel
 		$tab = in_array($_GET['tab'] ?? '', ['general', 'mapping', 'maps', 'preview', 'history', 'errors'], true) ? (string) $_GET['tab'] : 'general';
 		$mapping = XhRepo::mapping($conn);
 		$opt = XhRepo::options($conn);
-		$vars = $common + ['conn' => $conn, 'tab' => $tab, 'opt' => $opt, 'mapping' => $mapping, 'intervals' => $this->intervals(), 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'categories' => $this->categories(), 'brands' => $this->brands(), 'counts' => XhRepo::itemCounts($id), 'sampleOk' => false, 'keys' => [], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'suppliers' => XhRepo::suppliers((int) $conn['id_vendor']), 'hasAuth' => XhRepo::hasAuth($id), 'unmapped' => ['brand' => [], 'category' => []], 'productSamples' => [], 'mapBrand' => (array) ($mapping['brand_map'] ?? []), 'mapCategory' => (array) ($mapping['category_map'] ?? [])];
+		$vars = $common + ['conn' => $conn, 'tab' => $tab, 'opt' => $opt, 'mapping' => $mapping, 'intervals' => $this->intervals(), 'targets' => XhMapper::TARGETS, 'vtargets' => XhMapper::VARIANT_TARGETS, 'categories' => $this->categories(), 'brands' => $this->brands(), 'counts' => XhRepo::itemCounts($id), 'sampleOk' => false, 'keys' => [], 'rows' => [], 'distinctCats' => [], 'distinctBrands' => [], 'suppliers' => XhRepo::suppliers((int) $conn['id_vendor']), 'hasAuth' => XhRepo::hasAuth($id), 'unmapped' => ['brand' => [], 'category' => []], 'mapBrand' => (array) ($mapping['brand_map'] ?? []), 'mapCategory' => (array) ($mapping['category_map'] ?? [])];
 		$sample = $this->sampleFile($conn);
 		$vars['sampleOk'] = $sample !== '';
 
@@ -165,20 +165,7 @@ class XhPanel
 
 				if ($tab === 'mapping') {
 					$vars['suggest'] = $items !== [] ? XhMapper::suggest($items[0]) : ['fields' => [], 'variant_source' => '', 'variant_fields' => []];
-					$productMap = (array) ($mapping['product_map'] ?? []);
-					foreach ($items as $sampleItem) {
-						$mapped = XhMapper::apply($sampleItem, $mapping, $opt, [XhImporter::class, 'lookup']);
-						if ($mapped['key'] !== '' && $mapped['name'] !== '') {
-							$vars['productSamples'][] = [
-								'key' => $mapped['key'],
-								'key_enc' => base64_encode($mapped['key']),
-							'name' => $mapped['name'],
-							'sku' => $mapped['sku'],
-							'product_id' => (int) ($productMap[$mapped['key']] ?? 0),
-						];
-						}
-					}
-					$vars['recordKeys'] = array_values(array_filter(array_keys($keys), static function ($k) use ($items): bool {
+manual product sample builder					$vars['recordKeys'] = array_values(array_filter(array_keys($keys), static function ($k) use ($items): bool {
 						foreach ($items as $it) {
 							if (isset($it[$k]) && is_array($it[$k]) && is_array(reset($it[$k]))) {
 								return true;
@@ -296,36 +283,18 @@ class XhPanel
 				}
 
 				$previous = XhRepo::mapping($c);
-				$productMap = (array) ($previous['product_map'] ?? []);
-				$invalidProductMaps = 0;
-				foreach ((array) ($_POST['product_map'] ?? []) as $encodedKey => $targetId) {
-					$key = base64_decode((string) $encodedKey, true);
-					$targetId = (int) $targetId;
-					if (!is_string($key) || $key === '' || strlen($key) > 100) {
-						$invalidProductMaps++;
-						continue;
-					}
-					if ($targetId <= 0) {
-						unset($productMap[$key]);
-					} elseif (XhOwner::owns($this->ownerFor(), $targetId) && XhSink::current($targetId)) {
-						$productMap[$key] = $targetId;
-					} else {
-						$invalidProductMaps++;
-					}
-				}
 				$m = XhMapper::sanitizeMapping([
 					'fields' => $_POST['fields'] ?? [], 'variant_source' => self::post('variant_source'), 'variant_fields' => $_POST['variant_fields'] ?? [],
 					'category_map' => array_replace((array) ($previous['category_map'] ?? []), $this->pairs('cat_text', 'cat_id')),
 					'brand_map' => array_replace((array) ($previous['brand_map'] ?? []), $this->pairs('brand_text', 'brand_id')),
-					'product_map' => $productMap,
 				]);
 				$itemPath = mb_substr(preg_replace('/[^A-Za-z0-9_.:\-\/]/', '', self::post('item_path')) ?? '', 0, 190);
 				XhRepo::setConn($id, ['mapping' => json_encode($m, JSON_UNESCAPED_UNICODE), 'item_path' => $itemPath !== '' ? $itemPath : (string) $c['item_path']]);
 				$saved = XhRepo::mapping(XhRepo::conn($id, $this->scope()) ?: []);
-				if (($saved['fields'] ?? []) !== ($m['fields'] ?? []) || ($saved['category_map'] ?? []) !== ($m['category_map'] ?? []) || ($saved['brand_map'] ?? []) !== ($m['brand_map'] ?? []) || ($saved['product_map'] ?? []) !== ($m['product_map'] ?? [])) {
+				if (($saved['fields'] ?? []) !== ($m['fields'] ?? []) || ($saved['category_map'] ?? []) !== ($m['category_map'] ?? []) || ($saved['brand_map'] ?? []) !== ($m['brand_map'] ?? []) ) {
 					$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'danger', 'Eşleştirmeler veritabanına doğrulanarak kaydedilemedi. Lütfen tekrar deneyin.');
 				}
-				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'success', 'Eşleştirme kaydedildi.' . ($invalidProductMaps > 0 ? ' ' . $invalidProductMaps . ' geçersiz/başka hesaba ait ürün eşleştirmesi reddedildi.' : '') . (($m['fields']['name'] ?? '') === '' || ($m['fields']['price'] ?? '') === '' ? ' Uyarı: ürün adı ve fiyat eşleşmeden içe aktarma başlatılamaz.' : ''));
+				$this->go(['view' => 'conn', 'id' => $id, 'tab' => 'mapping'], 'success', 'Eşleştirme kaydedildi. Ürünler SKU/barkod ve tekil ürün adına göre otomatik eşleştirilir.' . (($m['fields']['name'] ?? '') === '' || ($m['fields']['price'] ?? '') === '' ? ' Uyarı: ürün adı ve fiyat eşleşmeden içe aktarma başlatılamaz.' : ''));
 				break;
 
 			case 'conn_options_save':
