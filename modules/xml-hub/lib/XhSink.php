@@ -51,6 +51,20 @@ class XhSink
 		return (int) (self::$nameIndex[$idVendor][$key] ?? 0);
 	}
 
+	/** Aynı aktarım sırasında eklenen ürünleri ad indeksine al; yinelenen adlarda belirsizliği işaretle. */
+	public static function rememberName(int $idVendor, string $name, int $id): void
+	{
+		$key = XhMapper::normText($name);
+		if ($key === '' || strlen($key) < 6 || $id <= 0 || !array_key_exists($idVendor, self::$nameIndex)) {
+			return;
+		}
+		if (isset(self::$nameIndex[$idVendor][$key])) {
+			self::$nameIndex[$idVendor][$key] = 0;
+		} else {
+			self::$nameIndex[$idVendor][$key] = $id;
+		}
+	}
+
 	/** @return int bulunan ürün ID'si veya 0 */
 	public static function find(int $idVendor, string $sku, string $barcode): int
 	{
@@ -145,6 +159,7 @@ class XhSink
 			DB::update('products', $extra, 'id_product = :pid', ['pid' => $id]);
 		}
 
+		self::rememberName($idVendor, (string) $row['name'], $id);
 		return ['success' => true, 'id' => $id, 'message' => 'Ürün eklendi.'];
 	}
 
