@@ -431,7 +431,7 @@ $o = XhRepo::options($new);
 ok($new['name'] === 'Uzak XML' && (int) $new['interval_minutes'] === 60 && $o['create_new'] === 0 && $o['sync_stock'] === 1 && $o['update_existing'] === 1, 'form seçenekleri kaydedilir (işaretsiz kutu = kapalı, belirtilmeyen = varsayılan)');
 ok((int) $new['id_supplier'] > 0 && $new['supplier_name'] === 'Uzak XML', 'tedarikçi seçilmezse bağlantı adına göre otomatik tedarikçi oluşturulur ve bağlanır');
 $sv = $call($vA, 'POST', [], ['xhAction' => 'supplier_save', 'name' => 'Tedarikçi Z', 'website' => 'https://z.com']);
-$sid = (int) DB::getValue('SELECT id_supplier FROM xh_suppliers WHERE id_vendor = 1');
+$sid = (int) DB::getValue("SELECT id_supplier FROM xh_suppliers WHERE id_vendor = 1 AND name = 'Tedarikçi Z'");
 $r = $call($vB, 'POST', [], ['xhAction' => 'supplier_save', 'id_supplier' => $sid, 'name' => 'Ele geçirildi']);
 ok($sid > 0 && DB::getValue('SELECT name FROM xh_suppliers WHERE id_supplier = ?', [$sid]) === 'Tedarikçi Z' && $call($vB, 'GET', ['view' => 'suppliers'])['vars']['suppliers'] === [], 'tedarikçi kaydı izole; B değiştiremez/göremez');
 $adm = function (string $method, array $get, array $post = []) { $_SERVER['REQUEST_METHOD'] = $method; $_GET = $get; $_POST = $post; $_SESSION = []; try { $p = new XhPanel(0, true, ''); $r = $p->handle(); return $r; } catch (RuntimeException $e) { return [null, ['flash' => $_SESSION['xh_flash'] ?? null]]; } };
