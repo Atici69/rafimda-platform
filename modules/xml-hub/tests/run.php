@@ -428,6 +428,7 @@ $r = $call($vA, 'POST', [], ['xhAction' => 'conn_create', 'name' => 'Uzak XML', 
 $new = XhRepo::connections($vA)[0];
 $o = XhRepo::options($new);
 ok($new['name'] === 'Uzak XML' && (int) $new['interval_minutes'] === 60 && $o['create_new'] === 0 && $o['sync_stock'] === 1 && $o['update_existing'] === 1, 'form seçenekleri kaydedilir (işaretsiz kutu = kapalı, belirtilmeyen = varsayılan)');
+ok((int) $new['id_supplier'] > 0 && $new['supplier_name'] === 'Uzak XML', 'tedarikçi seçilmezse bağlantı adına göre otomatik tedarikçi oluşturulur ve bağlanır');
 $sv = $call($vA, 'POST', [], ['xhAction' => 'supplier_save', 'name' => 'Tedarikçi Z', 'website' => 'https://z.com']);
 $sid = (int) DB::getValue('SELECT id_supplier FROM xh_suppliers WHERE id_vendor = 1');
 $r = $call($vB, 'POST', [], ['xhAction' => 'supplier_save', 'id_supplier' => $sid, 'name' => 'Ele geçirildi']);
