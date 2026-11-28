@@ -111,6 +111,7 @@
 {if $tab == 'general'}
 <div class="grid g2">
 <div class="xh-card"><h3>Durum</h3>
+	{if $xhCanManage}<form method="post" class="row" style="margin-bottom:10px"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_status"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}">{if $conn.status == 'active'}<input type="hidden" name="status" value="paused"><button class="btn ghost sm" type="submit">Aktarımı duraklat</button>{else}<input type="hidden" name="status" value="active"><button class="btn navy sm" type="submit">Bağlantıyı aktifleştir / devam et</button>{/if}</form>{/if}
 	<p>Ürün satırı: {foreach $counts as $st => $n}<span class="pill">{$st|escape}: {$n|escape}</span> {foreachelse}<span class="muted">henüz yok</span>{/foreach}</p>
 	{if $xhCanManage}
 	<form method="post" class="row"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="conn_test"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><button class="btn navy sm" type="submit">Bağlantıyı test et{if $conn.source_type == 'url'} (örnek indir){/if}</button></form>
@@ -159,6 +160,7 @@
 	<table><tbody>{foreach $distinctCats as $i => $txt}<tr><td>{$txt|escape}<input type="hidden" name="cat_text[{$i|escape}]" value="{$txt|escape}"></td><td><select name="cat_id[{$i|escape}]"><option value="0">—</option>{foreach $categories as $c}<option value="{$c.id_category|escape}"{if isset($mapping.category_map[$txt]) && $mapping.category_map[$txt] == $c.id_category} selected{/if}>{$c.category_name|escape}</option>{/foreach}</select></td></tr>{/foreach}</tbody></table>{/if}
 	{if $distinctBrands}<h3 style="margin-top:14px">Marka eşleştirme</h3>
 	<table><tbody>{foreach $distinctBrands as $i => $txt}<tr><td>{$txt|escape}<input type="hidden" name="brand_text[{$i|escape}]" value="{$txt|escape}"></td><td><select name="brand_id[{$i|escape}]"><option value="0">—</option>{foreach $brands as $b}<option value="{$b.id_brand|escape}"{if isset($mapping.brand_map[$txt]) && $mapping.brand_map[$txt] == $b.id_brand} selected{/if}>{$b.brand_name|escape}</option>{/foreach}</select></td></tr>{/foreach}</tbody></table>{/if}
+	<p class="muted">Ürünler tek tek seçilmez: önce SKU, sonra barkod, bunlar yoksa yalnızca benzersiz ve tam eşleşen ürün adıyla otomatik bağlanır. Aynı isim birden fazla üründe varsa yanlış ürünü güncellememek için yeni ürün olarak bırakılır.</p>
 	<p><button class="btn" type="submit">Eşleştirmeyi kaydet</button></p></form>{/if}
 </div>
 {/if}
@@ -195,8 +197,8 @@
 
 {if $tab == 'history'}
 <div class="xh-card"><h3>Bu bağlantının işlemleri</h3>
-	{if $runs}<div class="scroll"><table><thead><tr><th>#</th><th>Tür</th><th>Durum</th><th>İlerleme</th><th>Sonuç</th><th>Tarih</th></tr></thead><tbody>
-	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{$r.kind|escape}</td><td>{$r.status|escape}</td><td>{$r.item_offset|escape} / {$r.total|escape}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
+	{if $runs}<div class="scroll"><table><thead><tr><th>#</th><th>Tür</th><th>Durum</th><th>İlerleme</th><th>Sonuç</th><th>Tarih</th><th>Kontrol</th></tr></thead><tbody>
+	{foreach $runs as $r}<tr><td>{$r.id_run|escape}</td><td>{$r.kind|escape}</td><td>{$r.status|escape}</td><td>{$r.item_offset|escape} / {$r.total|escape}</td><td class="muted">{$r.message|escape}</td><td class="muted">{$r.date_add|escape}</td><td>{if $r.status == 'queued' || $r.status == 'running'}<form method="post" style="margin:0" onsubmit="return confirm('Bu aktarım durdurulsun mu?')"><input type="hidden" name="token" value="{$xhToken|escape}"><input type="hidden" name="xhAction" value="run_cancel"><input type="hidden" name="id_connection" value="{$conn.id_connection|escape}"><input type="hidden" name="id_run" value="{$r.id_run|escape}"><button class="btn danger sm" type="submit">Durdur</button></form>{else}—{/if}</td></tr>{/foreach}</tbody></table></div>{else}<p>Henüz işlem yok.</p>{/if}
 </div>
 {/if}
 

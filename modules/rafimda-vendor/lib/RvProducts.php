@@ -214,6 +214,12 @@ class RvProducts
 			return ['success' => false, 'message' => 'Formu kontrol edin.', 'id' => 0, 'errors' => $in['errors']];
 		}
 
+		// Moderasyon alanı migration 002 ile gelir. Eksik şemada önce ürün oluşturup
+		// ardından sahiplik INSERT'inin başarısız olması ürünün geri silinmesine yol açardı.
+		if (DB::execute('SELECT moderation FROM rafimda_vendor_products LIMIT 0') === false) {
+			return ['success' => false, 'message' => 'Satıcı ürün tablosu güncel değil. Yönetim > Satıcılar bölümünden bekleyen migration işlemlerini çalıştırın (002_moderation).', 'id' => 0, 'errors' => []];
+		}
+
 		$quota = RvPlans::checkProductQuota($idVendor, 1);
 
 		if (!$quota['ok']) {

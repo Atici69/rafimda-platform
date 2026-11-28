@@ -1,0 +1,31 @@
+name: XML Hub tests
+
+on:
+  push:
+    branches:
+      - feature/xml-hub-2-reliable-import
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  xml-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl, dom, libxml, mbstring, pdo_sqlite, simplexml, xml, xmlreader, xmlwriter, sodium
+          coverage: none
+      - name: Syntax check changed PHP modules
+        run: |
+          find modules/xml-hub modules/rafimda-vendor -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run XML Hub regression suites
+        run: |
+          php modules/xml-hub/tests/run.php
+          php modules/xml-hub/tests/run_v2.php
+          if [ -f modules/xml-hub/tests/run_v3.php ]; then php modules/xml-hub/tests/run_v3.php; fi
+          php modules/xml-hub/tests/load_module.php
