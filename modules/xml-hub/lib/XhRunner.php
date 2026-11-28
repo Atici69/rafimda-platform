@@ -357,6 +357,9 @@ class XhRunner
 				break;
 			}
 		}
+		if (self::stopBetweenItems($run, $conn, $processed)) {
+			return $processed;
+		}
 		if ($exhausted) {
 			self::finish($run, $conn);
 		} else {
@@ -381,6 +384,9 @@ class XhRunner
 			$rows = DB::execute("SELECT * FROM xh_items WHERE id_connection = ? AND state = 'failed' AND attempts < ? AND data IS NOT NULL AND data <> '' AND id_item > ? ORDER BY id_item ASC LIMIT 20", [$idConn, self::RETRY_ITEM_MAX_ATTEMPTS, (int) $run['item_offset']]) ?: [];
 
 			if ($rows === []) {
+				if (self::stopBetweenItems($run, $conn, $processed)) {
+					return $processed;
+				}
 				self::finish($run, $conn, ' (yeniden deneme)');
 
 				return $processed;
