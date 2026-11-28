@@ -65,10 +65,42 @@ class XhMapper
 	public static function norm(string $s): string
 	{
 		$s = strtr($s, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ğ' => 'g', 'ğ' => 'g', 'Ü' => 'u', 'ü' => 'u', 'Ö' => 'o', 'ö' => 'o', 'Ç' => 'c', 'ç' => 'c']);
-		$leaf = strtolower($s);
+		$leaf = mb_strtolower($s);
 		$leaf = preg_replace('/^.*[\/@]/', '', $leaf) ?? $leaf;
 
 		return preg_replace('/[^a-z0-9]/', '', $leaf) ?? '';
+	}
+
+	/** Tam ad/yol normalizasyonu; Türkçe karakter ve noktalama farklarını eşleştirmede yok sayar. */
+	public static function normText(string $s): string
+	{
+		$s = strtr($s, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ğ' => 'g', 'ğ' => 'g', 'Ü' => 'u', 'ü' => 'u', 'Ö' => 'o', 'ö' => 'o', 'Ç' => 'c', 'ç' => 'c']);
+		$s = mb_strtolower(trim($s));
+
+		return preg_replace('/[^a-z0-9]/', '', $s) ?? '';
+	}
+
+	/** Haritada tam veya benzersiz normalize eşleşme arar; belirsizlikte hedef seçmez. */
+	public static function mappedId(array $map, string $text): int
+	{
+		if (isset($map[$text]) && (int) $map[$text] > 0) {
+			return (int) $map[$text];
+		}
+		$key = self::normText($text);
+		if ($key === '') {
+			return 0;
+		}
+		$found = 0;
+		foreach ($map as $source => $id) {
+			if (self::normText((string) $source) !== $key || (int) $id <= 0) {
+				continue;
+			}
+			if ($found > 0 && $found !== (int) $id) {
+				return 0;
+			}
+			$found = (int) $id;
+		}
+		return $found;
 	}
 
 	/**
@@ -278,8 +310,8 @@ class XhMapper
 		$catTxt = $str($get('category'), 255);
 		$brandMap = is_array($mapping['brand_map'] ?? null) ? $mapping['brand_map'] : [];
 		$catMap = is_array($mapping['category_map'] ?? null) ? $mapping['category_map'] : [];
-		$idBrand = $brandTxt !== '' ? (int) ($brandMap[$brandTxt] ?? 0) : 0;
-		$idCat = $catTxt !== '' ? (int) ($catMap[$catTxt] ?? 0) : 0;
+		$idBrand = $brandTxt !== '' ? self::mappedId($brandMap, $brandTxt) : 0;
+		$idCat = $catTxt !== '' ? self::mappedId($catMap, $catTxt) : 0;
 
 		if ($idBrand <= 0 && $brandTxt !== '' && $lookup) {
 			$idBrand = (int) $lookup('brand', $brandTxt);
@@ -395,7 +427,7 @@ class XhMapper
 	/** @param array<string,mixed> $m @return array<string,mixed> */
 	public static function sanitizeMapping(array $m): array
 	{
-		$clean = ['fields' => [], 'variant_source' => '', 'variant_fields' => [], 'category_map' => [], 'brand_map' => []];
+		$clean = ['fields' => [], 'variant_source' => '', 'variant_fields' => [], 'category_map' => [], 'brand_map' => [], 'product_map' => []];
 
 		foreach ((array) ($m['fields'] ?? []) as $t => $src) {
 			if (isset(self::TARGETS[$t]) && is_scalar($src) && trim((string) $src) !== '') {
@@ -416,6 +448,11 @@ class XhMapper
 				if ((int) $id > 0 && is_scalar($txt)) {
 					$clean[$k][mb_substr(trim((string) $txt), 0, 255)] = (int) $id;
 				}
+			}
+		}
+		foreach (array_slice((array) ($m['product_map'] ?? []), 0, 5000, true) as $key => $id) {
+			if (is_scalar($key) && trim((string) $key) !== '' && (int) $id > 0) {
+				$clean['product_map'][mb_substr(trim((string) $key), 0, 100)] = (int) $id;
 			}
 		}
 
