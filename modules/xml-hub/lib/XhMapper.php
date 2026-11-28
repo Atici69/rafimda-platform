@@ -64,10 +64,11 @@ class XhMapper
 
 	public static function norm(string $s): string
 	{
-		$s = self::normText($s);
-		$leaf = preg_replace('/^.*[\/@]/', '', $s) ?? $s;
+		$s = strtr($s, ['İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ş' => 's', 'ş' => 's', 'Ğ' => 'g', 'ğ' => 'g', 'Ü' => 'u', 'ü' => 'u', 'Ö' => 'o', 'ö' => 'o', 'Ç' => 'c', 'ç' => 'c']);
+		$leaf = mb_strtolower($s);
+		$leaf = preg_replace('/^.*[\/@]/', '', $leaf) ?? $leaf;
 
-		return $leaf;
+		return preg_replace('/[^a-z0-9]/', '', $leaf) ?? '';
 	}
 
 	/** Tam ad/yol normalizasyonu; Türkçe karakter ve noktalama farklarını eşleştirmede yok sayar. */
