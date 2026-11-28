@@ -6,6 +6,51 @@
  */
 class XhSink
 {
+	/** @var array<int,array<string,int>> benzersiz normalize ürün adları; 0 = belirsiz/tekrarlı ad */
+	private static array $nameIndex = [];
+
+	public static function resetNameIndex(): void
+	{
+		self::$nameIndex = [];
+	}
+
+	/** SKU/barkod bulunmadığında yalnızca tekil tam ürün adı eşleşmesini kullanır. */
+	public static function findByName(int $idVendor, string $name): int
+	{
+		$key = XhMapper::normText($name);
+		if (strlen($key) < 6) {
+			return 0; // "Kablo", "Telefon" gibi kısa/genel adlarla yanlış eşleşmeyi önle.
+		}
+		if (!array_key_exists($idVendor, self::$nameIndex)) {
+			$sql = 'SELECT p.id_product, p.product_name FROM products p';
+			$params = [];
+			if ($idVendor > 0) {
+				if (!XhOwner::vendorModuleAvailable()) {
+					return 0;
+				}
+				$sql .= ' INNER JOIN rafimda_vendor_products vp ON vp.id_product = p.id_product WHERE vp.id_vendor = ?';
+				$params[] = $idVendor;
+			} elseif (XhOwner::vendorTableExists()) {
+				$sql .= ' WHERE NOT EXISTS (SELECT 1 FROM rafimda_vendor_products vp WHERE vp.id_product = p.id_product)';
+			}
+			$rows = DB::execute($sql, $params) ?: [];
+			self::$nameIndex[$idVendor] = [];
+			foreach ($rows as $row) {
+				$normal = XhMapper::normText((string) ($row['product_name'] ?? ''));
+				$id = (int) ($row['id_product'] ?? 0);
+				if ($normal === '' || $id <= 0) {
+					continue;
+				}
+				if (array_key_exists($normal, self::$nameIndex[$idVendor])) {
+					self::$nameIndex[$idVendor][$normal] = 0; // aynı ad birden fazla üründe var: otomatik bağlama yapma
+				} else {
+					self::$nameIndex[$idVendor][$normal] = $id;
+				}
+			}
+		}
+		return (int) (self::$nameIndex[$idVendor][$key] ?? 0);
+	}
+
 	/** @return int bulunan ürün ID'si veya 0 */
 	public static function find(int $idVendor, string $sku, string $barcode): int
 	{
