@@ -16,7 +16,7 @@ class XhImporter
 	/** Kategori yollarından son parçayı alır ve tedarikçi XML etiketini temizler. */
 	private static function taxonomyKey(string $text): string
 	{
-		$parts = preg_split('/[>»|\\\\]+/u', trim($text)) ?: [$text];
+		$parts = preg_split('/[>»|\\\\\/]+/u', trim($text)) ?: [$text];
 		$leaf = trim((string) end($parts));
 		$leaf = preg_replace('/\\s*\\(xml\\)\\s*$/iu', '', $leaf) ?? $leaf;
 
