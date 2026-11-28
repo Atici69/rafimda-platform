@@ -386,6 +386,100 @@ class XhXml
 		return $out;
 	}
 
+	/**
+	 * XML'i ilk kez tararken ürün kayıtlarını JSONL anlık görüntüsüne ve sabit genişlikli byte-offset
+	 * indeksine yazar. Sonraki cron dilimleri XML'i baştan ayrıştırmadan doğrudan kaldığı ürüne gider.
+	 *
+	 * @return int yazılan ürün sayısı
+	 */
+	public static function buildSnapshot(string $sourcePath, string $itemPath, string $rowsPath, string $indexPath): int
+	{
+		$dir = realpath(XhStorage::dir());
+		if ($dir === false || realpath(dirname($rowsPath)) !== $dir || realpath(dirname($indexPath)) !== $dir) {
+			throw new RuntimeException('XML çalışma dosyası depolama klasörünün dışında.');
+		}
+
+		$rows = @fopen($rowsPath, 'wb');
+		$index = @fopen($indexPath, 'wb');
+		if (!$rows || !$index) {
+			if (is_resource($rows)) { fclose($rows); }
+			if (is_resource($index)) { fclose($index); }
+			throw new RuntimeException('XML ürün anlık görüntüsü oluşturulamadı.');
+		}
+
+		$count = 0;
+		try {
+			foreach (self::stream($sourcePath, $itemPath, 0) as $raw) {
+				$json = json_encode($raw, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+				if (!is_string($json)) {
+					throw new RuntimeException('XML ürün kaydı JSON biçimine dönüştürülemedi.');
+				}
+				$offset = ftell($rows);
+				if ($offset === false || $offset > 9999999999) {
+					throw new RuntimeException('XML ürün anlık görüntüsü boyut sınırını aştı.');
+				}
+				$line = $json . "\n";
+				if (fwrite($index, sprintf('%010d', $offset) . "\n") !== 11 || fwrite($rows, $line) !== strlen($line)) {
+					throw new RuntimeException('XML ürün anlık görüntüsü diske yazılamadı.');
+				}
+				$count++;
+				if ($count > self::MAX_ITEMS || ftell($rows) > 209715200) {
+					throw new RuntimeException('XML ürün anlık görüntüsü sınırı aşıldı (200 MB / ' . self::MAX_ITEMS . ' ürün).');
+				}
+			}
+		} finally {
+			fclose($rows);
+			fclose($index);
+		}
+
+		return $count;
+	}
+
+	/**
+	 * JSONL anlık görüntüsünden ürünleri indeks üzerinden okur; offset öncesindeki ürünleri tekrar taramaz.
+	 *
+	 * @return Generator<int,array<string,mixed>>
+	 */
+	public static function streamSnapshot(string $rowsPath, string $indexPath, int $offset = 0): Generator
+	{
+		if ($offset < 0 || !XhStorage::isInside($rowsPath) || !XhStorage::isInside($indexPath)) {
+			throw new RuntimeException('XML ürün anlık görüntüsü bulunamadı.');
+		}
+		$rows = @fopen($rowsPath, 'rb');
+		$index = @fopen($indexPath, 'rb');
+		if (!$rows || !$index) {
+			if (is_resource($rows)) { fclose($rows); }
+			if (is_resource($index)) { fclose($index); }
+			throw new RuntimeException('XML ürün indeksi açılamadı.');
+		}
+
+		try {
+			if (fseek($index, $offset * 11) !== 0) {
+				throw new RuntimeException('XML ürün indeksinde konumlanılamadı.');
+			}
+			$idx = $offset;
+			while (($entry = fgets($index, 12)) !== false) {
+				if (strlen($entry) !== 11 || substr($entry, 10, 1) !== "\n") {
+					throw new RuntimeException('XML ürün indeksi bozuk.');
+				}
+				$byte = (int) substr($entry, 0, 10);
+				if (fseek($rows, $byte) !== 0) {
+					throw new RuntimeException('XML ürün kaydına konumlanılamadı.');
+				}
+				$json = fgets($rows);
+				$raw = $json !== false ? json_decode($json, true) : null;
+				if (!is_array($raw)) {
+					throw new RuntimeException('XML ürün anlık görüntüsü bozuk.');
+				}
+				yield $idx => $raw;
+				$idx++;
+			}
+		} finally {
+			fclose($rows);
+			fclose($index);
+		}
+	}
+
 	public static function countItems(string $path, string $itemPath): int
 	{
 		$r = self::open($path);
