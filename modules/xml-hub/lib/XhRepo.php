@@ -8,7 +8,7 @@ class XhRepo
 {
 	public const DEFAULT_OPTIONS = [
 		'create_new' => 1, 'update_existing' => 1, 'sync_price' => 1, 'sync_stock' => 1, 'sync_description' => 0, 'sync_images' => 0,
-		'price_markup_percent' => 0, 'price_add' => 0, 'default_category' => 0, 'default_brand' => 0, 'max_images' => 5,
+		'price_markup_percent' => 0, 'price_add' => 0, 'category_markup' => [], 'default_category' => 0, 'default_brand' => 0, 'max_images' => 5,
 		'image_mode' => 'if_empty', 'sync_cargo' => 1, 'create_variants' => 1,
 	];
 
@@ -108,6 +108,16 @@ class XhRepo
 
 		$o['price_markup_percent'] = max(-90.0, min(500.0, (float) str_replace(',', '.', (string) ($in['price_markup_percent'] ?? 0))));
 		$o['price_add'] = max(-100000.0, min(100000.0, (float) str_replace(',', '.', (string) ($in['price_add'] ?? 0))));
+		$o['category_markup'] = [];
+		$categoryRules = is_array($in['category_markup'] ?? null) ? $in['category_markup'] : [];
+		foreach ($categoryRules as $categoryId => $rule) {
+			$categoryId = (int) $categoryId;
+			if ($categoryId <= 0 || !is_array($rule)) { continue; }
+			$o['category_markup'][$categoryId] = [
+				'percent' => max(-90.0, min(500.0, (float) str_replace(',', '.', (string) ($rule['percent'] ?? 0)))),
+				'add' => max(-100000.0, min(100000.0, (float) str_replace(',', '.', (string) ($rule['add'] ?? 0)))),
+			];
+		}
 		$o['default_category'] = max(0, (int) ($in['default_category'] ?? 0));
 		$o['default_brand'] = max(0, (int) ($in['default_brand'] ?? 0));
 		$o['max_images'] = max(0, min(10, (int) ($in['max_images'] ?? 5)));

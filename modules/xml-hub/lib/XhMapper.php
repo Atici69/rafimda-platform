@@ -261,9 +261,6 @@ class XhMapper
 			$price = $sale;
 		}
 
-		$adj = static fn(float $p): float => $p > 0 ? round($p * (1 + $markup / 100) + $add, 2) : 0.0;
-		$price = $adj($price);
-		$old = $adj($old);
 
 		if ($stockRaw !== null && $stock === null) {
 			$errors[] = 'Stok sayısal değil: "' . mb_substr((string) (is_array($stockRaw) ? '' : $stockRaw), 0, 30) . '".';
@@ -291,6 +288,15 @@ class XhMapper
 
 		$idBrand = $idBrand > 0 ? $idBrand : (int) ($opt['default_brand'] ?? 0);
 		$idCat = $idCat > 0 ? $idCat : (int) ($opt['default_category'] ?? 0);
+
+		// Kategoriye özel kâr kuralı genel kuralı geçersiz kılar.
+		$categoryRules = is_array($opt['category_markup'] ?? null) ? $opt['category_markup'] : [];
+		$categoryRule = $idCat > 0 && is_array($categoryRules[$idCat] ?? null) ? $categoryRules[$idCat] : [];
+		$markup = array_key_exists('percent', $categoryRule) ? (float) $categoryRule['percent'] : $markup;
+		$add = array_key_exists('add', $categoryRule) ? (float) $categoryRule['add'] : $add;
+		$adj = static fn(float $p): float => $p > 0 ? round($p * (1 + $markup / 100) + $add, 2) : 0.0;
+		$price = $adj($price);
+		$old = $adj($old);
 
 		if ($idBrand <= 0) {
 			$errors[] = $brandTxt !== '' ? 'Marka eşleşmedi: "' . $brandTxt . '".' : 'Marka yok ve varsayılan marka seçilmedi.';

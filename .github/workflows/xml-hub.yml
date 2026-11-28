@@ -1,0 +1,31 @@
+name: XML Hub tests
+
+on:
+  push:
+    branches:
+      - feature/xml-center-rebuild
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  xml-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: PHP 8.2 with XML test extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl, dom, libxml, mbstring, pdo_sqlite, sodium, xml, xmlreader, xmlwriter
+          coverage: none
+      - name: PHP syntax check
+        run: |
+          find modules/xml-hub -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: XML Hub test suite
+        run: |
+          php modules/xml-hub/tests/run.php
+          php modules/xml-hub/tests/run_v2.php
+          php modules/xml-hub/tests/run_v3.php
+          php modules/xml-hub/tests/run_v4.php
+          php modules/xml-hub/tests/load_module.php
